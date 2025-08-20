@@ -73,10 +73,30 @@
             return `$${parseFloat(amount).toFixed(2)}`;
         }
 
+        // Función para mostrar toast notifications (mejora UX)
+        function showToast(message, type = 'success') {
+            const toastId = 'toast-' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast-notification toast-${type}">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                    ${message}
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+            
+            setTimeout(() => {
+                const toast = document.getElementById(toastId);
+                if (toast) {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3000);
+        }
+
         // Función para cargar pagos desde Firestore
         async function loadPayments() {
             const tableBody = document.getElementById('payments-table');
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Cargando datos...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="loading-spinner"><i class="fas fa-spinner fa-spin me-2"></i>Cargando datos...</div></td></tr>';
             
             try {
                 // Aplicar filtros
@@ -118,26 +138,30 @@
                     
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${formatDate(payment.date.toDate ? payment.date.toDate() : new Date(payment.date.seconds * 1000))}</td>
-                        <td>${payment.pharmacy}</td>
-                        <td>
+                        <td><span class="date-mobile">${formatDate(payment.date.toDate ? payment.date.toDate() : new Date(payment.date.seconds * 1000))}</span></td>
+                        <td><span class="pharmacy-name">${payment.pharmacy}</span></td>
+                        <td class="product-cell">
                             <span class="product-icon">${getProductIcon(payment.product)}</span>
                             <span class="badge badge-${getProductClass(payment.product)} status-badge">
                                 ${getProductName(payment.product)}
                             </span>
                         </td>
-                        <td>${formatCurrency(payment.amount)}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-secondary view-btn" data-id="${payment.id}">
+                        <td class="amount-cell"><strong>${formatCurrency(payment.amount)}</strong></td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-outline-secondary view-btn" data-id="${payment.id}" title="Ver detalles">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${payment.id}">
+                            <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${payment.id}" title="Eliminar">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
                     `;
                     tableBody.appendChild(row);
                 });
+                
+                if (payments.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No hay pagos registrados</td></tr>';
+                }
                 
                 // Actualizar estadísticas
                 updateStats(payments);
@@ -204,11 +228,11 @@
                 console.log("Pago registrado con ID: ", docRef.id);
                 loadPayments();
                 
-                // Mostrar mensaje de éxito
-                alert('Pago registrado exitosamente');
+                // Mostrar mensaje de éxito mejorado
+                showToast('✅ Pago registrado exitosamente', 'success');
             } catch (error) {
                 console.error("Error al registrar pago: ", error);
-                alert('Error al registrar el pago');
+                showToast('❌ Error al registrar el pago', 'error');
             }
         }
 
@@ -219,9 +243,10 @@
                     await deleteDoc(doc(db, "payments", id));
                     console.log("Pago eliminado");
                     loadPayments();
+                    showToast('🗑️ Pago eliminado correctamente', 'success');
                 } catch (error) {
                     console.error("Error al eliminar pago: ", error);
-                    alert('Error al eliminar el pago');
+                    showToast('❌ Error al eliminar el pago', 'error');
                 }
             }
         }
@@ -231,10 +256,10 @@
             try {
                 // En una implementación completa, podrías obtener los datos del documento
                 // y mostrarlos en un modal o alerta más detallada
-                alert(`ID del pago: ${id}\nHaz clic en "Actualizar" para ver los detalles completos`);
+                showToast(`📋 ID del pago: ${id}`, 'success');
             } catch (error) {
                 console.error("Error al obtener detalles del pago: ", error);
-                alert('Error al obtener detalles del pago');
+                showToast('❌ Error al obtener detalles del pago', 'error');
             }
         }
 
@@ -362,14 +387,17 @@
         
         .badge-descongel {
             background-color: #3498db;
+            color: white;
         }
         
         .badge-multidol400 {
             background-color: #2ecc71;
+            color: white;
         }
         
         .badge-multidol800 {
             background-color: #9b59b6;
+            color: white;
         }
         
         .product-icon {
@@ -428,6 +456,127 @@
         .product-card.multidol800 {
             border-left-color: #9b59b6;
         }
+
+        /* 📱 MEJORAS PARA MÓVIL */
+        .form-control, .form-select {
+            min-height: 48px;
+            font-size: 16px; /* Evita zoom en iOS */
+        }
+
+        .btn {
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        .btn-sm {
+            min-height: 40px;
+            min-width: 40px;
+            padding: 0.5rem;
+        }
+
+        /* Toast Notifications */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1050;
+            transition: opacity 0.3s ease;
+            max-width: 300px;
+        }
+
+        .toast-error {
+            background: #e74c3c;
+        }
+
+        .loading-spinner {
+            color: var(--secondary);
+        }
+
+        /* Responsive mejoras */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem 0;
+                margin-bottom: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .stats-card .number {
+                font-size: 2rem;
+            }
+            
+            .stats-card {
+                padding: 1rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+            }
+            
+            .filter-section {
+                padding: 1rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+            
+            .product-cell {
+                min-width: 120px;
+            }
+            
+            .amount-cell {
+                font-weight: bold;
+                color: var(--success);
+            }
+            
+            .action-buttons .btn {
+                margin: 0 2px;
+            }
+            
+            .pharmacy-name {
+                font-weight: 500;
+                color: var(--primary);
+            }
+            
+            .date-mobile {
+                font-size: 0.85rem;
+                color: #666;
+            }
+
+            .toast-notification {
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            
+            .filter-section .row > div {
+                margin-bottom: 1rem;
+            }
+            
+            .stats-card .number {
+                font-size: 1.8rem;
+            }
+            
+            .header .lead {
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -442,25 +591,25 @@
     <div class="container">
         <!-- Estadísticas -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-3 col-6">
                 <div class="card stats-card">
                     <div class="number" id="total-pagos">0</div>
                     <div class="label">Total Pagos</div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-6">
                 <div class="card stats-card">
                     <div class="number" id="total-descongel">0</div>
                     <div class="label">Descongel x100</div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-6">
                 <div class="card stats-card">
                     <div class="number" id="total-multidol400">0</div>
                     <div class="label">Multidol 400mg</div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-6">
                 <div class="card stats-card">
                     <div class="number" id="total-multidol800">0</div>
                     <div class="label">Multidol 800mg</div>
@@ -547,7 +696,7 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="fas fa-list me-2"></i>Historial de Pagos</span>
                         <button class="btn btn-sm btn-outline-light" id="refresh-btn">
-                            <i class="fas fa-sync-alt"></i> Actualizar
+                            <i class="fas fa-sync-alt"></i> <span class="d-none d-md-inline">Actualizar</span>
                         </button>
                     </div>
                     <div class="card-body">
@@ -576,7 +725,7 @@
     <!-- Footer -->
     <div class="footer text-center">
         <div class="container">
-            <p class="mb-0">CRM Control de Pagos &copy; 2023 - Sistema de gestión de medicamentos</p>
+            <p class="mb-0">CRM Control de Pagos &copy; 2025 - Sistema de gestión de medicamentos</p>
         </div>
     </div>
 </body>
