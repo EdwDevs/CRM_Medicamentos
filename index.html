@@ -2,18 +2,617 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM Control de Pagos - Medicamentos</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase SDK -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CRM Medicamentos - Móvil</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #34495e;
+            --descongel: #3498db;
+            --multidol400: #2ecc71;
+            --multidol800: #9b59b6;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding-bottom: 70px;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .app-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 15px 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .app-header h1 {
+            font-size: 1.4rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .app-header h1 i {
+            margin-right: 10px;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .stats-card .number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 5px 0;
+        }
+        
+        .stats-card .label {
+            font-size: 0.9rem;
+            color: var(--dark);
+        }
+        
+        .nav-tabs {
+            background: white;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 60px;
+            z-index: 999;
+        }
+        
+        .nav-tabs .nav-link {
+            color: var(--dark);
+            font-weight: 500;
+            padding: 12px 15px;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--secondary);
+            border-bottom: 3px solid var(--secondary);
+        }
+        
+        .tab-content {
+            padding: 15px;
+        }
+        
+        .form-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .form-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            height: auto;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+            border-radius: 8px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .payment-item {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--secondary);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .payment-item:active {
+            transform: scale(0.98);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        
+        .payment-item.descongel {
+            border-left-color: var(--descongel);
+        }
+        
+        .payment-item.multidol400 {
+            border-left-color: var(--multidol400);
+        }
+        
+        .payment-item.multidol800 {
+            border-left-color: var(--multidol800);
+        }
+        
+        .payment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .payment-date {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+        
+        .payment-amount {
+            font-weight: 700;
+            color: var(--success);
+            font-size: 1.2rem;
+        }
+        
+        .payment-product {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+        
+        .descongel-product {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--descongel);
+        }
+        
+        .multidol400-product {
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--multidol400);
+        }
+        
+        .multidol800-product {
+            background: rgba(155, 89, 182, 0.1);
+            color: var(--multidol800);
+        }
+        
+        .payment-pharmacy {
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            color: #34495e;
+            font-weight: 500;
+        }
+        
+        .payment-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f2f6;
+            border: none;
+            color: var(--dark);
+            transition: all 0.2s ease;
+        }
+        
+        .action-btn:active {
+            transform: scale(0.9);
+        }
+        
+        .action-btn.edit {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--secondary);
+        }
+        
+        .action-btn.delete {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger);
+        }
+        
+        .filter-section {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .filter-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-item {
+            flex: 1;
+        }
+        
+        .filter-item label {
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            color: #7f8c8d;
+        }
+        
+        .product-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .product-stat {
+            flex: 1;
+            min-width: 120px;
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .product-stat .number {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin: 5px 0;
+        }
+        
+        .product-stat .label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+        
+        .descongel-stat {
+            border-top: 3px solid var(--descongel);
+        }
+        
+        .multidol400-stat {
+            border-top: 3px solid var(--multidol400);
+        }
+        
+        .multidol800-stat {
+            border-top: 3px solid var(--multidol800);
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            border-top: 1px solid #eee;
+            z-index: 1000;
+        }
+        
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            color: #7f8c8d;
+            font-size: 0.8rem;
+        }
+        
+        .nav-item.active {
+            color: var(--secondary);
+        }
+        
+        .nav-item i {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #95a5a6;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+        
+        .empty-state p {
+            margin: 0;
+        }
+        
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--secondary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 100;
+            border: none;
+            transition: all 0.2s ease;
+        }
+        
+        .fab:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--secondary);
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Optimizaciones para móviles */
+        @media (max-width: 576px) {
+            .product-stats {
+                gap: 8px;
+            }
+            
+            .product-stat {
+                min-width: calc(33.333% - 6px);
+                padding: 10px;
+            }
+            
+            .payment-header {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .payment-amount {
+                font-size: 1.1rem;
+                align-self: flex-end;
+            }
+            
+            .filter-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .stats-card .number {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="app-header">
+        <h1><i class="fas fa-pills"></i> Control de Pagos</h1>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="stats-card">
+        <div class="label">Total Pagos</div>
+        <div class="number" id="total-payments">0</div>
+        <div class="label">Este mes</div>
+    </div>
+    
+    <!-- Product Stats -->
+    <div class="product-stats">
+        <div class="product-stat descongel-stat">
+            <div class="number" id="descongel-count">0</div>
+            <div class="label">Descongel x100</div>
+        </div>
+        <div class="product-stat multidol400-stat">
+            <div class="number" id="multidol400-count">0</div>
+            <div class="label">Multidol 400mg</div>
+        </div>
+        <div class="product-stat multidol800-stat">
+            <div class="number" id="multidol800-count">0</div>
+            <div class="label">Multidol 800mg</div>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button" role="tab">
+                <i class="fas fa-list"></i> Pagos
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button" role="tab">
+                <i class="fas fa-plus"></i> Agregar
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button" role="tab">
+                <i class="fas fa-chart-bar"></i> Reportes
+            </button>
+        </li>
+    </ul>
+    
+    <!-- Tab Content -->
+    <div class="tab-content" id="myTabContent">
+        <!-- Payments Tab -->
+        <div class="tab-pane fade show active" id="payments" role="tabpanel">
+            <div class="filter-section">
+                <div class="filter-title">
+                    <i class="fas fa-filter me-2"></i> Filtrar Pagos
+                </div>
+                <div class="filter-row">
+                    <div class="filter-item">
+                        <label>Producto</label>
+                        <select class="form-select" id="filter-product">
+                            <option value="">Todos</option>
+                            <option value="descongel">Descongel x100</option>
+                            <option value="multidol400">Multidol 400mg</option>
+                            <option value="multidol800">Multidol 800mg</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>Fecha</label>
+                        <input type="month" class="form-control" id="filter-date">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="payments-list" id="payments-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Cargando pagos...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add Payment Tab -->
+        <div class="tab-pane fade" id="add" role="tabpanel">
+            <div class="form-card">
+                <h3><i class="fas fa-receipt me-2"></i> Nuevo Pago</h3>
+                <form id="payment-form">
+                    <div class="mb-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" class="form-control" id="payment-date" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Farmacia</label>
+                        <input type="text" class="form-control" id="payment-pharmacy" placeholder="Nombre de la farmacia" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Producto</label>
+                        <select class="form-select" id="payment-product" required>
+                            <option value="">Seleccionar producto</option>
+                            <option value="descongel">Descongel x100 cápsulas</option>
+                            <option value="multidol400">Multidol 400mg</option>
+                            <option value="multidol800">Multidol 800mg</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Monto</label>
+                        <input type="number" class="form-control" id="payment-amount" placeholder="0" step="1" min="0" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Notas (Opcional)</label>
+                        <textarea class="form-control" id="payment-notes" rows="2" placeholder="Información adicional"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i> Registrar Pago
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Reports Tab -->
+        <div class="tab-pane fade" id="reports" role="tabpanel">
+            <div class="form-card">
+                <h3><i class="fas fa-chart-pie me-2"></i> Reporte de Pagos</h3>
+                <div class="text-center my-4">
+                    <canvas id="payments-chart" width="200" height="200"></canvas>
+                </div>
+                <div class="product-stats">
+                    <div class="product-stat descongel-stat">
+                        <div class="number" id="report-descongel">0%</div>
+                        <div class="label">Descongel</div>
+                    </div>
+                    <div class="product-stat multidol400-stat">
+                        <div class="number" id="report-multidol400">0%</div>
+                        <div class="label">Multidol 400</div>
+                    </div>
+                    <div class="product-stat multidol800-stat">
+                        <div class="number" id="report-multidol800">0%</div>
+                        <div class="label">Multidol 800</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Floating Action Button -->
+    <button class="fab" data-bs-toggle="tab" data-bs-target="#add">
+        <i class="fas fa-plus"></i>
+    </button>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Inicio</span>
+        </div>
+        <div class="nav-item">
+            <i class="fas fa-list"></i>
+            <span>Pagos</span>
+        </div>
+        <div class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reportes</span>
+        </div>
+        <div class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Ajustes</span>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
-        // Import the functions you need from the SDKs you need
+        // Importar las funciones necesarias de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // Your web app's Firebase configuration
+        
+        // Tu configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDK2Aoz1kxq1dDXKkemRIYCFAFtxgw4dZs",
             authDomain: "crm-medicamentos.firebaseapp.com",
@@ -23,42 +622,24 @@
             appId: "1:638953546971:web:4f811cdd7dd72dc7cfd8fe",
             measurementId: "G-RPZNJSCX12"
         };
-
-        // Initialize Firebase
+        
+        // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
         const db = getFirestore(app);
-
-        // Función para obtener el nombre del producto
-        function getProductName(productKey) {
-            const products = {
-                'descongel': 'Descongel x100 cápsulas',
-                'multidol400': 'Multidol 400mg',
-                'multidol800': 'Multidol 800mg'
-            };
-            return products[productKey] || productKey;
-        }
-
-        // Función para obtener la clase CSS del producto
-        function getProductClass(productKey) {
-            const classes = {
-                'descongel': 'descongel',
-                'multidol400': 'multidol400',
-                'multidol800': 'multidol800'
-            };
-            return classes[productKey] || '';
-        }
-
-        // Función para obtener el ícono del producto
-        function getProductIcon(productKey) {
-            const icons = {
-                'descongel': '❄️',
-                'multidol400': '💊',
-                'multidol800': '💊'
-            };
-            return icons[productKey] || '📦';
-        }
-
+        
+        // Productos
+        const products = ["descongel", "multidol400", "multidol800"];
+        const productNames = {
+            "descongel": "Descongel x100",
+            "multidol400": "Multidol 400mg",
+            "multidol800": "Multidol 800mg"
+        };
+        const productColors = {
+            "descongel": "#3498db",
+            "multidol400": "#2ecc71",
+            "multidol800": "#9b59b6"
+        };
+        
         // Función para formatear la fecha
         function formatDate(date) {
             if (date instanceof Date) {
@@ -67,21 +648,20 @@
             }
             return date;
         }
-
-        // Función para formatear moneda
+        
+        // Función para formatear moneda sin decimales
         function formatCurrency(amount) {
-            return `$${parseFloat(amount).toFixed(2)}`;
+            return `$${Math.round(parseFloat(amount))}`;
         }
-
+        
         // Función para cargar pagos desde Firestore
         async function loadPayments() {
-            const tableBody = document.getElementById('payments-table');
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Cargando datos...</td></tr>';
+            const paymentsList = document.getElementById('payments-list');
+            paymentsList.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando pagos...</p></div>';
             
             try {
                 // Aplicar filtros
                 const productFilter = document.getElementById('filter-product').value;
-                const pharmacyFilter = document.getElementById('filter-pharmacy').value;
                 const dateFilter = document.getElementById('filter-date').value;
                 
                 let q = collection(db, "payments");
@@ -89,10 +669,6 @@
                 // Crear consulta con filtros
                 if (productFilter) {
                     q = query(q, where("product", "==", productFilter));
-                }
-                
-                if (pharmacyFilter) {
-                    q = query(q, where("pharmacy", "==", pharmacyFilter));
                 }
                 
                 if (dateFilter) {
@@ -109,109 +685,165 @@
                 
                 const querySnapshot = await getDocs(q);
                 const payments = [];
+                let totalPayments = 0;
+                const productCounts = { descongel: 0, multidol400: 0, multidol800: 0 };
                 
-                tableBody.innerHTML = '';
+                paymentsList.innerHTML = '';
+                
+                if (querySnapshot.empty) {
+                    paymentsList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-receipt"></i>
+                            <p>No hay pagos registrados</p>
+                            <p class="text-muted">Agrega tu primer pago usando el botón +</p>
+                        </div>
+                    `;
+                    updateStats(0, productCounts);
+                    return;
+                }
                 
                 querySnapshot.forEach((doc) => {
                     const payment = { id: doc.id, ...doc.data() };
                     payments.push(payment);
                     
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${formatDate(payment.date.toDate ? payment.date.toDate() : new Date(payment.date.seconds * 1000))}</td>
-                        <td>${payment.pharmacy}</td>
-                        <td>
-                            <span class="product-icon">${getProductIcon(payment.product)}</span>
-                            <span class="badge badge-${getProductClass(payment.product)} status-badge">
-                                ${getProductName(payment.product)}
-                            </span>
-                        </td>
-                        <td>${formatCurrency(payment.amount)}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-secondary view-btn" data-id="${payment.id}">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${payment.id}">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
+                    // Sumar al total
+                    totalPayments++;
+                    
+                    // Sumar al conteo por producto
+                    if (productCounts.hasOwnProperty(payment.product)) {
+                        productCounts[payment.product]++;
+                    }
+                    
+                    // Crear elemento de pago
+                    const paymentElement = document.createElement('div');
+                    paymentElement.className = `payment-item ${payment.product}`;
+                    paymentElement.innerHTML = `
+                        <div class="payment-header">
+                            <div class="payment-date">${formatDate(payment.date.toDate ? payment.date.toDate() : new Date(payment.date.seconds * 1000))}</div>
+                            <div class="payment-amount">${formatCurrency(payment.amount)}</div>
+                        </div>
+                        <div class="payment-product ${payment.product}-product">${productNames[payment.product]}</div>
+                        <div class="payment-pharmacy">${payment.pharmacy}</div>
+                        <div class="payment-footer">
+                            <div>${payment.notes || '-'}</div>
+                            <div class="action-buttons">
+                                <button class="action-btn edit" data-id="${payment.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn delete" data-id="${payment.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
                     `;
-                    tableBody.appendChild(row);
+                    paymentsList.appendChild(paymentElement);
                 });
                 
                 // Actualizar estadísticas
-                updateStats(payments);
+                updateStats(totalPayments, productCounts);
                 
-                // Actualizar filtro de farmacias
-                updatePharmacyFilter(payments);
+                // Agregar event listeners a los botones
+                document.querySelectorAll('.action-btn.edit').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        alert(`Editar pago con ID: ${id}\nEn una implementación completa, cargaríamos los datos en el formulario`);
+                    });
+                });
+                
+                document.querySelectorAll('.action-btn.delete').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        deletePayment(id);
+                    });
+                });
                 
             } catch (error) {
                 console.error("Error al cargar pagos: ", error);
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar datos</td></tr>';
+                paymentsList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        <p>Error al cargar los pagos</p>
+                        <p class="text-muted">Por favor, intenta nuevamente</p>
+                    </div>
+                `;
             }
         }
-
+        
         // Función para actualizar estadísticas
-        function updateStats(payments) {
-            document.getElementById('total-pagos').textContent = payments.length;
+        function updateStats(totalPayments, productCounts) {
+            document.getElementById('total-payments').textContent = totalPayments;
+            document.getElementById('descongel-count').textContent = productCounts.descongel;
+            document.getElementById('multidol400-count').textContent = productCounts.multidol400;
+            document.getElementById('multidol800-count').textContent = productCounts.multidol800;
             
-            const descongelCount = payments.filter(p => p.product === 'descongel').length;
-            const multidol400Count = payments.filter(p => p.product === 'multidol400').length;
-            const multidol800Count = payments.filter(p => p.product === 'multidol800').length;
-            
-            document.getElementById('total-descongel').textContent = descongelCount;
-            document.getElementById('total-multidol400').textContent = multidol400Count;
-            document.getElementById('total-multidol800').textContent = multidol800Count;
+            // Actualizar reporte
+            updateReportChart(totalPayments, productCounts);
         }
-
-        // Función para actualizar el filtro de farmacias
-        function updatePharmacyFilter(payments) {
-            const pharmacyFilter = document.getElementById('filter-pharmacy');
-            const uniquePharmacies = [...new Set(payments.map(p => p.pharmacy))];
-            
-            // Guardar el valor actual
-            const currentValue = pharmacyFilter.value;
-            
-            // Limpiar opciones
-            pharmacyFilter.innerHTML = '<option value="">Todas las farmacias</option>';
-            
-            // Agregar opciones únicas
-            uniquePharmacies.forEach(pharmacy => {
-                const option = document.createElement('option');
-                option.value = pharmacy;
-                option.textContent = pharmacy;
-                pharmacyFilter.appendChild(option);
+        
+        // Función para actualizar el gráfico de reporte
+        function updateReportChart(totalPayments, productCounts) {
+            const percentages = {};
+            products.forEach(product => {
+                percentages[product] = totalPayments > 0 ? 
+                    Math.round((productCounts[product] / totalPayments) * 100) : 0;
             });
             
-            // Restaurar valor si aún existe
-            if (uniquePharmacies.includes(currentValue)) {
-                pharmacyFilter.value = currentValue;
+            document.getElementById('report-descongel').textContent = `${percentages.descongel}%`;
+            document.getElementById('report-multidol400').textContent = `${percentages.multidol400}%`;
+            document.getElementById('report-multidol800').textContent = `${percentages.multidol800}%`;
+            
+            // Actualizar gráfico
+            const ctx = document.getElementById('payments-chart').getContext('2d');
+            if (window.paymentsChart) {
+                window.paymentsChart.destroy();
             }
+            
+            window.paymentsChart = new Chart(ctx, {
+                type: 'doughnut',
+                 {
+                    labels: ['Descongel x100', 'Multidol 400mg', 'Multidol 800mg'],
+                    datasets: [{
+                        data: [
+                            productCounts.descongel,
+                            productCounts.multidol400,
+                            productCounts.multidol800
+                        ],
+                        backgroundColor: [
+                            productColors.descongel,
+                            productColors.multidol400,
+                            productColors.multidol800
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
         }
-
+        
         // Función para agregar un nuevo pago
-        async function addPayment(pharmacy, product, amount, date, notes) {
+        async function addPayment(paymentData) {
             try {
-                const newPayment = {
-                    pharmacy: pharmacy,
-                    product: product,
-                    amount: parseFloat(amount),
-                    date: new Date(date),
-                    notes: notes
-                };
-                
-                const docRef = await addDoc(collection(db, "payments"), newPayment);
+                const docRef = await addDoc(collection(db, "payments"), {
+                    ...paymentData,
+                    date: new Date(paymentData.date)
+                });
                 console.log("Pago registrado con ID: ", docRef.id);
                 loadPayments();
-                
-                // Mostrar mensaje de éxito
-                alert('Pago registrado exitosamente');
+                return true;
             } catch (error) {
                 console.error("Error al registrar pago: ", error);
-                alert('Error al registrar el pago');
+                return false;
             }
         }
-
+        
         // Función para eliminar un pago
         async function deletePayment(id) {
             if (confirm('¿Está seguro de eliminar este pago?')) {
@@ -225,359 +857,69 @@
                 }
             }
         }
-
-        // Función para ver detalles de un pago
-        async function viewPayment(id) {
-            try {
-                // En una implementación completa, podrías obtener los datos del documento
-                // y mostrarlos en un modal o alerta más detallada
-                alert(`ID del pago: ${id}\nHaz clic en "Actualizar" para ver los detalles completos`);
-            } catch (error) {
-                console.error("Error al obtener detalles del pago: ", error);
-                alert('Error al obtener detalles del pago');
-            }
-        }
-
+        
         // Event Listeners
         document.addEventListener('DOMContentLoaded', function() {
             // Inicializar la fecha actual en el campo de fecha
-            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('payment-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('filter-date').value = new Date().toISOString().slice(0, 7);
             
             // Cargar datos iniciales
             loadPayments();
             
             // Formulario de registro
-            document.getElementById('payment-form').addEventListener('submit', function(e) {
+            document.getElementById('payment-form').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                const pharmacy = document.getElementById('pharmacy').value;
-                const product = document.getElementById('product').value;
-                const amount = document.getElementById('amount').value;
-                const date = document.getElementById('date').value;
-                const notes = document.getElementById('notes').value;
+                const paymentData = {
+                    date: document.getElementById('payment-date').value,
+                    pharmacy: document.getElementById('payment-pharmacy').value,
+                    product: document.getElementById('payment-product').value,
+                    amount: parseFloat(document.getElementById('payment-amount').value),
+                    notes: document.getElementById('payment-notes').value || null
+                };
                 
-                if (pharmacy && product && amount && date) {
-                    addPayment(pharmacy, product, amount, date, notes);
-                    
+                if (!paymentData.product) {
+                    alert('Por favor seleccione un producto');
+                    return;
+                }
+                
+                const success = await addPayment(paymentData);
+                if (success) {
                     // Limpiar formulario
                     this.reset();
-                    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('payment-date').value = new Date().toISOString().split('T')[0];
+                    alert('Pago registrado exitosamente');
+                    
+                    // Cambiar a la pestaña de pagos
+                    const paymentsTab = document.querySelector('[data-bs-target="#payments"]');
+                    const tab = new bootstrap.Tab(paymentsTab);
+                    tab.show();
+                } else {
+                    alert('Error al registrar el pago');
                 }
-            });
-            
-            // Botón de actualización
-            document.getElementById('refresh-btn').addEventListener('click', function() {
-                loadPayments();
             });
             
             // Filtros
             document.getElementById('filter-product').addEventListener('change', loadPayments);
-            document.getElementById('filter-pharmacy').addEventListener('change', loadPayments);
             document.getElementById('filter-date').addEventListener('change', loadPayments);
             
-            // Delegación de eventos para botones de acción
-            document.getElementById('payments-table').addEventListener('click', function(e) {
-                if (e.target.closest('.delete-btn')) {
-                    const id = e.target.closest('.delete-btn').getAttribute('data-id');
-                    deletePayment(id);
-                }
-                
-                if (e.target.closest('.view-btn')) {
-                    const id = e.target.closest('.view-btn').getAttribute('data-id');
-                    viewPayment(id);
-                }
+            // Botón flotante para cambiar a la pestaña de agregar
+            const fab = document.querySelector('.fab');
+            fab.addEventListener('click', function() {
+                const addTab = document.querySelector('[data-bs-target="#add"]');
+                const tab = new bootstrap.Tab(addTab);
+                tab.show();
+            });
+            
+            // Navegación inferior
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                });
             });
         });
     </script>
-    <style>
-        :root {
-            --primary: #2c3e50;
-            --secondary: #3498db;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --danger: #e74c3c;
-            --light: #ecf0f1;
-            --dark: #34495e;
-        }
-        
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            padding: 1.5rem 0;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .card {
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
-            border: none;
-            margin-bottom: 1.5rem;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-        }
-        
-        .card-header {
-            background-color: var(--primary);
-            color: white;
-            border-radius: 10px 10px 0 0 !important;
-            font-weight: 600;
-            padding: 1rem 1.5rem;
-        }
-        
-        .btn-primary {
-            background-color: var(--secondary);
-            border-color: var(--secondary);
-        }
-        
-        .btn-primary:hover {
-            background-color: #2980b9;
-            border-color: #2980b9;
-        }
-        
-        .btn-success {
-            background-color: var(--success);
-            border-color: var(--success);
-        }
-        
-        .table th {
-            background-color: var(--light);
-        }
-        
-        .status-badge {
-            padding: 0.4em 0.8em;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
-        
-        .badge-descongel {
-            background-color: #3498db;
-        }
-        
-        .badge-multidol400 {
-            background-color: #2ecc71;
-        }
-        
-        .badge-multidol800 {
-            background-color: #9b59b6;
-        }
-        
-        .product-icon {
-            font-size: 1.5rem;
-            margin-right: 10px;
-        }
-        
-        .stats-card {
-            text-align: center;
-            padding: 1.5rem;
-        }
-        
-        .stats-card .number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-        
-        .stats-card .label {
-            font-size: 1rem;
-            color: var(--dark);
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: var(--secondary);
-            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
-        }
-        
-        .filter-section {
-            background-color: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        .footer {
-            background-color: var(--dark);
-            color: white;
-            padding: 1.5rem 0;
-            margin-top: 2rem;
-        }
-        
-        .product-card {
-            border-left: 4px solid var(--secondary);
-        }
-        
-        .product-card.descongel {
-            border-left-color: #3498db;
-        }
-        
-        .product-card.multidol400 {
-            border-left-color: #2ecc71;
-        }
-        
-        .product-card.multidol800 {
-            border-left-color: #9b59b6;
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <div class="header text-center">
-        <div class="container">
-            <h1><i class="fas fa-pills me-2"></i>CRM Control de Pagos</h1>
-            <p class="lead">Gestión de pagos para Cajas de Descongel x100 cápsulas, Multidol x400mg y 800mg</p>
-        </div>
-    </div>
-
-    <div class="container">
-        <!-- Estadísticas -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card stats-card">
-                    <div class="number" id="total-pagos">0</div>
-                    <div class="label">Total Pagos</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card stats-card">
-                    <div class="number" id="total-descongel">0</div>
-                    <div class="label">Descongel x100</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card stats-card">
-                    <div class="number" id="total-multidol400">0</div>
-                    <div class="label">Multidol 400mg</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card stats-card">
-                    <div class="number" id="total-multidol800">0</div>
-                    <div class="label">Multidol 800mg</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <!-- Formulario de Registro -->
-            <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Pago
-                    </div>
-                    <div class="card-body">
-                        <form id="payment-form">
-                            <div class="mb-3">
-                                <label for="pharmacy" class="form-label">Nombre de Farmacia</label>
-                                <input type="text" class="form-control" id="pharmacy" required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="product" class="form-label">Producto</label>
-                                <select class="form-select" id="product" required>
-                                    <option value="">Seleccionar producto</option>
-                                    <option value="descongel">Descongel x100 cápsulas</option>
-                                    <option value="multidol400">Multidol 400mg</option>
-                                    <option value="multidol800">Multidol 800mg</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="amount" class="form-label">Monto del Pago ($)</label>
-                                <input type="number" class="form-control" id="amount" min="0" step="0.01" required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="date" class="form-label">Fecha de Pago</label>
-                                <input type="date" class="form-control" id="date" required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="notes" class="form-label">Notas (Opcional)</label>
-                                <textarea class="form-control" id="notes" rows="2"></textarea>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-save me-2"></i>Registrar Pago
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Lista de Pagos -->
-            <div class="col-lg-8">
-                <div class="filter-section">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label for="filter-product" class="form-label">Filtrar por Producto</label>
-                            <select class="form-select" id="filter-product">
-                                <option value="">Todos los productos</option>
-                                <option value="descongel">Descongel x100 cápsulas</option>
-                                <option value="multidol400">Multidol 400mg</option>
-                                <option value="multidol800">Multidol 800mg</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <label for="filter-pharmacy" class="form-label">Filtrar por Farmacia</label>
-                            <select class="form-select" id="filter-pharmacy">
-                                <option value="">Todas las farmacias</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <label for="filter-date" class="form-label">Filtrar por Fecha</label>
-                            <input type="month" class="form-control" id="filter-date">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-list me-2"></i>Historial de Pagos</span>
-                        <button class="btn btn-sm btn-outline-light" id="refresh-btn">
-                            <i class="fas fa-sync-alt"></i> Actualizar
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Farmacia</th>
-                                        <th>Producto</th>
-                                        <th>Monto</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="payments-table">
-                                    <!-- Los datos se cargarán aquí -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer text-center">
-        <div class="container">
-            <p class="mb-0">CRM Control de Pagos &copy; 2023 - Sistema de gestión de medicamentos</p>
-        </div>
-    </div>
 </body>
 </html>
