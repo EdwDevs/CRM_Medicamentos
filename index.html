@@ -32,6 +32,24 @@
         // 💰 Configuración de presupuesto
         const BUDGET_TOTAL = 500000; // $500,000 COP
 
+        // 🧮 Función para calcular el total automáticamente
+        function calculateTotal() {
+            const quantity = document.getElementById('quantity').value || 0;
+            const unitPrice = document.getElementById('unitPrice').value || 0;
+            const total = parseFloat(quantity) * parseFloat(unitPrice);
+            
+            document.getElementById('total-display').textContent = formatCurrency(total);
+            document.getElementById('total-value').value = total;
+            
+            // Mostrar/ocultar el total
+            const totalContainer = document.getElementById('total-container');
+            if (quantity > 0 && unitPrice > 0) {
+                totalContainer.style.display = 'block';
+            } else {
+                totalContainer.style.display = 'none';
+            }
+        }
+
         // Función para obtener el nombre del producto
         function getProductName(productKey) {
             const products = {
@@ -104,7 +122,7 @@
         // Función para cargar pagos desde Firestore
         async function loadPayments() {
             const tableBody = document.getElementById('payments-table');
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="loading-spinner"><i class="fas fa-spinner fa-spin me-2"></i>Cargando datos...</div></td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center"><div class="loading-spinner"><i class="fas fa-spinner fa-spin me-2"></i>Cargando datos...</div></td></tr>';
             
             try {
                 // Aplicar filtros
@@ -154,7 +172,12 @@
                                 ${getProductName(payment.product)}
                             </span>
                         </td>
-                        <td class="amount-cell"><strong>${formatCurrency(payment.amount)}</strong></td>
+                        <td class="quantity-cell"><strong>${payment.quantity || 1}</strong></td>
+                        <td class="unit-price-cell">${formatCurrency(payment.unitPrice || payment.amount)}</td>
+                        <td class="amount-cell"><strong>${formatCurrency(payment.totalAmount || payment.amount)}</strong></td>
+                        <td class="description-cell">
+                            <small class="text-muted">${payment.notes ? payment.notes.substring(0, 50) + (payment.notes.length > 50 ? '...' : '') : 'Sin descripción'}</small>
+                        </td>
                         <td class="action-buttons">
                             <button class="btn btn-sm btn-outline-secondary view-btn" data-id="${payment.id}" title="Ver detalles">
                                 <i class="fas fa-eye"></i>
@@ -168,7 +191,7 @@
                 });
                 
                 if (payments.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No hay pagos registrados</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No hay pagos registrados</td></tr>';
                 }
                 
                 // Actualizar estadísticas
@@ -179,7 +202,7 @@
                 
             } catch (error) {
                 console.error("Error al cargar pagos: ", error);
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar datos</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar datos</td></tr>';
             }
         }
 
@@ -196,8 +219,8 @@
             document.getElementById('total-multidol400').textContent = multidol400Count;
             document.getElementById('total-multidol800').textContent = multidol800Count;
 
-            // 💰 Cálculos de presupuesto
-            const totalPagado = payments.reduce((sum, payment) => sum + payment.amount, 0);
+            // 💰 Cálculos de presupuesto (usar totalAmount si existe, sino amount)
+            const totalPagado = payments.reduce((sum, payment) => sum + (payment.totalAmount || payment.amount), 0);
             const presupuestoRestante = BUDGET_TOTAL - totalPagado;
             const porcentajeUsado = (totalPagado / BUDGET_TOTAL) * 100;
 
@@ -254,13 +277,17 @@
             }
         }
 
-        // Función para agregar un nuevo pago
-        async function addPayment(pharmacy, product, amount, date, notes) {
+        // Función para agregar un nuevo pago (ACTUALIZADA)
+        async function addPayment(pharmacy, product, quantity, unitPrice, totalAmount, date, notes) {
             try {
                 const newPayment = {
                     pharmacy: pharmacy,
                     product: product,
-                    amount: parseFloat(amount),
+                    quantity: parseInt(quantity),
+                    unitPrice: parseFloat(unitPrice),
+                    totalAmount: parseFloat(totalAmount),
+                    // Mantener amount para compatibilidad con datos antiguos
+                    amount: parseFloat(totalAmount),
                     date: new Date(date),
                     notes: notes
                 };
@@ -312,22 +339,32 @@
             // Cargar datos iniciales
             loadPayments();
             
-            // Formulario de registro
+            // Event listeners para cálculo automático
+            document.getElementById('quantity').addEventListener('input', calculateTotal);
+            document.getElementById('unitPrice').addEventListener('input', calculateTotal);
+            
+            // Formulario de registro (ACTUALIZADO)
             document.getElementById('payment-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
                 const pharmacy = document.getElementById('pharmacy').value;
                 const product = document.getElementById('product').value;
-                const amount = document.getElementById('amount').value;
+                const quantity = document.getElementById('quantity').value;
+                const unitPrice = document.getElementById('unitPrice').value;
+                const totalAmount = document.getElementById('total-value').value;
                 const date = document.getElementById('date').value;
                 const notes = document.getElementById('notes').value;
                 
-                if (pharmacy && product && amount && date) {
-                    addPayment(pharmacy, product, amount, date, notes);
+                if (pharmacy && product && quantity && unitPrice && totalAmount && date) {
+                    addPayment(pharmacy, product, quantity, unitPrice, totalAmount, date, notes);
                     
                     // Limpiar formulario
                     this.reset();
                     document.getElementById('date').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('total-container').style.display = 'none';
+                    document.getElementById('total-value').value = '';
+                } else {
+                    showToast('⚠️ Por favor completa todos los campos requeridos', 'error');
                 }
             });
             
@@ -494,6 +531,26 @@
             padding: 1rem;
             margin-top: 1rem;
         }
+
+        /* 🧮 Estilos para cálculo total */
+        .total-display {
+            background: linear-gradient(135deg, var(--success), #229954);
+            color: white;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .total-display .amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .total-display .label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
         
         .form-control:focus, .form-select:focus {
             border-color: var(--secondary);
@@ -571,6 +628,22 @@
             color: var(--secondary);
         }
 
+        /* Nuevos estilos para las columnas de la tabla */
+        .quantity-cell {
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .unit-price-cell {
+            color: var(--secondary);
+            font-weight: 500;
+        }
+
+        .description-cell {
+            max-width: 150px;
+        }
+
         /* Responsive mejoras */
         @media (max-width: 768px) {
             .header {
@@ -636,6 +709,15 @@
             .budget-info {
                 padding: 0.8rem;
                 margin-top: 0.8rem;
+            }
+
+            .description-cell {
+                max-width: 100px;
+                font-size: 0.8rem;
+            }
+
+            .total-display .amount {
+                font-size: 1.2rem;
             }
         }
 
@@ -760,9 +842,23 @@
                                 </select>
                             </div>
                             
+                            <!-- 🧮 NUEVO: Campo de Cantidad -->
                             <div class="mb-3">
-                                <label for="amount" class="form-label">Monto del Pago (COP)</label>
-                                <input type="number" class="form-control" id="amount" min="0" step="1000" required placeholder="Ej: 25000">
+                                <label for="quantity" class="form-label">Cantidad <span class="text-muted">(unidades)</span></label>
+                                <input type="number" class="form-control" id="quantity" min="1" step="1" required placeholder="Ej: 5">
+                            </div>
+                            
+                            <!-- 🧮 ACTUALIZADO: Valor por Unidad -->
+                            <div class="mb-3">
+                                <label for="unitPrice" class="form-label">Valor por Unidad (COP)</label>
+                                <input type="number" class="form-control" id="unitPrice" min="0" step="100" required placeholder="Ej: 5000">
+                            </div>
+                            
+                            <!-- 🧮 NUEVO: Mostrar Total Calculado -->
+                            <div id="total-container" class="total-display" style="display: none;">
+                                <div class="label">💰 Total a Pagar:</div>
+                                <div class="amount" id="total-display">$0</div>
+                                <input type="hidden" id="total-value" value="">
                             </div>
                             
                             <div class="mb-3">
@@ -771,8 +867,8 @@
                             </div>
                             
                             <div class="mb-3">
-                                <label for="notes" class="form-label">Notas (Opcional)</label>
-                                <textarea class="form-control" id="notes" rows="2"></textarea>
+                                <label for="notes" class="form-label">Descripción/Notas</label>
+                                <textarea class="form-control" id="notes" rows="2" placeholder="Ej: Pago por medicamentos del mes de agosto"></textarea>
                             </div>
                             
                             <button type="submit" class="btn btn-primary w-100">
@@ -826,7 +922,10 @@
                                         <th>Fecha</th>
                                         <th>Farmacia</th>
                                         <th>Producto</th>
-                                        <th>Monto</th>
+                                        <th>Cant.</th>
+                                        <th>Valor Unit.</th>
+                                        <th>Total</th>
+                                        <th>Descripción</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
