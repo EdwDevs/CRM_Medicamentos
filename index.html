@@ -29,6 +29,9 @@
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
+        // 💰 Configuración de presupuesto
+        const BUDGET_TOTAL = 500000; // $500,000 COP
+
         // Función para obtener el nombre del producto
         function getProductName(productKey) {
             const products = {
@@ -68,9 +71,14 @@
             return date;
         }
 
-        // Función para formatear moneda
+        // Función para formatear moneda colombiana
         function formatCurrency(amount) {
-            return `$${parseFloat(amount).toFixed(2)}`;
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
         }
 
         // Función para mostrar toast notifications (mejora UX)
@@ -175,8 +183,9 @@
             }
         }
 
-        // Función para actualizar estadísticas
+        // 💰 Función para actualizar estadísticas (ACTUALIZADA CON PRESUPUESTO)
         function updateStats(payments) {
+            // Estadísticas básicas
             document.getElementById('total-pagos').textContent = payments.length;
             
             const descongelCount = payments.filter(p => p.product === 'descongel').length;
@@ -186,6 +195,38 @@
             document.getElementById('total-descongel').textContent = descongelCount;
             document.getElementById('total-multidol400').textContent = multidol400Count;
             document.getElementById('total-multidol800').textContent = multidol800Count;
+
+            // 💰 Cálculos de presupuesto
+            const totalPagado = payments.reduce((sum, payment) => sum + payment.amount, 0);
+            const presupuestoRestante = BUDGET_TOTAL - totalPagado;
+            const porcentajeUsado = (totalPagado / BUDGET_TOTAL) * 100;
+
+            // Actualizar elementos del presupuesto
+            document.getElementById('total-pagado').textContent = formatCurrency(totalPagado);
+            document.getElementById('presupuesto-restante').textContent = formatCurrency(presupuestoRestante);
+            document.getElementById('porcentaje-usado').textContent = `${porcentajeUsado.toFixed(1)}%`;
+
+            // Actualizar barra de progreso
+            const progressBar = document.getElementById('budget-progress');
+            progressBar.style.width = `${Math.min(porcentajeUsado, 100)}%`;
+            
+            // Cambiar color según porcentaje
+            progressBar.className = 'progress-bar';
+            if (porcentajeUsado >= 90) {
+                progressBar.classList.add('bg-danger');
+            } else if (porcentajeUsado >= 75) {
+                progressBar.classList.add('bg-warning');
+            } else {
+                progressBar.classList.add('bg-success');
+            }
+
+            // Alerta si se excede el presupuesto
+            if (totalPagado > BUDGET_TOTAL) {
+                document.getElementById('budget-alert').style.display = 'block';
+                document.getElementById('exceso-presupuesto').textContent = formatCurrency(totalPagado - BUDGET_TOTAL);
+            } else {
+                document.getElementById('budget-alert').style.display = 'none';
+            }
         }
 
         // Función para actualizar el filtro de farmacias
@@ -420,6 +461,39 @@
             font-size: 1rem;
             color: var(--dark);
         }
+
+        /* 💰 Estilos para control de presupuesto */
+        .budget-card {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+        }
+
+        .budget-card .number {
+            color: white !important;
+        }
+
+        .budget-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .budget-progress {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 10px;
+            margin: 1rem 0;
+        }
+
+        .budget-alert {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
         
         .form-control:focus, .form-select:focus {
             border-color: var(--secondary);
@@ -557,6 +631,12 @@
                 left: 10px;
                 max-width: none;
             }
+
+            /* 💰 Budget responsive */
+            .budget-info {
+                padding: 0.8rem;
+                margin-top: 0.8rem;
+            }
         }
 
         @media (max-width: 576px) {
@@ -589,30 +669,69 @@
     </div>
 
     <div class="container">
-        <!-- Estadísticas -->
+        <!-- 💰 Control de Presupuesto -->
         <div class="row mb-4">
-            <div class="col-md-3 col-6">
+            <div class="col-lg-6">
+                <div class="card budget-card">
+                    <div class="card-header">
+                        <i class="fas fa-wallet me-2"></i>Control de Presupuesto
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="number" id="total-pagado">$0</div>
+                                <div class="label">Total Pagado</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="number" id="presupuesto-restante">$500,000</div>
+                                <div class="label">Presupuesto Restante</div>
+                            </div>
+                        </div>
+                        <div class="budget-info">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Progreso:</span>
+                                <strong id="porcentaje-usado">0%</strong>
+                            </div>
+                            <div class="progress budget-progress">
+                                <div id="budget-progress" class="progress-bar bg-success" style="width: 0%"></div>
+                            </div>
+                            <small class="text-light">Presupuesto total: $500,000 COP</small>
+                        </div>
+                        <!-- Alerta de exceso de presupuesto -->
+                        <div id="budget-alert" class="alert budget-alert" style="display: none;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>¡Presupuesto excedido!</strong><br>
+                            Has superado el presupuesto por: <span id="exceso-presupuesto">$0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <!-- Estadísticas por Producto -->
+                <div class="row">
+                    <div class="col-4">
+                        <div class="card stats-card">
+                            <div class="number" id="total-descongel">0</div>
+                            <div class="label">Descongel x100</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card stats-card">
+                            <div class="number" id="total-multidol400">0</div>
+                            <div class="label">Multidol 400mg</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card stats-card">
+                            <div class="number" id="total-multidol800">0</div>
+                            <div class="label">Multidol 800mg</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Total de Pagos -->
                 <div class="card stats-card">
                     <div class="number" id="total-pagos">0</div>
-                    <div class="label">Total Pagos</div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6">
-                <div class="card stats-card">
-                    <div class="number" id="total-descongel">0</div>
-                    <div class="label">Descongel x100</div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6">
-                <div class="card stats-card">
-                    <div class="number" id="total-multidol400">0</div>
-                    <div class="label">Multidol 400mg</div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6">
-                <div class="card stats-card">
-                    <div class="number" id="total-multidol800">0</div>
-                    <div class="label">Multidol 800mg</div>
+                    <div class="label">Total de Pagos Registrados</div>
                 </div>
             </div>
         </div>
@@ -642,8 +761,8 @@
                             </div>
                             
                             <div class="mb-3">
-                                <label for="amount" class="form-label">Monto del Pago ($)</label>
-                                <input type="number" class="form-control" id="amount" min="0" step="0.01" required>
+                                <label for="amount" class="form-label">Monto del Pago (COP)</label>
+                                <input type="number" class="form-control" id="amount" min="0" step="1000" required placeholder="Ej: 25000">
                             </div>
                             
                             <div class="mb-3">
