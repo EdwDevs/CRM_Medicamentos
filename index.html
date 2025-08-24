@@ -6,7 +6,6 @@
     <title>CRM Control de Pagos - Medicamentos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase SDK -->
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -83,8 +82,12 @@
         // Función para formatear la fecha
         function formatDate(date) {
             if (date instanceof Date) {
-                const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                const options = { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }; // Forzar UTC para consistencia
                 return date.toLocaleDateString('es-ES', options);
+            }
+            // ➕ CORRECCIÓN ZONA HORARIA: Si es un string, lo tratamos como local
+            if (typeof date === 'string') {
+                return new Date(date + 'T00:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
             }
             return date;
         }
@@ -143,7 +146,7 @@
                 
                 if (dateFilter) {
                     // Para filtrar por mes, creamos un rango de fechas
-                    const startDate = new Date(dateFilter + "-01");
+                    const startDate = new Date(dateFilter + "-01T00:00:00"); // Asegurar que es local
                     const endDate = new Date(startDate);
                     endDate.setMonth(endDate.getMonth() + 1);
                     
@@ -163,8 +166,12 @@
                     payments.push(payment);
                     
                     const row = document.createElement('tr');
+                    
+                    // ➕ CORRECCIÓN ZONA HORARIA: Simplificado para que formatDate lo maneje
+                    const displayDate = payment.date.toDate ? payment.date.toDate() : new Date(payment.date);
+                    
                     row.innerHTML = `
-                        <td><span class="date-mobile">${formatDate(payment.date.toDate ? payment.date.toDate() : new Date(payment.date.seconds * 1000))}</span></td>
+                        <td><span class="date-mobile">${formatDate(displayDate)}</span></td>
                         <td><span class="pharmacy-name">${payment.pharmacy}</span></td>
                         <td class="product-cell">
                             <span class="product-icon">${getProductIcon(payment.product)}</span>
@@ -288,7 +295,8 @@
                     totalAmount: parseFloat(totalAmount),
                     // Mantener amount para compatibilidad con datos antiguos
                     amount: parseFloat(totalAmount),
-                    date: new Date(date),
+                    // ➕ CORRECCIÓN ZONA HORARIA: Guardar la fecha como local
+                    date: new Date(date + 'T00:00:00'),
                     notes: notes
                 };
                 
@@ -742,7 +750,6 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
     <div class="header text-center">
         <div class="container">
             <h1><i class="fas fa-pills me-2"></i>CRM Control de Pagos</h1>
@@ -751,7 +758,6 @@
     </div>
 
     <div class="container">
-        <!-- 💰 Control de Presupuesto -->
         <div class="row mb-4">
             <div class="col-lg-6">
                 <div class="card budget-card">
@@ -779,7 +785,6 @@
                             </div>
                             <small class="text-light">Presupuesto total: $500,000 COP</small>
                         </div>
-                        <!-- Alerta de exceso de presupuesto -->
                         <div id="budget-alert" class="alert budget-alert" style="display: none;">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>¡Presupuesto excedido!</strong><br>
@@ -789,7 +794,6 @@
                 </div>
             </div>
             <div class="col-lg-6">
-                <!-- Estadísticas por Producto -->
                 <div class="row">
                     <div class="col-4">
                         <div class="card stats-card">
@@ -810,7 +814,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Total de Pagos -->
                 <div class="card stats-card">
                     <div class="number" id="total-pagos">0</div>
                     <div class="label">Total de Pagos Registrados</div>
@@ -819,7 +822,6 @@
         </div>
 
         <div class="row">
-            <!-- Formulario de Registro -->
             <div class="col-lg-4">
                 <div class="card">
                     <div class="card-header">
@@ -842,19 +844,16 @@
                                 </select>
                             </div>
                             
-                            <!-- 🧮 NUEVO: Campo de Cantidad -->
                             <div class="mb-3">
                                 <label for="quantity" class="form-label">Cantidad <span class="text-muted">(unidades)</span></label>
                                 <input type="number" class="form-control" id="quantity" min="1" step="1" required placeholder="Ej: 5">
                             </div>
                             
-                            <!-- 🧮 ACTUALIZADO: Valor por Unidad -->
                             <div class="mb-3">
                                 <label for="unitPrice" class="form-label">Valor por Unidad (COP)</label>
                                 <input type="number" class="form-control" id="unitPrice" min="0" step="100" required placeholder="Ej: 5000">
                             </div>
                             
-                            <!-- 🧮 NUEVO: Mostrar Total Calculado -->
                             <div id="total-container" class="total-display" style="display: none;">
                                 <div class="label">💰 Total a Pagar:</div>
                                 <div class="amount" id="total-display">$0</div>
@@ -879,7 +878,6 @@
                 </div>
             </div>
 
-            <!-- Lista de Pagos -->
             <div class="col-lg-8">
                 <div class="filter-section">
                     <div class="row">
@@ -930,8 +928,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="payments-table">
-                                    <!-- Los datos se cargarán aquí -->
-                                </tbody>
+                                    </tbody>
                             </table>
                         </div>
                     </div>
@@ -940,7 +937,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
     <div class="footer text-center">
         <div class="container">
             <p class="mb-0">CRM Control de Pagos &copy; 2025 - Sistema de gestión de medicamentos</p>
