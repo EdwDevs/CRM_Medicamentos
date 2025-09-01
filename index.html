@@ -10,8 +10,8 @@
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        
         // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDK2Aoz1kxq1dDXKkemRIYCFAFtxgw4dZs",
@@ -22,15 +22,15 @@
             appId: "1:638953546971:web:4f811cdd7dd72dc7cfd8fe",
             measurementId: "G-RPZNJSCX12"
         };
-
+        
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
-
+        
         // 💰 Configuración de presupuesto
         const BUDGET_TOTAL = 500000; // $500,000 COP
-
+        
         // 🧮 Función para calcular el total automáticamente
         function calculateTotal() {
             const quantity = document.getElementById('quantity').value || 0;
@@ -48,7 +48,7 @@
                 totalContainer.style.display = 'none';
             }
         }
-
+        
         // Función para obtener el nombre del producto
         function getProductName(productKey) {
             const products = {
@@ -58,7 +58,7 @@
             };
             return products[productKey] || productKey;
         }
-
+        
         // Función para obtener la clase CSS del producto
         function getProductClass(productKey) {
             const classes = {
@@ -68,7 +68,7 @@
             };
             return classes[productKey] || '';
         }
-
+        
         // Función para obtener el ícono del producto
         function getProductIcon(productKey) {
             const icons = {
@@ -78,11 +78,28 @@
             };
             return icons[productKey] || '📦';
         }
-
+        
+        // 🆕 Función para obtener el estado del pago con estilos
+        function getPaymentStatus(status) {
+            const statuses = {
+                'pendiente': {
+                    label: 'Pendiente',
+                    class: 'bg-warning text-dark',
+                    icon: '⏳'
+                },
+                'procesado': {
+                    label: 'Procesado',
+                    class: 'bg-success text-white',
+                    icon: '✅'
+                }
+            };
+            return statuses[status] || statuses['pendiente'];
+        }
+        
         // Función para formatear la fecha
         function formatDate(date) {
             if (date instanceof Date) {
-                const options = { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }; // Forzar UTC para consistencia
+                const options = { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' };
                 return date.toLocaleDateString('es-ES', options);
             }
             if (typeof date === 'string') {
@@ -90,7 +107,7 @@
             }
             return date;
         }
-
+        
         // Función para formatear moneda colombiana
         function formatCurrency(amount) {
             return new Intl.NumberFormat('es-CO', {
@@ -100,8 +117,8 @@
                 maximumFractionDigits: 0
             }).format(amount);
         }
-
-        // Función para mostrar toast notifications (mejora UX)
+        
+        // Función para mostrar toast notifications
         function showToast(message, type = 'success') {
             const toastId = 'toast-' + Date.now();
             const toastHtml = `
@@ -120,29 +137,51 @@
                 }
             }, 3000);
         }
-
-        // ------------------- FUNCIÓN CORREGIDA -------------------
+        
+        // 🆕 Función para cambiar el estado de un pago
+        async function togglePaymentStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'pendiente' ? 'procesado' : 'pendiente';
+            
+            try {
+                await updateDoc(doc(db, "payments", id), {
+                    status: newStatus
+                });
+                
+                const statusInfo = getPaymentStatus(newStatus);
+                showToast(`${statusInfo.icon} Estado cambiado a: ${statusInfo.label}`, 'success');
+                loadPayments();
+            } catch (error) {
+                console.error("Error al cambiar estado: ", error);
+                showToast('❌ Error al cambiar el estado', 'error');
+            }
+        }
+        
+        // ------------------- FUNCIÓN CORREGIDA Y MEJORADA -------------------
         // Función para cargar pagos desde Firestore
         async function loadPayments() {
             const tableBody = document.getElementById('payments-table');
-            tableBody.innerHTML = '<tr><td colspan="8" class="text-center"><div class="loading-spinner"><i class="fas fa-spinner fa-spin me-2"></i>Cargando datos...</div></td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="9" class="text-center"><div class="loading-spinner"><i class="fas fa-spinner fa-spin me-2"></i>Cargando datos...</div></td></tr>';
             
             try {
-                // 1. Obtener valores de los filtros
+                // Obtener valores de los filtros
                 const productFilter = document.getElementById('filter-product').value;
                 const pharmacyFilter = document.getElementById('filter-pharmacy').value;
                 const dateFilter = document.getElementById('filter-date').value;
+                const statusFilter = document.getElementById('filter-status').value; // 🆕 Nuevo filtro
                 
-                // 2. Crear un array para almacenar las condiciones de la consulta
                 const queryConstraints = [];
                 
-                // 3. Añadir condicionalmente cada filtro al array
                 if (productFilter) {
                     queryConstraints.push(where("product", "==", productFilter));
                 }
                 
                 if (pharmacyFilter) {
                     queryConstraints.push(where("pharmacy", "==", pharmacyFilter));
+                }
+                
+                // 🆕 Filtro por estado
+                if (statusFilter) {
+                    queryConstraints.push(where("status", "==", statusFilter));
                 }
                 
                 if (dateFilter) {
@@ -154,14 +193,11 @@
                     queryConstraints.push(where("date", "<", endDate));
                 }
                 
-                // 4. Añadir siempre la condición de ordenamiento
                 queryConstraints.push(orderBy("date", "desc"));
-
-                // 5. Construir la consulta final pasando todas las condiciones a la vez
+                
                 const paymentsCollection = collection(db, "payments");
                 const finalQuery = query(paymentsCollection, ...queryConstraints);
                 
-                // 6. Ejecutar la consulta
                 const querySnapshot = await getDocs(finalQuery);
                 const payments = [];
                 
@@ -169,11 +205,17 @@
                 
                 querySnapshot.forEach((doc) => {
                     const payment = { id: doc.id, ...doc.data() };
+                    
+                    // 🆕 Si no tiene estado, asignar 'pendiente' por defecto
+                    if (!payment.status) {
+                        payment.status = 'pendiente';
+                    }
+                    
                     payments.push(payment);
                     
                     const row = document.createElement('tr');
-                    
                     const displayDate = payment.date.toDate ? payment.date.toDate() : new Date(payment.date);
+                    const statusInfo = getPaymentStatus(payment.status);
                     
                     row.innerHTML = `
                         <td><span class="date-mobile">${formatDate(displayDate)}</span></td>
@@ -187,8 +229,16 @@
                         <td class="quantity-cell"><strong>${payment.quantity || 1}</strong></td>
                         <td class="unit-price-cell">${formatCurrency(payment.unitPrice || payment.amount)}</td>
                         <td class="amount-cell"><strong>${formatCurrency(payment.totalAmount || payment.amount)}</strong></td>
+                        <td class="status-cell">
+                            <button class="btn btn-sm badge ${statusInfo.class} status-toggle-btn" 
+                                    data-id="${payment.id}" 
+                                    data-status="${payment.status}"
+                                    title="Clic para cambiar estado">
+                                ${statusInfo.icon} ${statusInfo.label}
+                            </button>
+                        </td>
                         <td class="description-cell">
-                            <small class="text-muted">${payment.notes ? payment.notes.substring(0, 50) + (payment.notes.length > 50 ? '...' : '') : 'Sin descripción'}</small>
+                            <small class="text-muted">${payment.notes ? payment.notes.substring(0, 40) + (payment.notes.length > 40 ? '...' : '') : 'Sin descripción'}</small>
                         </td>
                         <td class="action-buttons">
                             <button class="btn btn-sm btn-outline-secondary view-btn" data-id="${payment.id}" title="Ver detalles">
@@ -203,7 +253,7 @@
                 });
                 
                 if (payments.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No se encontraron pagos con los filtros aplicados.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No se encontraron pagos con los filtros aplicados.</td></tr>';
                 }
                 
                 // Actualizar estadísticas y filtros
@@ -212,16 +262,15 @@
                 
             } catch (error) {
                 console.error("Error al cargar pagos: ", error);
-                tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar datos. Revisa la consola para más detalles.</td></tr>';
-                // Firestore te avisará en la consola si necesitas crear un índice compuesto para esta consulta.
+                tableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error al cargar datos. Revisa la consola para más detalles.</td></tr>';
             }
         }
-        // ------------------- FIN DE LA CORRECCIÓN -------------------
-
-        // 💰 Función para actualizar estadísticas
+        
+        // 💰 Función para actualizar estadísticas (MEJORADA)
         function updateStats(payments) {
             document.getElementById('total-pagos').textContent = payments.length;
             
+            // Contadores por producto
             const descongelCount = payments.filter(p => p.product === 'descongel').length;
             const multidol400Count = payments.filter(p => p.product === 'multidol400').length;
             const multidol800Count = payments.filter(p => p.product === 'multidol800').length;
@@ -229,15 +278,23 @@
             document.getElementById('total-descongel').textContent = descongelCount;
             document.getElementById('total-multidol400').textContent = multidol400Count;
             document.getElementById('total-multidol800').textContent = multidol800Count;
-
+            
+            // 🆕 Estadísticas por estado
+            const pendientes = payments.filter(p => (p.status || 'pendiente') === 'pendiente').length;
+            const procesados = payments.filter(p => (p.status || 'pendiente') === 'procesado').length;
+            
+            document.getElementById('total-pendientes').textContent = pendientes;
+            document.getElementById('total-procesados').textContent = procesados;
+            
+            // Cálculos financieros
             const totalPagado = payments.reduce((sum, payment) => sum + (payment.totalAmount || payment.amount), 0);
             const presupuestoRestante = BUDGET_TOTAL - totalPagado;
             const porcentajeUsado = (totalPagado / BUDGET_TOTAL) * 100;
-
+            
             document.getElementById('total-pagado').textContent = formatCurrency(totalPagado);
             document.getElementById('presupuesto-restante').textContent = formatCurrency(presupuestoRestante);
             document.getElementById('porcentaje-usado').textContent = `${porcentajeUsado.toFixed(1)}%`;
-
+            
             const progressBar = document.getElementById('budget-progress');
             progressBar.style.width = `${Math.min(porcentajeUsado, 100)}%`;
             
@@ -249,7 +306,7 @@
             } else {
                 progressBar.classList.add('bg-success');
             }
-
+            
             if (totalPagado > BUDGET_TOTAL) {
                 document.getElementById('budget-alert').style.display = 'block';
                 document.getElementById('exceso-presupuesto').textContent = formatCurrency(totalPagado - BUDGET_TOTAL);
@@ -257,14 +314,13 @@
                 document.getElementById('budget-alert').style.display = 'none';
             }
         }
-
+        
         // Función para actualizar el filtro de farmacias
         function updatePharmacyFilter(payments) {
             const pharmacyFilter = document.getElementById('filter-pharmacy');
             const uniquePharmacies = [...new Set(payments.map(p => p.pharmacy))];
             
             const currentValue = pharmacyFilter.value;
-            
             pharmacyFilter.innerHTML = '<option value="">Todas las farmacias</option>';
             
             uniquePharmacies.sort().forEach(pharmacy => {
@@ -278,9 +334,9 @@
                 pharmacyFilter.value = currentValue;
             }
         }
-
-        // Función para agregar un nuevo pago
-        async function addPayment(pharmacy, product, quantity, unitPrice, totalAmount, date, notes) {
+        
+        // Función para agregar un nuevo pago (MEJORADA)
+        async function addPayment(pharmacy, product, quantity, unitPrice, totalAmount, date, notes, status) {
             try {
                 const newPayment = {
                     pharmacy: pharmacy,
@@ -290,20 +346,22 @@
                     totalAmount: parseFloat(totalAmount),
                     amount: parseFloat(totalAmount),
                     date: new Date(date + 'T00:00:00'),
-                    notes: notes
+                    notes: notes,
+                    status: status || 'pendiente' // 🆕 Campo de estado
                 };
                 
                 const docRef = await addDoc(collection(db, "payments"), newPayment);
                 console.log("Pago registrado con ID: ", docRef.id);
                 loadPayments();
                 
-                showToast('✅ Pago registrado exitosamente', 'success');
+                const statusInfo = getPaymentStatus(status || 'pendiente');
+                showToast(`✅ Pago registrado como: ${statusInfo.label}`, 'success');
             } catch (error) {
                 console.error("Error al registrar pago: ", error);
                 showToast('❌ Error al registrar el pago', 'error');
             }
         }
-
+        
         // Función para eliminar un pago
         async function deletePayment(id) {
             if (confirm('¿Está seguro de eliminar este pago?')) {
@@ -318,7 +376,7 @@
                 }
             }
         }
-
+        
         // Función para ver detalles de un pago
         async function viewPayment(id) {
             try {
@@ -328,7 +386,7 @@
                 showToast('❌ Error al obtener detalles del pago', 'error');
             }
         }
-
+        
         // Event Listeners
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('date').value = new Date().toISOString().split('T')[0];
@@ -338,6 +396,7 @@
             document.getElementById('quantity').addEventListener('input', calculateTotal);
             document.getElementById('unitPrice').addEventListener('input', calculateTotal);
             
+            // 🆕 Formulario mejorado con estado
             document.getElementById('payment-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
@@ -348,12 +407,14 @@
                 const totalAmount = document.getElementById('total-value').value;
                 const date = document.getElementById('date').value;
                 const notes = document.getElementById('notes').value;
+                const status = document.getElementById('status').value; // 🆕 Campo de estado
                 
                 if (pharmacy && product && quantity && unitPrice && totalAmount && date) {
-                    addPayment(pharmacy, product, quantity, unitPrice, totalAmount, date, notes);
+                    addPayment(pharmacy, product, quantity, unitPrice, totalAmount, date, notes, status);
                     
                     this.reset();
                     document.getElementById('date').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('status').value = 'pendiente'; // 🆕 Reset estado
                     document.getElementById('total-container').style.display = 'none';
                     document.getElementById('total-value').value = '';
                 } else {
@@ -368,7 +429,9 @@
             document.getElementById('filter-product').addEventListener('change', loadPayments);
             document.getElementById('filter-pharmacy').addEventListener('change', loadPayments);
             document.getElementById('filter-date').addEventListener('change', loadPayments);
+            document.getElementById('filter-status').addEventListener('change', loadPayments); // 🆕 Filtro estado
             
+            // 🆕 Event listeners para cambio de estado y acciones
             document.getElementById('payments-table').addEventListener('click', function(e) {
                 if (e.target.closest('.delete-btn')) {
                     const id = e.target.closest('.delete-btn').getAttribute('data-id');
@@ -379,9 +442,18 @@
                     const id = e.target.closest('.view-btn').getAttribute('data-id');
                     viewPayment(id);
                 }
+                
+                // 🆕 Toggle estado del pago
+                if (e.target.closest('.status-toggle-btn')) {
+                    const button = e.target.closest('.status-toggle-btn');
+                    const id = button.getAttribute('data-id');
+                    const currentStatus = button.getAttribute('data-status');
+                    togglePaymentStatus(id, currentStatus);
+                }
             });
         });
     </script>
+    
     <style>
         :root {
             --primary: #2c3e50;
@@ -468,6 +540,35 @@
             color: white;
         }
         
+        /* 🆕 Estilos para estados de pago */
+        .status-toggle-btn {
+            border: none !important;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85em;
+            padding: 0.4em 0.8em;
+            border-radius: 15px;
+        }
+        
+        .status-toggle-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .status-cell {
+            text-align: center;
+        }
+        
+        /* 🆕 Estilos para nuevas estadísticas */
+        .status-stats {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
+            color: white;
+        }
+        
+        .status-stats .number {
+            color: white !important;
+        }
+        
         .product-icon {
             font-size: 1.5rem;
             margin-right: 10px;
@@ -488,31 +589,30 @@
             font-size: 1rem;
             color: var(--dark);
         }
-
-        /* 💰 Estilos para control de presupuesto */
+        
         .budget-card {
             background: linear-gradient(135deg, #2c3e50, #34495e);
             color: white;
         }
-
+        
         .budget-card .number {
             color: white !important;
         }
-
+        
         .budget-info {
             background: rgba(255,255,255,0.1);
             border-radius: 8px;
             padding: 1rem;
             margin-top: 1rem;
         }
-
+        
         .budget-progress {
             background: rgba(255,255,255,0.2);
             border-radius: 10px;
             height: 10px;
             margin: 1rem 0;
         }
-
+        
         .budget-alert {
             background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: white;
@@ -521,8 +621,7 @@
             padding: 1rem;
             margin-top: 1rem;
         }
-
-        /* 🧮 Estilos para cálculo total */
+        
         .total-display {
             background: linear-gradient(135deg, var(--success), #229954);
             color: white;
@@ -531,12 +630,12 @@
             text-align: center;
             margin-top: 1rem;
         }
-
+        
         .total-display .amount {
             font-size: 1.5rem;
             font-weight: 700;
         }
-
+        
         .total-display .label {
             font-size: 0.9rem;
             opacity: 0.9;
@@ -577,25 +676,23 @@
         .product-card.multidol800 {
             border-left-color: #9b59b6;
         }
-
-        /* 📱 MEJORAS PARA MÓVIL */
+        
         .form-control, .form-select {
             min-height: 48px;
-            font-size: 16px; /* Evita zoom en iOS */
+            font-size: 16px;
         }
-
+        
         .btn {
             min-height: 44px;
             min-width: 44px;
         }
-
+        
         .btn-sm {
             min-height: 40px;
             min-width: 40px;
             padding: 0.5rem;
         }
-
-        /* Toast Notifications */
+        
         .toast-notification {
             position: fixed;
             top: 20px;
@@ -609,32 +706,31 @@
             transition: opacity 0.3s ease;
             max-width: 300px;
         }
-
+        
         .toast-error {
             background: #e74c3c;
         }
-
+        
         .loading-spinner {
             color: var(--secondary);
         }
-
-        /* Nuevos estilos para las columnas de la tabla */
+        
         .quantity-cell {
             text-align: center;
             font-weight: bold;
             color: var(--primary);
         }
-
+        
         .unit-price-cell {
             color: var(--secondary);
             font-weight: 500;
         }
-
+        
         .description-cell {
-            max-width: 150px;
+            max-width: 120px;
         }
-
-        /* Responsive mejoras */
+        
+        /* Responsive */
         @media (max-width: 768px) {
             .header {
                 padding: 1rem 0;
@@ -688,29 +784,34 @@
                 font-size: 0.85rem;
                 color: #666;
             }
-
+            
             .toast-notification {
                 right: 10px;
                 left: 10px;
                 max-width: none;
             }
-
-            /* 💰 Budget responsive */
+            
             .budget-info {
                 padding: 0.8rem;
                 margin-top: 0.8rem;
             }
-
+            
             .description-cell {
                 max-width: 100px;
                 font-size: 0.8rem;
             }
-
+            
             .total-display .amount {
                 font-size: 1.2rem;
             }
+            
+            /* 🆕 Status responsive */
+            .status-toggle-btn {
+                font-size: 0.8rem;
+                padding: 0.3em 0.6em;
+            }
         }
-
+        
         @media (max-width: 576px) {
             .container {
                 padding-left: 10px;
@@ -731,6 +832,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="header text-center">
         <div class="container">
@@ -738,7 +840,7 @@
             <p class="lead">Gestión de pagos para Cajas de Descongel x100 cápsulas, Multidol x400mg y 800mg</p>
         </div>
     </div>
-
+    
     <div class="container">
         <div class="row mb-4">
             <div class="col-lg-6">
@@ -775,6 +877,7 @@
                     </div>
                 </div>
             </div>
+            
             <div class="col-lg-6">
                 <div class="row">
                     <div class="col-4">
@@ -796,13 +899,30 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- 🆕 Nueva sección de estadísticas por estado -->
+                <div class="row">
+                    <div class="col-6">
+                        <div class="card stats-card status-stats">
+                            <div class="number" id="total-pendientes">0</div>
+                            <div class="label">⏳ Pendientes</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card stats-card status-stats">
+                            <div class="number" id="total-procesados">0</div>
+                            <div class="label">✅ Procesados</div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="card stats-card">
                     <div class="number" id="total-pagos">0</div>
                     <div class="label">Total de Pagos Registrados</div>
                 </div>
             </div>
         </div>
-
+        
         <div class="row">
             <div class="col-lg-4">
                 <div class="card">
@@ -842,6 +962,15 @@
                                 <input type="hidden" id="total-value" value="">
                             </div>
                             
+                            <!-- 🆕 Campo de Estado -->
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Estado del Pago</label>
+                                <select class="form-select" id="status" required>
+                                    <option value="pendiente">⏳ Pendiente</option>
+                                    <option value="procesado">✅ Procesado</option>
+                                </select>
+                            </div>
+                            
                             <div class="mb-3">
                                 <label for="date" class="form-label">Fecha de Pago</label>
                                 <input type="date" class="form-control" id="date" required>
@@ -859,11 +988,11 @@
                     </div>
                 </div>
             </div>
-
+            
             <div class="col-lg-8">
                 <div class="filter-section">
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="filter-product" class="form-label">Filtrar por Producto</label>
                             <select class="form-select" id="filter-product">
                                 <option value="">Todos los productos</option>
@@ -873,14 +1002,24 @@
                             </select>
                         </div>
                         
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="filter-pharmacy" class="form-label">Filtrar por Farmacia</label>
                             <select class="form-select" id="filter-pharmacy">
                                 <option value="">Todas las farmacias</option>
                             </select>
                         </div>
                         
-                        <div class="col-md-4">
+                        <!-- 🆕 Nuevo filtro por Estado -->
+                        <div class="col-md-3">
+                            <label for="filter-status" class="form-label">Filtrar por Estado</label>
+                            <select class="form-select" id="filter-status">
+                                <option value="">Todos los estados</option>
+                                <option value="pendiente">⏳ Pendiente</option>
+                                <option value="procesado">✅ Procesado</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
                             <label for="filter-date" class="form-label">Filtrar por Fecha</label>
                             <input type="month" class="form-control" id="filter-date">
                         </div>
@@ -905,12 +1044,13 @@
                                         <th>Cant.</th>
                                         <th>Valor Unit.</th>
                                         <th>Total</th>
+                                        <th>Estado</th> <!-- 🆕 Nueva columna -->
                                         <th>Descripción</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="payments-table">
-                                    </tbody>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -918,7 +1058,7 @@
             </div>
         </div>
     </div>
-
+    
     <div class="footer text-center">
         <div class="container">
             <p class="mb-0">CRM Control de Pagos &copy; 2025 - Sistema de gestión de medicamentos</p>
