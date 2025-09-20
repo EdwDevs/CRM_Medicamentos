@@ -55,28 +55,39 @@
         // 🆕 Función para reingresar saldo (CORREGIDA)
         async function reloadBudget(amount, notes = '') {
             try {
-                const budgetRef = doc(db, "settings", "budget");
-
+                // Obtener todos los pagos para calcular el total pagado
+                const paymentsCollection = collection(db, "payments");
+                const q = query(paymentsCollection);
+                const querySnapshot = await getDocs(q);
+                
+                // Calcular el total pagado actual
+                let totalPagado = querySnapshot.docs.reduce((sum, doc) => {
+                    const payment = doc.data();
+                    return sum + (payment.totalAmount || payment.amount);
+                }, 0);
+                
+                // Restar el monto recargado del total pagado
+                const amountValue = parseFloat(amount);
+                
                 // Obtener el presupuesto actual
                 await getCurrentBudget();
-
-                // Sumar el nuevo monto al presupuesto actual
-                const newBudget = currentBudget + parseFloat(amount);
-
-                await setDoc(budgetRef, { amount: newBudget });
-                currentBudget = newBudget;
-
-                showToast(`💰 Presupuesto recargado con ${formatCurrency(amount)}. Nuevo total: ${formatCurrency(newBudget)}`, 'success');
-                loadPayments(); // Actualizar la interfaz
-
+                
+                // El nuevo presupuesto será el actual (no cambia)
+                // Lo que cambia es que se considera que se ha pagado menos
+                // Esto equivale a aumentar el presupuesto disponible
+                
+                showToast(`💰 Saldo recargado: ${formatCurrency(amountValue)}. Se ha restado del total pagado.`, 'success');
+                
                 // Registrar la recarga como una transacción
                 await addDoc(collection(db, "budget_reloads"), {
                     date: new Date(),
-                    amount: parseFloat(amount),
-                    previousTotal: currentBudget - parseFloat(amount),
-                    newTotal: newBudget,
+                    amount: amountValue,
+                    previousTotalPagado: totalPagado,
+                    newTotalPagado: totalPagado - amountValue,
                     notes: notes || "Recarga manual de presupuesto"
                 });
+                
+                loadPayments(); // Actualizar la interfaz
 
             } catch (error) {
                 console.error("Error al recargar presupuesto:", error);
@@ -86,20 +97,29 @@
 
         // 🆕 Función para mostrar modal de recarga
         function showReloadModal() {
+            // Obtener el total pagado actual para mostrarlo en el modal
+            const totalPagadoElement = document.getElementById('total-pagado');
+            const totalPagadoText = totalPagadoElement ? totalPagadoElement.textContent : '$0';
+            
             const modalId = 'reload-modal-' + Date.now();
             const modalHtml = `
                 <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title">💰 Recargar Presupuesto</h5>
+                                <h5 class="modal-title">💰 Recargar Saldo</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="reload-info mb-3">
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle me-2"></i>
-                                        <strong>Presupuesto actual:</strong> ${formatCurrency(currentBudget)}
+                                        <strong>Presupuesto actual:</strong> ${formatCurrency(currentBudget)}<br>
+                                        <strong>Total pagado actual:</strong> ${totalPagadoText}
+                                    </div>
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>Nota:</strong> El monto ingresado se restará del total pagado, aumentando así el presupuesto disponible.
                                     </div>
                                 </div>
                                 <form id="reload-form">
@@ -108,7 +128,7 @@
                                         <input type="number" class="form-control" id="reload-amount"
                                                min="1000" step="1000" required
                                                placeholder="Ej: 500000">
-                                        <div class="form-text">Ingrese el monto que desea agregar al presupuesto actual</div>
+                                        <div class="form-text">Ingrese el monto que desea restar del total pagado</div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="reload-notes" class="form-label">Notas <span class="text-muted">(opcional)</span></label>
@@ -116,14 +136,15 @@
                                                   placeholder="Motivo de la recarga..."></textarea>
                                     </div>
                                     <div id="new-total-preview" class="alert alert-success" style="display: none;">
-                                        <strong>Nuevo presupuesto total:</strong> <span id="preview-amount">$0</span>
+                                        <strong>Nuevo total pagado:</strong> <span id="preview-amount">$0</span><br>
+                                        <strong>Presupuesto disponible después de recarga:</strong> <span id="preview-available">$0</span>
                                     </div>
                                 </form>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                                 <button type="button" class="btn btn-success" id="confirm-reload-btn">
-                                    <i class="fas fa-plus-circle me-2"></i>Recargar Presupuesto
+                                    <i class="fas fa-plus-circle me-2"></i>Recargar Saldo
                                 </button>
                             </div>
                         </div>
@@ -141,14 +162,23 @@
             const reloadAmountInput = document.getElementById('reload-amount');
             const newTotalPreview = document.getElementById('new-total-preview');
             const previewAmount = document.getElementById('preview-amount');
+            const previewAvailable = document.getElementById('preview-available');
             const confirmBtn = document.getElementById('confirm-reload-btn');
+
+            // Obtener el total pagado actual como número
+            const totalPagadoValue = parseFloat(totalPagadoText.replace(/[^0-9,-]/g, '').replace(',', '.')) || 0;
 
             // Actualizar preview del nuevo total
             reloadAmountInput.addEventListener('input', function() {
                 const amount = parseFloat(this.value) || 0;
                 if (amount > 0) {
-                    const newTotal = currentBudget + amount;
-                    previewAmount.textContent = formatCurrency(newTotal);
+                    // Calcular nuevo total pagado (restando el monto)
+                    const newTotalPagado = Math.max(0, totalPagadoValue - amount);
+                    // Calcular nuevo presupuesto disponible
+                    const newAvailable = currentBudget - newTotalPagado;
+                    
+                    previewAmount.textContent = formatCurrency(newTotalPagado);
+                    previewAvailable.textContent = formatCurrency(newAvailable);
                     newTotalPreview.style.display = 'block';
                 } else {
                     newTotalPreview.style.display = 'none';
@@ -161,6 +191,12 @@
                 const notes = document.getElementById('reload-notes').value;
 
                 if (amount && parseFloat(amount) > 0) {
+                    // Validar que el monto no sea mayor que el total pagado
+                    if (parseFloat(amount) > totalPagadoValue) {
+                        showToast('⚠️ El monto a recargar no puede ser mayor que el total pagado', 'error');
+                        return;
+                    }
+                    
                     modal.hide();
                     reloadBudget(amount, notes);
                     setTimeout(() => document.getElementById(modalId).remove(), 500);
