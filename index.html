@@ -1,252 +1,1804 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CRM Medicamentos · Control de Pagos</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="./src/styles/main.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Control de Pagos - Medicamentos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDK2Aoz1kxq1dDXKkemRIYCFAFtxgw4dZs",
+            authDomain: "crm-medicamentos.firebaseapp.com",
+            projectId: "crm-medicamentos",
+            storageBucket: "crm-medicamentos.appspot.com",
+            messagingSenderId: "638953546971",
+            appId: "1:638953546971:web:4f811cdd7dd72dc7cfd8fe",
+            measurementId: "G-RPZNJSCX12"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
+        // 💰 Configuración de presupuesto
+        const BUDGET_TOTAL = 500000; // $500,000 COP
+        let currentBudget = BUDGET_TOTAL; // Presupuesto actual
+
+        // 🆕 Función para obtener el presupuesto actual de Firestore
+        async function getCurrentBudget() {
+            try {
+                const budgetRef = doc(db, "settings", "budget");
+                const budgetDoc = await getDoc(budgetRef);
+
+                if (budgetDoc.exists()) {
+                    currentBudget = budgetDoc.data().amount || BUDGET_TOTAL;
+                } else {
+                    // Si no existe, crear el documento con el presupuesto inicial
+                    await setDoc(budgetRef, { amount: BUDGET_TOTAL });
+                }
+
+                return currentBudget;
+            } catch (error) {
+                console.error("Error al obtener presupuesto:", error);
+                return BUDGET_TOTAL;
+            }
+        }
+
+        // 🆕 Función para reingresar saldo (CORREGIDA)
+        async function reloadBudget(amount, notes = '') {
+            try {
+                const budgetRef = doc(db, "settings", "budget");
+
+                // Obtener el presupuesto actual
+                await getCurrentBudget();
+
+                // Calcular el nuevo presupuesto (sumando el monto de recarga)
+                const newBudget = currentBudget + parseFloat(amount);
+
+                // Actualizar el presupuesto en Firestore
+                await setDoc(budgetRef, { amount: newBudget });
+                
+                // Actualizar la variable local
+                const previousBudget = currentBudget;
+                currentBudget = newBudget;
+
+                showToast(`💰 Presupuesto recargado con ${formatCurrency(amount)}. Nuevo total: ${formatCurrency(newBudget)}`, 'success');
+                
+                // Registrar la recarga como una transacción
+                await addDoc(collection(db, "budget_reloads"), {
+                    date: new Date(),
+                    amount: parseFloat(amount),
+                    previousTotal: previousBudget,
+                    newTotal: newBudget,
+                    notes: notes || "Recarga manual de presupuesto"
+                });
+                
+                // Actualizar la interfaz después de completar todas las operaciones
+                loadPayments();
+
+            } catch (error) {
+                console.error("Error al recargar presupuesto:", error);
+                showToast('❌ Error al recargar el presupuesto', 'error');
+            }
+        }
+
+        // 🆕 Función para mostrar modal de recarga
+        function showReloadModal() {
+            // Obtener el total pagado para mostrar en el modal
+            const paymentsCollection = collection(db, "payments");
+            getDocs(query(paymentsCollection)).then(querySnapshot => {
+                const totalPagado = querySnapshot.docs.reduce((sum, doc) => {
+                    const payment = doc.data();
+                    return sum + (payment.totalAmount || payment.amount);
+                }, 0);
+                
+                const presupuestoDisponible = currentBudget - totalPagado;
+                
+                const modalId = 'reload-modal-' + Date.now();
+                const modalHtml = `
+                    <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">💰 Recargar Presupuesto</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="reload-info mb-3">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <div class="mb-2"><strong>Presupuesto actual:</strong> ${formatCurrency(currentBudget)}</div>
+                                            <div class="mb-2"><strong>Total pagado:</strong> ${formatCurrency(totalPagado)}</div>
+                                            <div><strong>Disponible:</strong> ${formatCurrency(presupuestoDisponible)}</div>
+                                        </div>
+                                    </div>
+                                    <form id="reload-form">
+                                        <div class="mb-3">
+                                            <label for="reload-amount" class="form-label">Monto a recargar (COP)</label>
+                                            <input type="number" class="form-control" id="reload-amount"
+                                                min="1000" step="1000" required
+                                                placeholder="Ej: 500000">
+                                            <div class="form-text">Ingrese el monto que desea agregar al presupuesto actual</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="reload-notes" class="form-label">Notas <span class="text-muted">(opcional)</span></label>
+                                            <textarea class="form-control" id="reload-notes" rows="2"
+                                                    placeholder="Motivo de la recarga..."></textarea>
+                                        </div>
+                                        <div id="new-total-preview" class="alert alert-success" style="display: none;">
+                                            <div class="mb-2"><strong>Nuevo presupuesto total:</strong> <span id="preview-amount">$0</span></div>
+                                            <div><strong>Nuevo disponible:</strong> <span id="preview-available">$0</span></div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="button" class="btn btn-success" id="confirm-reload-btn">
+                                        <i class="fas fa-plus-circle me-2"></i>Recargar Presupuesto
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                // Mostrar modal
+                const modal = new bootstrap.Modal(document.getElementById(modalId));
+                modal.show();
+
+                // Event listeners para el modal
+                const reloadAmountInput = document.getElementById('reload-amount');
+                const newTotalPreview = document.getElementById('new-total-preview');
+                const previewAmount = document.getElementById('preview-amount');
+                const previewAvailable = document.getElementById('preview-available');
+                const confirmBtn = document.getElementById('confirm-reload-btn');
+
+                // Actualizar preview del nuevo total
+                reloadAmountInput.addEventListener('input', function() {
+                    const amount = parseFloat(this.value) || 0;
+                    if (amount > 0) {
+                        const newTotal = currentBudget + amount;
+                        const newAvailable = presupuestoDisponible + amount;
+                        
+                        previewAmount.textContent = formatCurrency(newTotal);
+                        previewAvailable.textContent = formatCurrency(newAvailable);
+                        newTotalPreview.style.display = 'block';
+                    } else {
+                        newTotalPreview.style.display = 'none';
+                    }
+                });
+
+                // Confirmar recarga
+                confirmBtn.addEventListener('click', function() {
+                    const amount = document.getElementById('reload-amount').value;
+                    const notes = document.getElementById('reload-notes').value;
+
+                    if (amount && parseFloat(amount) > 0) {
+                        modal.hide();
+                        reloadBudget(amount, notes);
+                        setTimeout(() => document.getElementById(modalId).remove(), 500);
+                    } else {
+                        showToast('⚠️ Por favor ingrese un monto válido', 'error');
+                    }
+                });
+
+                // Eliminar modal al cerrarse
+                document.getElementById(modalId).addEventListener('hidden.bs.modal', function() {
+                    this.remove();
+                });
+            }).catch(error => {
+                console.error("Error al obtener pagos para el modal:", error);
+                showToast('❌ Error al cargar datos para el modal', 'error');
+            });
+        }
+
+        // 🧮 Función para calcular el total automáticamente
+        function calculateTotal() {
+            const quantity = document.getElementById('quantity').value || 0;
+            const unitPrice = document.getElementById('unitPrice').value || 0;
+            const total = parseFloat(quantity) * parseFloat(unitPrice);
+
+            document.getElementById('total-display').textContent = formatCurrency(total);
+            document.getElementById('total-value').value = total;
+
+            // Mostrar/ocultar el total
+            const totalContainer = document.getElementById('total-container');
+            if (quantity > 0 && unitPrice > 0) {
+                totalContainer.style.display = 'block';
+            } else {
+                totalContainer.style.display = 'none';
+            }
+        }
+
+        // Función para obtener el nombre del producto
+        function getProductName(productKey) {
+            const products = {
+                'descongel': 'Descongel x100 cápsulas',
+                'multidol400': 'Multidol 400mg',
+                'multidol800': 'Multidol 800mg'
+            };
+            return products[productKey] || productKey;
+        }
+
+        // Función para obtener la clase CSS del producto
+        function getProductClass(productKey) {
+            const classes = {
+                'descongel': 'descongel',
+                'multidol400': 'multidol400',
+                'multidol800': 'multidol800'
+            };
+            return classes[productKey] || '';
+        }
+
+        // Función para obtener el ícono del producto
+        function getProductIcon(productKey) {
+            const icons = {
+                'descongel': '❄️',
+                'multidol400': '💊',
+                'multidol800': '💊'
+            };
+            return icons[productKey] || '📦';
+        }
+
+        // 🆕 Función para obtener el estado del pago con estilos
+        function getPaymentStatus(status) {
+            const statuses = {
+                'pendiente': {
+                    label: 'Pendiente',
+                    class: 'bg-warning text-dark',
+                    icon: '⏳'
+                },
+                'procesado': {
+                    label: 'Procesado',
+                    class: 'bg-success text-white',
+                    icon: '✅'
+                }
+            };
+            return statuses[status] || statuses['pendiente'];
+        }
+
+        // Función para formatear la fecha
+        function formatDate(date) {
+            if (date instanceof Date) {
+                const options = { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' };
+                return date.toLocaleDateString('es-ES', options);
+            }
+            if (typeof date === 'string') {
+                return new Date(date + 'T00:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+            }
+            return date;
+        }
+
+        // Función para formatear moneda colombiana
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        // Función para mostrar toast notifications
+        function showToast(message, type = 'success') {
+            const toastId = 'toast-' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast-notification toast-${type}">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                    ${message}
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+
+            setTimeout(() => {
+                const toast = document.getElementById(toastId);
+                if (toast) {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3000);
+        }
+
+        // 🆕 Función para cambiar el estado de un pago
+        async function togglePaymentStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'pendiente' ? 'procesado' : 'pendiente';
+
+            try {
+                await updateDoc(doc(db, "payments", id), {
+                    status: newStatus
+                });
+
+                const statusInfo = getPaymentStatus(newStatus);
+                showToast(`${statusInfo.icon} Estado cambiado a: ${statusInfo.label}`, 'success');
+                loadPayments();
+            } catch (error) {
+                console.error("Error al cambiar estado: ", error);
+                showToast('❌ Error al cambiar el estado', 'error');
+            }
+        }
+
+        // ------------------- FUNCIÓN CORREGIDA Y MEJORADA -------------------
+        // Función para cargar pagos desde Firestore
+        async function loadPayments() {
+            const tableBody = document.getElementById('payments-table');
+            tableBody.innerHTML = '<tr><td colspan="9" class="text-center"><div class="loading-spinner"><i class="fas fa-spinner fa-spin me-2"></i>Cargando datos...</div></td></tr>';
+
+            try {
+                // Obtener el presupuesto actual
+                await getCurrentBudget();
+
+                // Obtener valores de los filtros
+                const productFilter = document.getElementById('filter-product').value;
+                const pharmacyFilter = document.getElementById('filter-pharmacy').value;
+                const dateFilter = document.getElementById('filter-date').value;
+                const statusFilter = document.getElementById('filter-status').value; // 🆕 Nuevo filtro
+
+                const queryConstraints = [];
+
+                if (productFilter) {
+                    queryConstraints.push(where("product", "==", productFilter));
+                }
+
+                if (pharmacyFilter) {
+                    queryConstraints.push(where("pharmacy", "==", pharmacyFilter));
+                }
+
+                // 🆕 Filtro por estado
+                if (statusFilter) {
+                    queryConstraints.push(where("status", "==", statusFilter));
+                }
+
+                if (dateFilter) {
+                    const startDate = new Date(dateFilter + "-01T00:00:00");
+                    const endDate = new Date(startDate);
+                    endDate.setMonth(endDate.getMonth() + 1);
+
+                    queryConstraints.push(where("date", ">=", startDate));
+                    queryConstraints.push(where("date", "<", endDate));
+                }
+
+                queryConstraints.push(orderBy("date", "desc"));
+
+                const paymentsCollection = collection(db, "payments");
+                const finalQuery = query(paymentsCollection, ...queryConstraints);
+
+                const querySnapshot = await getDocs(finalQuery);
+                const payments = [];
+
+                tableBody.innerHTML = '';
+
+                // Usar DocumentFragment para mejorar rendimiento
+                const fragment = document.createDocumentFragment();
+
+                querySnapshot.forEach((doc) => {
+                    const payment = { id: doc.id, ...doc.data() };
+
+                    // 🆕 Si no tiene estado, asignar 'pendiente' por defecto
+                    if (!payment.status) {
+                        payment.status = 'pendiente';
+                    }
+
+                    payments.push(payment);
+
+                    const row = document.createElement('tr');
+                    const displayDate = payment.date.toDate ? payment.date.toDate() : new Date(payment.date);
+                    const statusInfo = getPaymentStatus(payment.status);
+
+                    row.innerHTML = `
+                        <td data-label="Fecha"><span class="date-mobile">${formatDate(displayDate)}</span></td>
+                        <td data-label="Farmacia"><span class="pharmacy-name">${payment.pharmacy}</span></td>
+                        <td data-label="Producto" class="product-cell">
+                            <span class="product-icon">${getProductIcon(payment.product)}</span>
+                            <span class="badge badge-${getProductClass(payment.product)} status-badge">
+                                ${getProductName(payment.product)}
+                            </span>
+                        </td>
+                        <td data-label="Cantidad" class="quantity-cell"><strong>${payment.quantity || 1}</strong></td>
+                        <td data-label="Valor Unit." class="unit-price-cell">${formatCurrency(payment.unitPrice || payment.amount)}</td>
+                        <td data-label="Total" class="amount-cell"><strong>${formatCurrency(payment.totalAmount || payment.amount)}</strong></td>
+                        <td data-label="Estado" class="status-cell">
+                            <button class="btn btn-sm badge ${statusInfo.class} status-toggle-btn"
+                                    data-id="${payment.id}"
+                                    data-status="${payment.status}"
+                                    title="Clic para cambiar estado">
+                                ${statusInfo.icon} ${statusInfo.label}
+                            </button>
+                        </td>
+                        <td data-label="Descripción" class="description-cell">
+                            <small class="text-muted">${payment.notes ? payment.notes.substring(0, 40) + (payment.notes.length > 40 ? '...' : '') : 'Sin descripción'}</small>
+                        </td>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-outline-secondary view-btn" data-id="${payment.id}" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${payment.id}" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    fragment.appendChild(row);
+                });
+
+                tableBody.appendChild(fragment);
+
+                if (payments.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No se encontraron pagos con los filtros aplicados.</td></tr>';
+                }
+
+                // Actualizar estadísticas y filtros
+                updateStats(payments);
+                updatePharmacyFilter(payments);
+
+            } catch (error) {
+                console.error("Error al cargar pagos: ", error);
+                tableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error al cargar datos. Revisa la consola para más detalles.</td></tr>';
+            }
+        }
+
+        // 💰 Función para actualizar estadísticas (MEJORADA)
+        function updateStats(payments) {
+            document.getElementById('total-pagos').textContent = payments.length;
+
+            // Contadores por producto
+            const descongelCount = payments.filter(p => p.product === 'descongel').length;
+            const multidol400Count = payments.filter(p => p.product === 'multidol400').length;
+            const multidol800Count = payments.filter(p => p.product === 'multidol800').length;
+
+            document.getElementById('total-descongel').textContent = descongelCount;
+            document.getElementById('total-multidol400').textContent = multidol400Count;
+            document.getElementById('total-multidol800').textContent = multidol800Count;
+
+            // 🆕 Estadísticas por estado
+            const pendientes = payments.filter(p => (p.status || 'pendiente') === 'pendiente').length;
+            const procesados = payments.filter(p => (p.status || 'pendiente') === 'procesado').length;
+
+            document.getElementById('total-pendientes').textContent = pendientes;
+            document.getElementById('total-procesados').textContent = procesados;
+
+            // Cálculos financieros
+            const totalPagado = payments.reduce((sum, payment) => sum + (payment.totalAmount || payment.amount), 0);
+            const presupuestoRestante = currentBudget - totalPagado;
+            const porcentajeUsado = (totalPagado / currentBudget) * 100;
+
+            document.getElementById('total-pagado').textContent = formatCurrency(totalPagado);
+            document.getElementById('presupuesto-restante').textContent = formatCurrency(presupuestoRestante);
+            document.getElementById('porcentaje-usado').textContent = `${porcentajeUsado.toFixed(1)}%`;
+            document.getElementById('presupuesto-actual').textContent = formatCurrency(currentBudget);
+
+            const progressBar = document.getElementById('budget-progress');
+            progressBar.style.width = `${Math.min(porcentajeUsado, 100)}%`;
+
+            progressBar.className = 'progress-bar';
+            if (porcentajeUsado >= 90) {
+                progressBar.classList.add('bg-danger');
+            } else if (porcentajeUsado >= 75) {
+                progressBar.classList.add('bg-warning');
+            } else {
+                progressBar.classList.add('bg-success');
+            }
+
+            if (totalPagado > currentBudget) {
+                document.getElementById('budget-alert').style.display = 'block';
+                document.getElementById('exceso-presupuesto').textContent = formatCurrency(totalPagado - currentBudget);
+            } else {
+                document.getElementById('budget-alert').style.display = 'none';
+            }
+
+            // Mostrar/ocultar botón de recarga según el presupuesto restante
+            const reloadBtn = document.getElementById('reload-budget-btn');
+            if (presupuestoRestante < 100000) { // Mostrar cuando queden menos de 100,000
+                reloadBtn.style.display = 'block';
+            } else {
+                reloadBtn.style.display = 'none';
+            }
+        }
+
+        // Función para actualizar el filtro de farmacias
+        function updatePharmacyFilter(payments) {
+            const pharmacyFilter = document.getElementById('filter-pharmacy');
+            const uniquePharmacies = [...new Set(payments.map(p => p.pharmacy))];
+
+            const currentValue = pharmacyFilter.value;
+            pharmacyFilter.innerHTML = '<option value="">Todas las farmacias</option>';
+
+            uniquePharmacies.sort().forEach(pharmacy => {
+                const option = document.createElement('option');
+                option.value = pharmacy;
+                option.textContent = pharmacy;
+                pharmacyFilter.appendChild(option);
+            });
+
+            if (uniquePharmacies.includes(currentValue)) {
+                pharmacyFilter.value = currentValue;
+            }
+        }
+
+        // Función para agregar un nuevo pago (MEJORADA)
+        async function addPayment(pharmacy, product, quantity, unitPrice, totalAmount, date, notes, status) {
+            try {
+                // Verificar si hay suficiente presupuesto
+                await getCurrentBudget();
+                const paymentsCollection = collection(db, "payments");
+                const q = query(paymentsCollection);
+                const querySnapshot = await getDocs(q);
+
+                const totalGastado = querySnapshot.docs.reduce((sum, doc) => {
+                    const payment = doc.data();
+                    return sum + (payment.totalAmount || payment.amount);
+                }, 0);
+
+                const presupuestoDisponible = currentBudget - totalGastado;
+
+                if (parseFloat(totalAmount) > presupuestoDisponible) {
+                    showToast(`⚠️ No hay suficiente presupuesto. Disponible: ${formatCurrency(presupuestoDisponible)}`, 'error');
+                    return false;
+                }
+
+                const newPayment = {
+                    pharmacy: pharmacy,
+                    product: product,
+                    quantity: parseInt(quantity),
+                    unitPrice: parseFloat(unitPrice),
+                    totalAmount: parseFloat(totalAmount),
+                    amount: parseFloat(totalAmount),
+                    date: new Date(date + 'T00:00:00'),
+                    notes: notes,
+                    status: status || 'pendiente' // 🆕 Campo de estado
+                };
+
+                const docRef = await addDoc(collection(db, "payments"), newPayment);
+                console.log("Pago registrado con ID: ", docRef.id);
+                loadPayments();
+
+                const statusInfo = getPaymentStatus(status || 'pendiente');
+                showToast(`✅ Pago registrado como: ${statusInfo.label}`, 'success');
+                return true;
+            } catch (error) {
+                console.error("Error al registrar pago: ", error);
+                showToast('❌ Error al registrar el pago', 'error');
+                return false;
+            }
+        }
+
+        // Función para eliminar un pago
+        async function deletePayment(id) {
+            if (confirm('¿Está seguro de eliminar este pago?')) {
+                try {
+                    await deleteDoc(doc(db, "payments", id));
+                    console.log("Pago eliminado");
+                    loadPayments();
+                    showToast('🗑️ Pago eliminado correctamente', 'success');
+                } catch (error) {
+                    console.error("Error al eliminar pago: ", error);
+                    showToast('❌ Error al eliminar el pago', 'error');
+                }
+            }
+        }
+
+        // Función para ver detalles de un pago
+        async function viewPayment(id) {
+            try {
+                const paymentDoc = await getDoc(doc(db, "payments", id));
+
+                if (paymentDoc.exists()) {
+                    const payment = paymentDoc.data();
+                    const displayDate = payment.date.toDate ? payment.date.toDate() : new Date(payment.date);
+                    const statusInfo = getPaymentStatus(payment.status || 'pendiente');
+
+                    // Crear modal de detalles
+                    const modalId = 'modal-' + Date.now();
+                    const modalHtml = `
+                        <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Detalles del Pago</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="payment-detail-card">
+                                            <div class="detail-header ${payment.product}">
+                                                <span class="product-icon">${getProductIcon(payment.product)}</span>
+                                                <h4>${getProductName(payment.product)}</h4>
+                                            </div>
+                                            <div class="detail-body">
+                                                <div class="detail-row">
+                                                    <span class="detail-label">ID:</span>
+                                                    <span class="detail-value">${id}</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <span class="detail-label">Farmacia:</span>
+                                                    <span class="detail-value">${payment.pharmacy}</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <span class="detail-label">Fecha:</span>
+                                                    <span class="detail-value">${formatDate(displayDate)}</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <span class="detail-label">Cantidad:</span>
+                                                    <span class="detail-value">${payment.quantity || 1} unidades</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <span class="detail-label">Valor Unitario:</span>
+                                                    <span class="detail-value">${formatCurrency(payment.unitPrice || payment.amount)}</span>
+                                                </div>
+                                                <div class="detail-row total-row">
+                                                    <span class="detail-label">Total:</span>
+                                                    <span class="detail-value">${formatCurrency(payment.totalAmount || payment.amount)}</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <span class="detail-label">Estado:</span>
+                                                    <span class="badge ${statusInfo.class} status-badge">
+                                                        ${statusInfo.icon} ${statusInfo.label}
+                                                    </span>
+                                                </div>
+                                                <div class="detail-notes">
+                                                    <span class="detail-label">Notas:</span>
+                                                    <p>${payment.notes || 'Sin notas adicionales'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                        <button type="button" class="btn btn-danger delete-payment-btn" data-id="${id}">
+                                            <i class="fas fa-trash me-2"></i>Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                    // Mostrar modal
+                    const modal = new bootstrap.Modal(document.getElementById(modalId));
+                    modal.show();
+
+                    // Evento para eliminar desde el modal
+                    document.querySelector(`#${modalId} .delete-payment-btn`).addEventListener('click', function() {
+                        const paymentId = this.getAttribute('data-id');
+                        modal.hide();
+                        setTimeout(() => {
+                            deletePayment(paymentId);
+                            document.getElementById(modalId).remove();
+                        }, 500);
+                    });
+
+                    // Eliminar modal al cerrarse
+                    document.getElementById(modalId).addEventListener('hidden.bs.modal', function() {
+                        this.remove();
+                    });
+
+                } else {
+                    showToast('❌ No se encontró el pago', 'error');
+                }
+            } catch (error) {
+                console.error("Error al obtener detalles del pago: ", error);
+                showToast('❌ Error al obtener detalles del pago', 'error');
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+            loadPayments();
+
+            document.getElementById('quantity').addEventListener('input', calculateTotal);
+            document.getElementById('unitPrice').addEventListener('input', calculateTotal);
+
+            // 🆕 Botón para recargar presupuesto (CORREGIDO)
+            document.getElementById('reload-budget-btn').addEventListener('click', function() {
+                showReloadModal();
+            });
+
+            // 🆕 Formulario mejorado con estado
+            document.getElementById('payment-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const pharmacy = document.getElementById('pharmacy').value;
+                const product = document.getElementById('product').value;
+                const quantity = document.getElementById('quantity').value;
+                const unitPrice = document.getElementById('unitPrice').value;
+                const totalAmount = document.getElementById('total-value').value;
+                const date = document.getElementById('date').value;
+                const notes = document.getElementById('notes').value;
+                const status = document.getElementById('status').value; // 🆕 Campo de estado
+
+                if (pharmacy && product && quantity && unitPrice && totalAmount && date) {
+                    addPayment(pharmacy, product, quantity, unitPrice, totalAmount, date, notes, status)
+                    .then(success => {
+                        if (success) {
+                            this.reset();
+                            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+                            document.getElementById('status').value = 'pendiente'; // 🆕 Reset estado
+                            document.getElementById('total-container').style.display = 'none';
+                            document.getElementById('total-value').value = '';
+                        }
+                    });
+                } else {
+                    showToast('⚠️ Por favor completa todos los campos requeridos', 'error');
+                }
+            });
+
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                loadPayments();
+            });
+
+            document.getElementById('filter-product').addEventListener('change', loadPayments);
+            document.getElementById('filter-pharmacy').addEventListener('change', loadPayments);
+            document.getElementById('filter-date').addEventListener('change', loadPayments);
+            document.getElementById('filter-status').addEventListener('change', loadPayments); // 🆕 Filtro estado
+
+            // 🆕 Event listeners para cambio de estado y acciones
+            document.getElementById('payments-table').addEventListener('click', function(e) {
+                if (e.target.closest('.delete-btn')) {
+                    const id = e.target.closest('.delete-btn').getAttribute('data-id');
+                    deletePayment(id);
+                }
+
+                if (e.target.closest('.view-btn')) {
+                    const id = e.target.closest('.view-btn').getAttribute('data-id');
+                    viewPayment(id);
+                }
+
+                // 🆕 Toggle estado del pago
+                if (e.target.closest('.status-toggle-btn')) {
+                    const button = e.target.closest('.status-toggle-btn');
+                    const id = button.getAttribute('data-id');
+                    const currentStatus = button.getAttribute('data-status');
+                    togglePaymentStatus(id, currentStatus);
+                }
+            });
+
+            // Implementar filtros desplegables en móvil
+            if (window.innerWidth <= 767) {
+                // Crear botón de filtros
+                const filterSection = document.querySelector('.filter-section');
+                const filterRow = filterSection.querySelector('.row');
+
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'filter-toggle';
+                toggleBtn.innerHTML = '<i class="fas fa-filter me-2"></i> Mostrar filtros <i class="fas fa-chevron-down float-end"></i>';
+
+                // Envolver el contenido de filtros
+                const filterContent = document.createElement('div');
+                filterContent.className = 'filter-content';
+                filterContent.appendChild(filterRow);
+
+                // Reorganizar elementos
+                filterSection.innerHTML = '';
+                filterSection.appendChild(toggleBtn);
+                filterSection.appendChild(filterContent);
+
+                // Añadir funcionalidad de toggle
+                toggleBtn.addEventListener('click', function() {
+                    this.classList.toggle('collapsed');
+                    filterContent.classList.toggle('show');
+                });
+            }
+
+            // Implementar pull-to-refresh
+            let startY = 0;
+            let endY = 0;
+            const tableContainer = document.querySelector('.table-responsive');
+            const pullIndicator = document.querySelector('.pull-indicator');
+
+            if (tableContainer && pullIndicator) {
+                tableContainer.addEventListener('touchstart', function(e) {
+                    startY = e.touches[0].clientY;
+                });
+
+                tableContainer.addEventListener('touchmove', function(e) {
+                    endY = e.touches[0].clientY;
+                    const diff = endY - startY;
+
+                    if (diff > 50 && tableContainer.scrollTop === 0) {
+                        pullIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Suelta para actualizar';
+                        e.preventDefault();
+                    }
+                });
+
+                tableContainer.addEventListener('touchend', function() {
+                    if (endY - startY > 50 && tableContainer.scrollTop === 0) {
+                        pullIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando...';
+                        loadPayments();
+
+                        setTimeout(() => {
+                            pullIndicator.innerHTML = '<i class="fas fa-arrow-down"></i> Desliza hacia abajo para actualizar';
+                        }, 1000);
+                    }
+                });
+            }
+        });
+    </script>
+
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #34495e;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+            border: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            background-color: var(--primary);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            border-color: var(--success);
+        }
+
+        .table th {
+            background-color: var(--light);
+        }
+
+        .status-badge {
+            padding: 0.4em 0.8em;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .badge-descongel {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .badge-multidol400 {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .badge-multidol800 {
+            background-color: #9b59b6;
+            color: white;
+        }
+
+        /* 🆕 Estilos para estados de pago */
+        .status-toggle-btn {
+            border: none !important;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85em;
+            padding: 0.4em 0.8em;
+            border-radius: 15px;
+        }
+
+        .status-toggle-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .status-cell {
+            text-align: center;
+        }
+
+        /* 🆕 Estilos para nuevas estadísticas */
+        .status-stats {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
+            color: white;
+        }
+
+        .status-stats .number {
+            color: white !important;
+        }
+
+        .product-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+
+        .stats-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .stats-card .number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stats-card .label {
+            font-size: 1rem;
+            color: var(--dark);
+        }
+
+        .budget-card {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+        }
+
+        .budget-card .number {
+            color: white !important;
+        }
+
+        .budget-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .budget-progress {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 10px;
+            margin: 1rem 0;
+        }
+
+        .budget-alert {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .total-display {
+            background: linear-gradient(135deg, var(--success), #229954);
+            color: white;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .total-display .amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .total-display .label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+        }
+
+        .filter-section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 1.5rem 0;
+            margin-top: 2rem;
+        }
+
+        .product-card {
+            border-left: 4px solid var(--secondary);
+        }
+
+        .product-card.descongel {
+            border-left-color: #3498db;
+        }
+
+        .product-card.multidol400 {
+            border-left-color: #2ecc71;
+        }
+
+        .product-card.multidol800 {
+            border-left-color: #9b59b6;
+        }
+
+        .form-control, .form-select {
+            min-height: 48px;
+            font-size: 16px;
+        }
+
+        .btn {
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        .btn-sm {
+            min-height: 40px;
+            min-width: 40px;
+            padding: 0.5rem;
+        }
+
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1050;
+            transition: opacity 0.3s ease;
+            max-width: 300px;
+        }
+
+        .toast-error {
+            background: #e74c3c;
+        }
+
+        .loading-spinner {
+            color: var(--secondary);
+        }
+
+        .quantity-cell {
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .unit-price-cell {
+            color: var(--secondary);
+            font-weight: 500;
+        }
+
+        .description-cell {
+            max-width: 120px;
+        }
+
+        /* 🆕 Estilos para el modal de detalles */
+        .payment-detail-card {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .detail-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+        }
+
+        .detail-header.descongel {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+        }
+
+        .detail-header.multidol400 {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .detail-header.multidol800 {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
+        }
+
+        .detail-header h4 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .detail-body {
+            padding: 1.5rem;
+            background: white;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .detail-value {
+            text-align: right;
+        }
+
+        .total-row {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .detail-notes {
+            margin-top: 1rem;
+        }
+
+        .detail-notes p {
+            margin-top: 0.5rem;
+            padding: 0.8rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-style: italic;
+        }
+
+        /* 🆕 Estilos para el botón de recarga de presupuesto */
+        .reload-budget-btn {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 1.5rem;
+            margin-top: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: none; /* Oculto por defecto */
+        }
+
+        .reload-budget-btn:hover {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .reload-budget-btn i {
+            margin-right: 0.5rem;
+        }
+
+        /* 🆕 Estilos para pull-to-refresh */
+        .pull-indicator {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem 0;
+                margin-bottom: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .stats-card .number {
+                font-size: 2rem;
+            }
+
+            .stats-card {
+                padding: 1rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .card {
+                margin-bottom: 1rem;
+            }
+
+            .filter-section {
+                padding: 1rem;
+            }
+
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+
+            .product-cell {
+                min-width: 120px;
+            }
+
+            .amount-cell {
+                font-weight: bold;
+                color: var(--success);
+            }
+
+            .action-buttons .btn {
+                margin: 0 2px;
+            }
+
+            .pharmacy-name {
+                font-weight: 500;
+                color: var(--primary);
+            }
+
+            .date-mobile {
+                font-size: 0.85rem;
+                color: #666;
+            }
+
+            .toast-notification {
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+
+            .budget-info {
+                padding: 0.8rem;
+                margin-top: 0.8rem;
+            }
+
+            .description-cell {
+                max-width: 100px;
+                font-size: 0.8rem;
+            }
+
+            .total-display .amount {
+                font-size: 1.2rem;
+            }
+
+            /* 🆕 Status responsive */
+            .status-toggle-btn {
+                font-size: 0.8rem;
+                padding: 0.3em 0.6em;
+            }
+
+            /* Pull to refresh visible en móvil */
+            .pull-indicator {
+                display: block;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+
+            .filter-section .row > div {
+                margin-bottom: 1rem;
+            }
+
+            .stats-card .number {
+                font-size: 1.8rem;
+            }
+
+            .header .lead {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* 🆕 Transformar tabla en tarjetas en móvil */
+        @media (max-width: 767px) {
+            /* Transformar tabla en tarjetas */
+            .table-responsive table {
+                border: 0;
+            }
+
+            .table-responsive thead {
+                display: none;
+            }
+
+            .table-responsive tr {
+                display: block;
+                margin-bottom: 1rem;
+                border-radius: 8px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                background-color: white;
+                padding: 0.8rem;
+            }
+
+            .table-responsive td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.5rem 0;
+                border: none;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .table-responsive td:last-child {
+                border-bottom: none;
+            }
+
+            .table-responsive td:before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--primary);
+                flex: 1;
+            }
+
+            .table-responsive .action-buttons {
+                justify-content: flex-end;
+                display: flex;
+                gap: 8px;
+            }
+
+            .table-responsive .status-cell {
+                text-align: right;
+            }
+
+            .table-responsive .product-cell {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .table-responsive .product-cell:before {
+                margin-bottom: 0.5rem;
+            }
+
+            /* Mejorar tamaño de botones para táctil */
+            .btn-sm {
+                min-height: 44px;
+                min-width: 44px;
+                padding: 0.5rem;
+                font-size: 1rem;
+            }
+
+            .status-toggle-btn {
+                padding: 0.5em 0.8em;
+                font-size: 0.9rem;
+                width: auto;
+            }
+
+            /* Espacio entre botones de acción */
+            .action-buttons .btn {
+                margin: 0 5px;
+            }
+
+            /* Mejorar tamaño de toque para filtros */
+            .filter-section select,
+            .filter-section input {
+                height: 50px;
+            }
+
+            /* Mejorar visualización de tarjetas estadísticas */
+            .stats-card {
+                padding: 0.8rem;
+                margin-bottom: 0.8rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                text-align: left;
+            }
+
+            .stats-card .number {
+                font-size: 1.5rem;
+                margin-bottom: 0;
+            }
+
+            .stats-card .label {
+                font-size: 0.9rem;
+            }
+
+            /* Reorganizar estadísticas en móvil */
+            .col-lg-6 .row {
+                margin-left: -5px;
+                margin-right: -5px;
+            }
+
+            .col-lg-6 .row > div {
+                padding-left: 5px;
+                padding-right: 5px;
+            }
+
+            /* Filtros desplegables */
+            .filter-section {
+                padding: 0.8rem;
+            }
+
+            .filter-toggle {
+                display: block;
+                width: 100%;
+                text-align: left;
+                background: var(--light);
+                border: none;
+                padding: 0.8rem;
+                border-radius: 8px;
+                margin-bottom: 1rem;
+                font-weight: 500;
+            }
+
+            .filter-toggle i {
+                transition: transform 0.3s;
+            }
+
+            .filter-toggle.collapsed i {
+                transform: rotate(-90deg);
+            }
+
+            .filter-content {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+
+            .filter-content.show {
+                max-height: 500px;
+            }
+
+            /* Formulario más compacto en móvil */
+            .card-body {
+                padding: 1rem;
+            }
+
+            .form-label {
+                margin-bottom: 0.3rem;
+                font-size: 0.9rem;
+            }
+
+            .mb-3 {
+                margin-bottom: 0.8rem !important;
+            }
+
+            /* Botones de formulario más grandes */
+            .btn-primary {
+                padding: 0.8rem;
+                font-size: 1.1rem;
+            }
+
+            /* Mejorar visualización del total */
+            .total-display {
+                padding: 0.8rem;
+            }
+
+            /* Mejorar notificaciones toast en móvil */
+            .toast-notification {
+                bottom: 20px;
+                top: auto;
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                padding: 1rem;
+                font-size: 0.9rem;
+                border-radius: 10px;
+            }
+
+            /* Optimización de cabecera y pie */
+            .header {
+                padding: 1rem 0;
+                margin-bottom: 0.8rem;
+            }
+
+            .header h1 {
+                font-size: 1.3rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .header .lead {
+                font-size: 0.8rem;
+                margin-bottom: 0;
+            }
+
+            .footer {
+                padding: 1rem 0;
+                margin-top: 1rem;
+                font-size: 0.8rem;
+            }
+
+            /* Mejoras en la visualización del presupuesto */
+            .budget-card .row {
+                margin: 0 -5px;
+            }
+
+            .budget-card .col-6 {
+                padding: 0 5px;
+            }
+
+            .budget-card .number {
+                font-size: 1.3rem;
+                word-break: break-word;
+            }
+
+            .budget-card .label {
+                font-size: 0.8rem;
+            }
+
+            .budget-info {
+                padding: 0.6rem;
+                margin-top: 0.6rem;
+                font-size: 0.9rem;
+            }
+
+            .budget-progress {
+                height: 8px;
+                margin: 0.6rem 0;
+            }
+
+            .budget-alert {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
 </head>
+
 <body>
-  <header class="app-header">
-    <div class="container-xl py-4">
-      <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
-        <div>
-          <p class="app-kicker">CRM · Medicamentos</p>
-          <h1 class="app-title">Control de presupuesto y pagos</h1>
-          <p class="app-subtitle">Gestiona en un solo lugar las compras de medicamentos, controla el presupuesto disponible y haz seguimiento al estado de cada pago.</p>
+    <div class="header text-center">
+        <div class="container">
+            <h1><i class="fas fa-pills me-2"></i>CRM Control de Pagos</h1>
+            <p class="lead">Gestión de pagos para Cajas de Descongel x100 cápsulas, Multidol x400mg y 800mg</p>
         </div>
-        <div class="header-actions">
-          <button id="reloadBudgetButton" class="btn btn-success btn-lg">
-            <i class="fa-solid fa-wallet me-2" aria-hidden="true"></i>
-            Registrar recarga
-          </button>
-        </div>
-      </div>
     </div>
-  </header>
 
-  <main id="main-content" class="app-main" aria-live="polite">
-    <div class="container-xl">
-      <section class="grid gap-4" aria-labelledby="budget-section-title">
-        <div class="card shadow-sm h-100" id="budget-overview">
-          <div class="card-body">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-4">
-              <div class="flex-grow-1">
-                <h2 id="budget-section-title" class="card-title h4 mb-3">Resumen del presupuesto</h2>
-                <dl class="budget-summary" id="budget-summary" aria-live="polite">
-                  <div>
-                    <dt>Total asignado</dt>
-                    <dd id="budget-total">$0</dd>
-                  </div>
-                  <div>
-                    <dt>Gastado</dt>
-                    <dd id="budget-spent">$0</dd>
-                  </div>
-                  <div>
-                    <dt>Disponible</dt>
-                    <dd id="budget-available">$0</dd>
-                  </div>
-                </dl>
-                <div class="progress" role="presentation" aria-hidden="true">
-                  <div id="budget-progress" class="progress-bar" style="width: 0%"></div>
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card budget-card">
+                    <div class="card-header">
+                        <i class="fas fa-wallet me-2"></i>Control de Presupuesto
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="number" id="total-pagado">$0</div>
+                                <div class="label">Total Pagado</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="number" id="presupuesto-restante">$500,000</div>
+                                <div class="label">Presupuesto Restante</div>
+                            </div>
+                        </div>
+                        <div class="budget-info">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Progreso:</span>
+                                <strong id="porcentaje-usado">0%</strong>
+                            </div>
+                            <div class="progress budget-progress">
+                                <div id="budget-progress" class="progress-bar bg-success" style="width: 0%"></div>
+                            </div>
+                            <small class="text-light">Presupuesto actual: <span id="presupuesto-actual">$500,000 COP</span></small>
+                        </div>
+                        <div id="budget-alert" class="alert budget-alert" style="display: none;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>¡Presupuesto excedido!</strong><br>
+                            Has superado el presupuesto por: <span id="exceso-presupuesto">$0</span>
+                        </div>
+
+                        <!-- 🆕 Botón para recargar presupuesto -->
+                        <button id="reload-budget-btn" class="reload-budget-btn w-100" style="display: none;">
+                            <i class="fas fa-plus-circle"></i> Recargar Presupuesto
+                        </button>
+                    </div>
                 </div>
-              </div>
-              <div class="stats-panel" id="status-stats">
-                <p class="text-muted mb-1">Pagos por estado</p>
-                <ul class="list-unstyled d-flex flex-wrap gap-3 mb-0" id="status-badges">
-                  <li class="badge-pill bg-warning-subtle text-warning-emphasis">Pendientes: 0</li>
-                  <li class="badge-pill bg-success-subtle text-success-emphasis">Procesados: 0</li>
-                </ul>
-              </div>
             </div>
-          </div>
-        </div>
 
-        <div class="card shadow-sm h-100" aria-labelledby="filters-title">
-          <div class="card-body">
-            <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
-              <div>
-                <h2 id="filters-title" class="card-title h4 mb-3">Filtros</h2>
-                <p class="text-muted mb-0">Combina filtros para segmentar los registros. La tabla se actualiza automáticamente.</p>
-              </div>
-              <button id="clearFilters" class="btn btn-outline-secondary align-self-start">
-                <i class="fa-solid fa-eraser me-2" aria-hidden="true"></i>
-                Limpiar filtros
-              </button>
-            </div>
-            <form id="filters-form" class="row gy-3 mt-1" aria-label="Filtros de búsqueda">
-              <div class="col-12 col-md-3">
-                <label for="filterProduct" class="form-label">Producto</label>
-                <select id="filterProduct" class="form-select" aria-describedby="filterProductHelp">
-                  <option value="">Todos</option>
-                </select>
-                <div id="filterProductHelp" class="form-text">Selecciona el medicamento a consultar.</div>
-              </div>
-              <div class="col-12 col-md-3">
-                <label for="filterPharmacy" class="form-label">Farmacia</label>
-                <input id="filterPharmacy" type="text" class="form-control" placeholder="Ej: Cruz Verde" autocomplete="organization">
-              </div>
-              <div class="col-12 col-md-3">
-                <label for="filterMonth" class="form-label">Mes</label>
-                <input id="filterMonth" type="month" class="form-control">
-              </div>
-              <div class="col-12 col-md-3">
-                <label for="filterStatus" class="form-label">Estado</label>
-                <select id="filterStatus" class="form-select">
-                  <option value="">Todos</option>
-                </select>
-              </div>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      <section class="grid gap-4 mt-4" aria-labelledby="payments-section-title">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-3">
-              <div>
-                <h2 id="payments-section-title" class="card-title h4 mb-1">Pagos registrados</h2>
-                <p class="text-muted mb-0">Listado actualizado automáticamente con los últimos movimientos.</p>
-              </div>
-              <div class="d-flex align-items-center gap-2">
-                <label for="pageSize" class="form-label mb-0">Registros por página</label>
-                <select id="pageSize" class="form-select form-select-sm" style="width: 120px;">
-                  <option value="25">25</option>
-                  <option value="50" selected>50</option>
-                  <option value="100">100</option>
-                </select>
-              </div>
-            </div>
-            <div class="table-responsive" aria-live="polite">
-              <table class="table table-hover align-middle" id="paymentsTable">
-                <thead class="table-light">
-                  <tr>
-                    <th scope="col">Fecha</th>
-                    <th scope="col">Farmacia</th>
-                    <th scope="col">Producto</th>
-                    <th scope="col" class="text-end">Cantidad</th>
-                    <th scope="col" class="text-end">Valor unit.</th>
-                    <th scope="col" class="text-end">Total</th>
-                    <th scope="col">Estado</th>
-                    <th scope="col">Notas</th>
-                    <th scope="col" class="text-end">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="paymentsTableBody">
-                  <tr>
-                    <td colspan="9" class="text-center text-muted py-4">
-                      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Cargando pagos...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Paginación de pagos">
-              <p class="text-muted mb-0" id="paginationStatus">Mostrando 0 de 0</p>
-              <div class="btn-group" role="group">
-                <button class="btn btn-outline-secondary" id="previousPage" type="button" disabled>
-                  <i class="fa-solid fa-chevron-left me-2" aria-hidden="true"></i>Anterior
-                </button>
-                <button class="btn btn-outline-secondary" id="nextPage" type="button" disabled>
-                  Siguiente<i class="fa-solid fa-chevron-right ms-2" aria-hidden="true"></i>
-                </button>
-              </div>
-            </nav>
-          </div>
-        </div>
-
-        <div class="card shadow-sm" aria-labelledby="new-payment-title">
-          <div class="card-body">
-            <h2 id="new-payment-title" class="card-title h4 mb-3">Registrar un nuevo pago</h2>
-            <form id="paymentForm" class="row gy-3" novalidate>
-              <div class="col-12 col-lg-4">
-                <label for="pharmacy" class="form-label">Farmacia</label>
-                <input id="pharmacy" name="pharmacy" type="text" class="form-control" required placeholder="Nombre de la farmacia" autocomplete="organization" aria-describedby="pharmacyHelp">
-                <div id="pharmacyHelp" class="form-text">Ingresa el nombre tal como deseas que aparezca en los reportes.</div>
-                <div class="invalid-feedback">Indica la farmacia asociada al pago.</div>
-              </div>
-              <div class="col-12 col-lg-4">
-                <label for="product" class="form-label">Producto</label>
-                <select id="product" name="product" class="form-select" required></select>
-                <div class="invalid-feedback">Selecciona el medicamento adquirido.</div>
-              </div>
-              <div class="col-6 col-lg-2">
-                <label for="quantity" class="form-label">Cantidad</label>
-                <input id="quantity" name="quantity" type="number" class="form-control" min="1" step="1" required>
-                <div class="invalid-feedback">Ingresa una cantidad válida.</div>
-              </div>
-              <div class="col-6 col-lg-2">
-                <label for="unitPrice" class="form-label">Valor unitario (COP)</label>
-                <input id="unitPrice" name="unitPrice" type="number" class="form-control" min="0" step="100" required aria-describedby="unitPriceHelp">
-                <div id="unitPriceHelp" class="form-text">Usa valores enteros en pesos colombianos.</div>
-                <div class="invalid-feedback">Especifica el valor unitario.</div>
-              </div>
-              <div class="col-12 col-lg-3">
-                <label for="date" class="form-label">Fecha</label>
-                <input id="date" name="date" type="date" class="form-control" required>
-                <div class="invalid-feedback">Selecciona una fecha válida.</div>
-              </div>
-              <div class="col-12 col-lg-3">
-                <label for="status" class="form-label">Estado</label>
-                <select id="status" name="status" class="form-select" required></select>
-                <div class="invalid-feedback">Indica el estado actual del pago.</div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <label for="notes" class="form-label">Notas</label>
-                <textarea id="notes" name="notes" class="form-control" rows="2" placeholder="Observaciones relevantes"></textarea>
-              </div>
-              <div class="col-12">
-                <div class="alert alert-info d-flex align-items-center" role="status" id="totalPreview" hidden>
-                  <i class="fa-solid fa-coins me-2" aria-hidden="true"></i>
-                  <div>
-                    <p class="mb-0 fw-semibold">Total estimado: <span id="totalAmountPreview">$0</span></p>
-                    <small id="budgetWarning" class="d-block text-muted"></small>
-                  </div>
+            <div class="col-lg-6">
+                <div class="row">
+                    <div class="col-4">
+                        <div class="card stats-card">
+                            <div class="number" id="total-descongel">0</div>
+                            <div class="label">Descongel x100</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card stats-card">
+                            <div class="number" id="total-multidol400">0</div>
+                            <div class="label">Multidol 400mg</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card stats-card">
+                            <div class="number" id="total-multidol800">0</div>
+                            <div class="label">Multidol 800mg</div>
+                        </div>
+                    </div>
                 </div>
-              </div>
-              <div class="col-12 d-flex justify-content-end gap-3">
-                <button type="reset" class="btn btn-outline-secondary">Limpiar</button>
-                <button type="submit" class="btn btn-primary">
-                  <i class="fa-solid fa-paper-plane me-2" aria-hidden="true"></i>
-                  Guardar pago
-                </button>
-              </div>
-            </form>
-          </div>
+
+                <!-- 🆕 Nueva sección de estadísticas por estado -->
+                <div class="row">
+                    <div class="col-6">
+                        <div class="card stats-card status-stats">
+                            <div class="number" id="total-pendientes">0</div>
+                            <div class="label">⏳ Pendientes</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card stats-card status-stats">
+                            <div class="number" id="total-procesados">0</div>
+                            <div class="label">✅ Procesados</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card stats-card">
+                    <div class="number" id="total-pagos">0</div>
+                    <div class="label">Total de Pagos Registrados</div>
+                </div>
+            </div>
         </div>
-      </section>
+
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Pago
+                    </div>
+                    <div class="card-body">
+                        <form id="payment-form">
+                            <div class="mb-3">
+                                <label for="pharmacy" class="form-label">Nombre de Farmacia</label>
+                                <input type="text" class="form-control" id="pharmacy" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="product" class="form-label">Producto</label>
+                                <select class="form-select" id="product" required>
+                                    <option value="">Seleccionar producto</option>
+                                    <option value="descongel">Descongel x100 cápsulas</option>
+                                    <option value="multidol400">Multidol 400mg</option>
+                                    <option value="multidol800">Multidol 800mg</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Cantidad <span class="text-muted">(unidades)</span></label>
+                                <input type="number" class="form-control" id="quantity" min="1" step="1" required placeholder="Ej: 5">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="unitPrice" class="form-label">Valor por Unidad (COP)</label>
+                                <input type="number" class="form-control" id="unitPrice" min="0" step="100" required placeholder="Ej: 5000">
+                            </div>
+
+                            <div id="total-container" class="total-display" style="display: none;">
+                                <div class="label">💰 Total a Pagar:</div>
+                                <div class="amount" id="total-display">$0</div>
+                                <input type="hidden" id="total-value" value="">
+                            </div>
+
+                            <!-- 🆕 Campo de Estado -->
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Estado del Pago</label>
+                                <select class="form-select" id="status" required>
+                                    <option value="pendiente">⏳ Pendiente</option>
+                                    <option value="procesado">✅ Procesado</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="date" class="form-label">Fecha</label>
+                                <input type="date" class="form-control" id="date" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">Notas <span class="text-muted">(opcional)</span></label>
+                                <textarea class="form-control" id="notes" rows="2" placeholder="Información adicional..."></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-save me-2"></i>Registrar Pago
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="filter-section">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="filter-product" class="form-label">Filtrar por Producto</label>
+                            <select class="form-select" id="filter-product">
+                                <option value="">Todos los productos</option>
+                                <option value="descongel">Descongel x100 cápsulas</option>
+                                <option value="multidol400">Multidol 400mg</option>
+                                <option value="multidol800">Multidol 800mg</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filter-pharmacy" class="form-label">Filtrar por Farmacia</label>
+                            <select class="form-select" id="filter-pharmacy">
+                                <option value="">Todas las farmacias</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filter-date" class="form-label">Filtrar por Mes</label>
+                            <input type="month" class="form-select" id="filter-date">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filter-status" class="form-label">Filtrar por Estado</label>
+                            <select class="form-select" id="filter-status">
+                                <option value="">Todos los estados</option>
+                                <option value="pendiente">⏳ Pendiente</option>
+                                <option value="procesado">✅ Procesado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-list me-2"></i>Pagos Registrados</span>
+                        <button id="refresh-btn" class="btn btn-sm btn-outline-light" title="Actualizar">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="pull-indicator">
+                            <i class="fas fa-arrow-down"></i> Desliza hacia abajo para actualizar
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Farmacia</th>
+                                        <th>Producto</th>
+                                        <th>Cantidad</th>
+                                        <th>Valor Unit.</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                        <th>Descripción</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="payments-table">
+                                    <tr>
+                                        <td colspan="9" class="text-center">
+                                            <div class="loading-spinner">
+                                                <i class="fas fa-spinner fa-spin me-2"></i>Cargando datos...
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </main>
 
-  <div id="toastContainer" class="toast-container" role="status" aria-live="polite"></div>
+    <div class="footer text-center">
+        <div class="container">
+            <p class="mb-0">© 2025 CRM Control de Pagos - Medicamentos | Desarrollado para gestión interna</p>
+        </div>
+    </div>
 
-  <template id="paymentRowTemplate">
-    <tr>
-      <td data-cell="date"></td>
-      <td data-cell="pharmacy"></td>
-      <td data-cell="product"></td>
-      <td data-cell="quantity" class="text-end"></td>
-      <td data-cell="unitPrice" class="text-end"></td>
-      <td data-cell="totalAmount" class="text-end fw-semibold"></td>
-      <td data-cell="status"></td>
-      <td data-cell="notes" class="text-break"></td>
-      <td class="text-end" data-cell="actions"></td>
-    </tr>
-  </template>
-
-  <template id="statusPillTemplate">
-    <span class="badge rounded-pill"></span>
-  </template>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
-  <script src="./firebase-config.js" defer></script>
-  <script type="module" src="./src/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
