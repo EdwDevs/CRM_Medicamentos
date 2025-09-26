@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CRM Control de Pagos - Farmacias</title>
+  <title>CRM Control de Pagos - Consolidado</title>
 
   <!-- Bootstrap & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -51,7 +51,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc, setDoc, increment, getDoc
+      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc, setDoc, increment, getDoc, collectionGroup
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // TUS DATOS CORRECTOS DE FIREBASE
@@ -69,6 +69,8 @@
 
     const BUDGET_TOTAL = 500000;
     let totalLegalizado = 0;
+    let allPharmacies = []; // Guardaremos las farmacias aquí para los filtros
+    let allPaymentsCache = []; // Guardaremos todos los pagos aquí para filtrar rápido
 
     const $ = sel => document.querySelector(sel);
     const $$ = sel => document.querySelectorAll(sel);
@@ -133,106 +135,91 @@
       $('#total-container').style.display = (q>0 && up>0) ? 'block' : 'none';
     }
 
-    // ========= NUEVO: Lógica para cargar farmacias =========
-    async function loadPharmacies() {
-        const selector = $('#pharmacy-selector');
-        selector.disabled = true;
-        selector.innerHTML = '<option>Cargando farmacias...</option>';
-        try {
-            const q = query(collection(db, "pharmacies"), orderBy("nombre"));
-            const snap = await getDocs(q);
-            const pharmacies = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            
-            selector.innerHTML = '<option value="">-- Seleccione una Farmacia --</option>';
-            pharmacies.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.nombre; // Usamos el campo "nombre"
-                selector.appendChild(opt);
-            });
-            selector.disabled = false;
-        } catch (e) {
-            console.error("Error cargando farmacias:", e);
-            selector.innerHTML = '<option>Error al cargar</option>';
-            showToast("No se pudieron cargar las farmacias.", "error");
-        }
-    }
-
-    // ========= Lógica de Legalización (sin cambios) =========
-    async function getLegalizado(pharmacyId) {
-      if (!pharmacyId) return 0;
-      try {
-        const docRef = doc(db, `pharmacies/${pharmacyId}/budget_meta`, "main");
-        const docSnap = await getDoc(docRef);
-        return docSnap.exists() ? docSnap.data().total || 0 : 0;
-      } catch (e) { return 0; }
-    }
-
-    async function legalizarMonto(pharmacyId, amount) {
-      const parsedAmount = Number(amount);
-      if (!pharmacyId) {
-        showToast("Seleccione una farmacia primero.", "error");
-        return;
-      }
-      if (!parsedAmount || parsedAmount <= 0) {
-        showToast("El monto a legalizar debe ser mayor a cero.", "error");
-        return;
-      }
-      const docRef = doc(db, `pharmacies/${pharmacyId}/budget_meta`, "main");
-      try {
-        await updateDoc(docRef, { total: increment(parsedAmount) });
-        showToast(`✅ ${formatCurrency(parsedAmount)} legalizados.`, "success");
-        await loadPayments();
-      } catch (e) {
-        if (e.code === 'not-found') {
-          await setDoc(docRef, { total: parsedAmount });
-          showToast(`✅ ${formatCurrency(parsedAmount)} legalizados.`, "success");
-          await loadPayments();
-        } else {
-          console.error("Error al legalizar:", e);
-          showToast("❌ Error al procesar la legalización.", "error");
-        }
-      }
-    }
-
-    // ========= Lógica de Pagos MODIFICADA =========
-    async function loadPayments(){
-      const pharmacyId = $('#pharmacy-selector').value;
+    // ========= Lógica de Carga de Datos MODIFICADA =========
+    async function loadAllData(){
       const tbody = $('#payments-table');
-      
-      if (!pharmacyId) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4"><i class="fas fa-arrow-up me-2"></i>Seleccione una farmacia para ver sus pagos.</td></tr>`;
-        updateStats([], 0); // Limpiar estadísticas
-        return;
-      }
-
       tbody.innerHTML = spinnerRow();
-      totalLegalizado = await getLegalizado(pharmacyId);
 
-      // CAMBIO CLAVE: La ruta a la colección de pagos ahora es dinámica
-      const paymentsCollectionPath = `pharmacies/${pharmacyId}/payments`;
-      
-      try{
-        const qy = query(collection(db, paymentsCollectionPath), orderBy("date", "desc"));
-        const snap = await getDocs(qy);
-        const payments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-        renderPayments(payments);
-      } catch(error){
-        console.error("Error cargando pagos:", error);
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Error al cargar pagos. Revisa la consola.</td></tr>`;
+      try {
+        // 1. Cargar todas las farmacias para tener sus nombres
+        const pharmaciesSnap = await getDocs(query(collection(db, "pharmacies"), orderBy("nombre")));
+        allPharmacies = pharmaciesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const pharmacyNameMap = new Map(allPharmacies.map(p => [p.id, p.nombre]));
+        populatePharmacyFilters();
+
+        // 2. Usar collectionGroup para cargar TODOS los pagos de TODAS las farmacias
+        const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('date', 'desc'));
+        const paymentsSnap = await getDocs(paymentsQuery);
+        
+        allPaymentsCache = paymentsSnap.docs.map(doc => {
+            const pharmacyId = doc.ref.parent.parent.id;
+            return {
+                id: doc.id,
+                pharmacyId: pharmacyId,
+                pharmacyName: pharmacyNameMap.get(pharmacyId) || 'Desconocida', // Asignar nombre
+                ...doc.data()
+            };
+        });
+
+        // 3. Cargar el total legalizado (global)
+        const legalizadoDoc = await getDoc(doc(db, "budget_meta", "main"));
+        totalLegalizado = legalizadoDoc.exists() ? legalizadoDoc.data().total : 0;
+
+        // 4. Aplicar filtros y renderizar
+        filterAndRender();
+
+      } catch (e) {
+        console.error("Error al cargar datos:", e);
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Error al cargar datos. Revisa la consola.</td></tr>`;
+        if (String(e.message).includes("indexes?create_composite")) {
+            showIndexHelp(String(e.message).match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/)[0]);
+        }
       }
     }
+    
+    function filterAndRender() {
+        const pf = $('#filter-product').value || "";
+        const phf = $('#filter-pharmacy').value || "";
+        const df = $('#filter-date').value || "";
+        const sf = $('#filter-status').value || "";
 
-    function renderPayments(raw){
+        const filteredPayments = allPaymentsCache.filter(p => {
+            const date = toDate(p.date);
+            const monthMatch = df ? (date.getFullYear() === new Date(df + '-02').getFullYear() && date.getMonth() === new Date(df + '-02').getMonth()) : true;
+            const productMatch = pf ? p.product === pf : true;
+            const pharmacyMatch = phf ? p.pharmacyId === phf : true;
+            const statusMatch = sf ? (p.status || 'pendiente') === sf : true;
+            return monthMatch && productMatch && pharmacyMatch && statusMatch;
+        });
+        
+        renderPayments(filteredPayments);
+    }
+
+    function populatePharmacyFilters() {
+        const sel = $('#filter-pharmacy');
+        const formSel = $('#pharmacy');
+        sel.innerHTML = '<option value="">Todas</option>';
+        formSel.innerHTML = '<option value="">Seleccionar farmacia</option>';
+
+        allPharmacies.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.nombre;
+            sel.appendChild(opt.cloneNode(true));
+            formSel.appendChild(opt);
+        });
+    }
+
+    function renderPayments(payments){
       const tbody = $('#payments-table');
       tbody.innerHTML = "";
-      const payments = raw.map(p => ({...p, date: toDate(p.date)}));
 
       payments.forEach(p=>{
         const st = getPaymentStatus(p.status || 'pendiente');
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td data-label="Fecha">${formatDate(p.date)}</td>
+          <td data-label="Farmacia"><strong>${p.pharmacyName || "-"}</strong></td>
           <td data-label="Producto">
             <span class="me-1">${getProductIcon(p.product)}</span>
             <span class="badge badge-${getProductClass(p.product)}">${getProductName(p.product)}</span>
@@ -241,7 +228,7 @@
           <td data-label="Valor Unit.">${formatCurrency(p.unitPrice)}</td>
           <td data-label="Total"><strong>${formatCurrency(p.totalAmount)}</strong></td>
           <td data-label="Estado" class="text-center">
-            <button class="btn btn-sm status-toggle-btn ${st.class}" data-action="toggle" data-id="${p.id}" data-status="${p.status || 'pendiente'}" title="Cambiar estado">
+            <button class="btn btn-sm status-toggle-btn ${st.class}" data-action="toggle" data-id="${p.id}" data-pharmacy-id="${p.pharmacyId}" data-status="${p.status || 'pendiente'}" title="Cambiar estado">
               ${st.icon} ${st.label}
             </button>
           </td>
@@ -249,7 +236,7 @@
             <small class="text-muted">${p.notes ? (p.notes.length>60 ? p.notes.slice(0,60)+"…" : p.notes) : "Sin descripción"}</small>
           </td>
           <td data-label="Acciones" class="action-buttons">
-            <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${p.id}" title="Eliminar">
+            <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${p.id}" data-pharmacy-id="${p.pharmacyId}" title="Eliminar">
               <i class="fas fa-trash"></i>
             </button>
           </td>
@@ -258,7 +245,7 @@
       });
 
       if(payments.length===0){
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4"><i class="fa-regular fa-folder-open me-2"></i>No hay pagos registrados para esta farmacia.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4"><i class="fa-regular fa-folder-open me-2"></i>No se encontraron pagos con los filtros aplicados.</td></tr>`;
       }
       updateStats(payments, totalLegalizado);
     }
@@ -293,7 +280,7 @@
     async function addPayment(pharmacyId, pharmacyName, product, quantity, unitPrice, totalAmount, date, notes, status){
       try{
         const payload = {
-          pharmacyName, // Guardamos el nombre para referencia
+          pharmacyName,
           product,
           quantity:Number(quantity),
           unitPrice:Number(unitPrice),
@@ -302,37 +289,57 @@
           notes:notes||"",
           status:status||"pendiente"
         };
-        // CAMBIO CLAVE: Se guarda en la sub-colección correcta
         await addDoc(collection(db, `pharmacies/${pharmacyId}/payments`), payload);
-        await loadPayments();
+        await loadAllData();
         showToast(`✅ Pago registrado en ${pharmacyName}.`,"success");
       }catch(e){
         console.error(e); showToast("❌ Error al registrar el pago.","error");
       }
     }
 
-    async function deletePayment(id){
-      const pharmacyId = $('#pharmacy-selector').value;
+    async function deletePayment(pharmacyId, paymentId){
       if(!confirm("¿Está seguro de eliminar este pago?")) return;
       try{
-        await deleteDoc(doc(db, `pharmacies/${pharmacyId}/payments`, id));
-        await loadPayments();
+        await deleteDoc(doc(db, `pharmacies/${pharmacyId}/payments`, paymentId));
+        await loadAllData();
         showToast("🗑️ Pago eliminado correctamente","success");
       }catch(e){
         console.error(e); showToast("❌ Error al eliminar el pago","error");
       }
     }
 
-    async function togglePaymentStatus(id, currentStatus){
-      const pharmacyId = $('#pharmacy-selector').value;
+    async function togglePaymentStatus(pharmacyId, paymentId, currentStatus){
       const next = currentStatus==="pendiente" ? "procesado" : "pendiente";
       try{
-        await updateDoc(doc(db, `pharmacies/${pharmacyId}/payments`, id), {status:next});
+        await updateDoc(doc(db, `pharmacies/${pharmacyId}/payments`, paymentId), {status:next});
         const info=getPaymentStatus(next);
         showToast(`${info.icon} Estado cambiado a: ${info.label}`,"success");
-        await loadPayments();
+        await loadAllData();
       }catch(e){
         console.error(e); showToast("❌ Error al cambiar el estado","error");
+      }
+    }
+    
+    async function legalizarMonto(amount) {
+      const parsedAmount = Number(amount);
+      if (!parsedAmount || parsedAmount <= 0) {
+        showToast("El monto a legalizar debe ser un número mayor a cero.", "error");
+        return;
+      }
+      const docRef = doc(db, "budget_meta", "main");
+      try {
+        await updateDoc(docRef, { total: increment(parsedAmount) });
+        showToast(`✅ ${formatCurrency(parsedAmount)} legalizados.`, "success");
+        await loadAllData();
+      } catch (e) {
+        if (e.code === 'not-found') {
+          await setDoc(docRef, { total: parsedAmount });
+          showToast(`✅ ${formatCurrency(parsedAmount)} legalizados.`, "success");
+          await loadAllData();
+        } else {
+          console.error("Error al legalizar:", e);
+          showToast("❌ Error al procesar la legalización.", "error");
+        }
       }
     }
 
@@ -345,12 +352,12 @@
 
       $('#payment-form').addEventListener('submit', (e)=>{
         e.preventDefault();
-        const selectedPharmacy = $('#pharmacy-selector');
+        const selectedPharmacy = $('#pharmacy');
         const pharmacyId = selectedPharmacy.value;
         const pharmacyName = selectedPharmacy.options[selectedPharmacy.selectedIndex].text;
 
         if (!pharmacyId) {
-            showToast('⚠️ Por favor, seleccione una farmacia primero.', 'error');
+            showToast('⚠️ Por favor, seleccione una farmacia.', 'error');
             return;
         }
 
@@ -380,9 +387,8 @@
 
       $('#legalizar-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const pharmacyId = $('#pharmacy-selector').value;
         const amount = $('#legalizar-amount').value;
-        await legalizarMonto(pharmacyId, amount);
+        await legalizarMonto(amount);
         
         $('#legalizar-amount').value = '';
         const legalizarModalEl = document.getElementById('legalizarModal');
@@ -390,39 +396,29 @@
         legalizarModal.hide();
       });
 
-      // NUEVO: El selector de farmacia ahora dispara la carga de pagos
-      $('#pharmacy-selector').addEventListener('change', loadPayments);
+      $$('.filter-control').forEach(el => el.addEventListener('change', filterAndRender));
 
       $('#payments-table').addEventListener('click', (e)=>{
         const btn = e.target.closest('button'); if(!btn) return;
         const action = btn.dataset.action;
-        const id = btn.dataset.id;
-        if(action==="delete") deletePayment(id);
-        if(action==="toggle") togglePaymentStatus(id, btn.dataset.status);
+        const paymentId = btn.dataset.id;
+        const pharmacyId = btn.dataset.pharmacyId;
+        if(action==="delete") deletePayment(pharmacyId, paymentId);
+        if(action==="toggle") togglePaymentStatus(pharmacyId, paymentId, btn.dataset.status);
       });
 
       $$('.js-open-form').forEach(btn=>{
         btn.addEventListener('click', ()=>{
-          if (!$('#pharmacy-selector').value) {
-              showToast('Seleccione una farmacia antes de registrar un pago.', 'warning');
-              return;
-          }
           const m = new bootstrap.Modal(document.getElementById('formModal'));
           m.show();
         });
       });
       $('#open-legalizar-modal').addEventListener('click', () => {
-        if (!$('#pharmacy-selector').value) {
-            showToast('Seleccione una farmacia antes de legalizar un gasto.', 'warning');
-            return;
-        }
         const m = new bootstrap.Modal(document.getElementById('legalizarModal'));
         m.show();
       });
 
-      // Carga inicial de farmacias
-      loadPharmacies();
-      loadPayments(); // Se llamará pero no hará nada hasta que se seleccione una farmacia
+      loadAllData();
     });
   </script>
 </head>
@@ -430,31 +426,22 @@
   <!-- Header -->
   <header class="app-header">
     <div class="container">
-      <h1 class="h4 mb-1"><i class="fas fa-hospital me-2"></i>CRM Control de Pagos</h1>
-      <p class="lead mb-0">Gestión de Pagos por Farmacia</p>
+      <h1 class="h4 mb-1"><i class="fas fa-pills me-2"></i>CRM Control de Pagos</h1>
+      <p class="lead mb-0">Vista consolidada de todas las farmacias</p>
     </div>
   </header>
 
   <main class="container my-3">
-    <!-- NUEVO: Selector de Farmacia -->
-    <div class="card mb-3">
-        <div class="card-header"><i class="fas fa-store me-2"></i>Selección de Farmacia</div>
-        <div class="card-body">
-            <label for="pharmacy-selector" class="form-label fw-bold">Trabajando en:</label>
-            <select id="pharmacy-selector" class="form-select form-select-lg"></select>
-        </div>
-    </div>
-
     <!-- Presupuesto + KPIs -->
     <div class="row g-3 mb-2">
       <div class="col-lg-6">
         <div class="card budget-card">
-          <div class="card-header"><i class="fas fa-wallet me-2"></i>Control de Presupuesto</div>
+          <div class="card-header"><i class="fas fa-wallet me-2"></i>Control de Presupuesto Global</div>
           <div class="card-body">
             <div class="row text-center">
               <div class="col-6">
                 <div class="number" id="total-pagado">$0</div>
-                <div id="total-pagado-label">Total Pagado</div>
+                <div id="total-pagado-label">Total Pagado (Neto)</div>
               </div>
               <div class="col-6">
                 <div class="number" id="presupuesto-restante">$500,000</div>
@@ -485,27 +472,66 @@
       </div>
 
       <div class="col-lg-6">
-        <!-- Esta sección podría mostrar estadísticas globales o de la farmacia seleccionada. Por ahora la dejamos como está. -->
         <div class="card h-100">
-            <div class="card-header"><i class="fas fa-chart-pie me-2"></i>Estadísticas</div>
+            <div class="card-header"><i class="fas fa-chart-pie me-2"></i>Estadísticas Globales</div>
             <div class="card-body d-flex align-items-center justify-content-center text-muted">
-                <p>Aquí se mostrarán las estadísticas de la farmacia seleccionada.</p>
+                <p>Aquí se mostrarán las estadísticas consolidadas.</p>
             </div>
         </div>
       </div>
     </div>
 
-    <!-- Historial -->
+    <!-- Filtros + Historial -->
     <div class="row g-3">
       <div class="col-12">
         <div class="card">
-          <div class="card-header"><i class="fas fa-list me-2"></i>Historial de Pagos</div>
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <div><i class="fas fa-filter me-2"></i>Filtros</div>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="filter-product">Producto</label>
+                <select id="filter-product" class="form-select filter-control">
+                  <option value="">Todos</option>
+                  <option value="descongel">Descongel x100 cápsulas</option>
+                  <option value="multidol400">Multidol 400mg</option>
+                  <option value="multidol800">Multidol 800mg</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="filter-pharmacy">Farmacia</label>
+                <select id="filter-pharmacy" class="form-select filter-control">
+                  <option value="">Todas</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="filter-status">Estado</label>
+                <select id="filter-status" class="form-select filter-control">
+                  <option value="">Todos</option>
+                  <option value="pendiente">⏳ Pendiente</option>
+                  <option value="procesado">✅ Procesado</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="filter-date">Mes</label>
+                <input id="filter-date" type="month" class="form-control filter-control"/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historial -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header"><i class="fas fa-list me-2"></i>Historial de Pagos Consolidado</div>
           <div class="card-body">
             <div class="table-responsive table-wrap">
               <table class="table table-hover align-middle">
                 <thead>
                   <tr>
-                    <th>Fecha</th><th>Producto</th><th>Cant.</th>
+                    <th>Fecha</th><th>Farmacia</th><th>Producto</th><th>Cant.</th>
                     <th>Valor Unit.</th><th>Total</th><th>Estado</th><th>Descripción</th><th>Acciones</th>
                   </tr>
                 </thead>
@@ -530,6 +556,12 @@
         <div class="card-header" id="formModalTitle"><i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Pago</div>
         <div class="modal-body">
           <form id="payment-form">
+            <div class="mb-3">
+              <label class="form-label" for="pharmacy">Farmacia</label>
+              <select id="pharmacy" class="form-select" required>
+                <option value="">Seleccionar farmacia</option>
+              </select>
+            </div>
             <div class="mb-3">
               <label class="form-label" for="product">Producto</label>
               <select id="product" class="form-select" required>
@@ -595,7 +627,7 @@
       <div class="modal-content">
         <div class="card-header" id="legalizarModalTitle"><i class="fas fa-check-double me-2"></i>Legalizar Gasto</div>
         <div class="modal-body">
-          <p class="text-muted">Ingresa el monto total que ya ha sido legalizado para la farmacia seleccionada.</p>
+          <p class="text-muted">Ingresa el monto total que ya ha sido legalizado. Este valor se restará del total pagado, liberando presupuesto.</p>
           <form id="legalizar-form">
             <div class="mb-3">
               <label class="form-label" for="legalizar-amount">Monto a Legalizar (COP)</label>
