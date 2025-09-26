@@ -143,17 +143,14 @@
     async function backfillMissingStatus(docs){
       const toFix = docs.filter(d => !("status" in d.data()));
       if(toFix.length===0) return;
-      // Evitamos bloquear la UI: actualizamos en tandas pequeñas
       const batchSize = Math.min(toFix.length, 10);
       for(let i=0;i<batchSize;i++){
         try{
           await updateDoc(doc(db,"payments",toFix[i].id), { status:"pendiente" });
         }catch(e){ console.warn("Backfill status error", e); }
       }
-      // No hacemos todos para no exceder cuotas desde el cliente
     }
     function normalizeClientData(payments){
-      // Asegura status y coerces de fecha y números
       return payments.map(p=>{
         const date = toDate(p.date);
         const unitPrice = Number(p.unitPrice ?? p.amount ?? 0);
@@ -168,15 +165,12 @@
       const tbody = $('#payments-table');
       tbody.innerHTML = spinnerRow()+spinnerRow()+spinnerRow();
 
-      // Lee filtros de UI
       const pf = $('#filter-product').value || "";
       const phf = $('#filter-pharmacy').value || "";
-      const df = $('#filter-date').value || ""; // yyyy-mm
+      const df = $('#filter-date').value || "";
       const sf = $('#filter-status').value || "";
 
-      // Construye constraints preferidos (rápidos en servidor)
       const constraints = [];
-      // Rango por fecha (ayuda a limitar si falla más adelante)
       let start=null, end=null;
       if(df){
         start = new Date(df+"-01T00:00:00");
@@ -184,31 +178,22 @@
         constraints.push(where("date",">=",start));
         constraints.push(where("date","<",end));
       }
-      // Igualdades (pueden requerir índice)
       if(pf) constraints.push(where("product","==",pf));
       if(phf) constraints.push(where("pharmacy","==",phf));
       if(sf) constraints.push(where("status","==",sf));
-      // Orden por fecha
       constraints.push(orderBy("date","desc"));
 
-      // Intenta server-side filtering
       try{
         const qy = query(collection(db,"payments"), ...constraints);
         const snap = await getDocs(qy);
-
-        // Backfill parcial de status si faltó
         await backfillMissingStatus(snap.docs);
-
         const payments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
         renderPayments(payments);
       }catch(error){
         console.error("Error o índice faltante, aplicando fallback:", error);
-
-        // Si hay link de índice, lo mostramos
         const msg = String(error?.message || "");
         const match = msg.match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/);
 
-        // Fallback: traemos por fecha o todo, y filtramos en cliente
         try{
           const baseConstraints = [];
           if(start && end){
@@ -224,7 +209,6 @@
           let payments = snapAll.docs.map(d => ({ id:d.id, ...d.data() }));
           payments = normalizeClientData(payments);
 
-          // Filtrado client-side
           payments = payments.filter(p=>{
             const okP = pf ? p.product === pf : true;
             const okPh = phf ? (p.pharmacy === phf) : true;
@@ -475,14 +459,17 @@
           $('#status').value = 'pendiente';
           $('#total-container').style.display='none';
           $('#total-value').value='';
-          const formModal = bootstrap.Modal.getInstance(document.getElementById('formModal'));
-          if(formModal) formModal.hide();
+
+          // Cierra el modal de forma segura (exista o no la instancia previa)
+          const formModalEl = document.getElementById('formModal');
+          const formModal = bootstrap.Modal.getOrCreateInstance(formModalEl);
+          formModal.hide();
         }else{
           showToast('⚠️ Por favor completa todos los campos requeridos','error');
         }
       });
 
-      // Filtros y acciones (ids únicos y clase para evitar duplicados)
+      // Filtros y acciones
       $$('.refresh-btn').forEach(btn=>btn.addEventListener('click', loadPayments));
       $('#filter-product').addEventListener('change', loadPayments);
       $('#filter-pharmacy').addEventListener('change', loadPayments);
@@ -499,10 +486,12 @@
         if(action==="toggle") togglePaymentStatus(id, btn.dataset.status);
       });
 
-      // FAB / botón para abrir modal de formulario
-      $('#fabAdd').addEventListener('click', ()=>{
-        const m = new bootstrap.Modal(document.getElementById('formModal'));
-        m.show();
+      // Botones para abrir modal de formulario (móvil y desktop) - ¡sin IDs duplicados!
+      $$('.js-open-form').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const m = new bootstrap.Modal(document.getElementById('formModal'));
+          m.show();
+        });
       });
 
       // Carga inicial
@@ -660,16 +649,16 @@
 
     <!-- Sección Rápida (móvil) -->
     <div class="d-md-none d-flex gap-2 mt-2">
-      <button id="fabAdd" class="btn btn-primary flex-fill"><i class="fa fa-plus me-2"></i>Registrar pago</button>
+      <button class="btn btn-primary flex-fill js-open-form"><i class="fa fa-plus me-2"></i>Registrar pago</button>
       <button class="btn btn-outline-secondary flex-fill refresh-btn"><i class="fa fa-rotate me-2"></i>Actualizar</button>
     </div>
   </main>
 
   <!-- Modal: Registrar Pago -->
-  <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalLabel" aria-hidden="true">
+  <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="card-header"><i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Pago</div>
+        <div class="card-header" id="formModalTitle"><i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Pago</div>
         <div class="modal-body">
           <form id="payment-form">
             <div class="mb-3">
@@ -753,7 +742,7 @@
   </footer>
 
   <!-- Botón flotante (desktop/tablet) -->
-  <button id="fabAdd" class="btn btn-primary position-fixed d-none d-md-inline-flex align-items-center justify-content-center"
+  <button class="btn btn-primary position-fixed d-none d-md-inline-flex align-items-center justify-content-center js-open-form"
           style="right:18px;bottom:22px;border-radius:28px;width:56px;height:56px" title="Registrar pago">
     <i class="fa fa-plus"></i>
   </button>
