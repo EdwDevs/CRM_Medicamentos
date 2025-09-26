@@ -982,5 +982,138 @@
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- ========== DEBUG BAR: Diagnóstico de carga de datos ========== -->
+<style>
+  #debug-bar{
+    position:fixed;left:16px;right:16px;bottom:16px;z-index:3000;
+    border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);display:none;
+    padding:12px 14px;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;
+  }
+  #debug-bar.debug-info    { background:#e8f4ff; color:#0b5394; border:1px solid #b3d7ff; }
+  #debug-bar.debug-warn    { background:#fff6e6; color:#7a4d00; border:1px solid #ffd58a; }
+  #debug-bar.debug-error   { background:#ffecec; color:#8a0f0f; border:1px solid #ffb3b3; }
+  #debug-bar .dbg-title{font-weight:700;margin-right:8px}
+  #debug-bar .dbg-actions a{margin-left:10px;text-decoration:underline}
+  #debug-bar .dbg-close{float:right;border:none;background:transparent;font-weight:700;cursor:pointer}
+  #debug-bar .dbg-pre{margin:6px 0 0;max-height:120px;overflow:auto;background:rgba(0,0,0,.04);padding:6px 8px;border-radius:8px;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:12px}
+</style>
+
+<div id="debug-bar" class="debug-info" role="status" aria-live="polite">
+  <button class="dbg-close" aria-label="Cerrar">×</button>
+  <span class="dbg-title">Diagnóstico</span>
+  <span id="dbg-msg">Verificando conexión a Firestore…</span>
+  <div id="dbg-extra" class="dbg-pre" style="display:none"></div>
+  <span class="dbg-actions" id="dbg-actions"></span>
+</div>
+
+<script type="module">
+  // ----- Helpers UI -----
+  const $dbg = (sel)=>document.querySelector(sel);
+  const bar  = $dbg('#debug-bar');
+  const msg  = $dbg('#dbg-msg');
+  const extra= $dbg('#dbg-extra');
+  const acts = $dbg('#dbg-actions');
+  $dbg('.dbg-close').addEventListener('click', ()=> bar.style.display='none');
+
+  function show(type, text, details=null, actionHtml=""){
+    bar.className = `debug-${type}`;
+    msg.textContent = text;
+    if(details){
+      extra.style.display = 'block';
+      extra.textContent = (typeof details === 'string') ? details : JSON.stringify(details, null, 2);
+    }else{
+      extra.style.display = 'none';
+      extra.textContent = '';
+    }
+    acts.innerHTML = actionHtml || "";
+    bar.style.display = 'block';
+    console[type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'log']('DEBUG:', text, details || '');
+  }
+
+  // Captura errores JS globales (por si tu script se rompe antes de cargar datos)
+  window.addEventListener('error', e=>{
+    show('error','⚠️ Error de JavaScript en la página.', `${e.message}\n${e.filename}:${e.lineno}`);
+  });
+  window.addEventListener('unhandledrejection', e=>{
+    show('error','🤯 Promesa rechazada sin manejar.', String(e.reason));
+  });
+
+  // ----- Diagnóstico Firestore -----
+  (async ()=>{
+    try{
+      const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+      const {
+        getFirestore, collection, getDocs, query, orderBy, limit
+      } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+
+      // Config del proyecto (la misma de tu app)
+      const firebaseConfig = {
+        apiKey: "AIzaSyDK2Aoz1kxq1dDXKkemRIYCFAFtxgw4dZs",
+        authDomain: "crm-medicamentos.firebaseapp.com",
+        projectId: "crm-medicamentos",
+        storageBucket: "crm-medicamentos.appspot.com",
+        messagingSenderId: "638953546971",
+        appId: "1:638953546971:web:4f811cdd7dd72dc7cfd8fe",
+        measurementId: "G-RPZNJSCX12"
+      };
+
+      // App aislada para debug (no interfiere con la principal)
+      const app = getApps().find(a=>a.name==='crm-debug') || initializeApp(firebaseConfig, 'crm-debug');
+      const db  = getFirestore(app);
+
+      // Paso 1: Smoke test SIN índices (nunca debe fallar por índices)
+      let rows = [];
+      try{
+        const snap = await getDocs(collection(db, 'payments'));
+        rows = snap.docs.map(d=>({ id: d.id, ...d.data() }));
+        console.table(rows.slice(0,10));
+        if(rows.length === 0){
+          show('warn','ℹ️ La colección "payments" no tiene documentos o estás en otro proyecto.', null);
+        }else{
+          show('info',`✅ Conexión OK. Se encontraron ${rows.length} doc(s) en "payments".`, null);
+        }
+      }catch(e){
+        // Permisos u otros errores “duros”
+        show('error','❌ No se pudo leer la colección "payments". ¿Reglas de seguridad?', `${e.code||e.name}: ${e.message}`);
+        return; // no seguimos si falla el smoke test
+      }
+
+      // Paso 2: Prueba de orden/índices como tu consulta real
+      try{
+        const qy = query(collection(db, 'payments'), orderBy('date', 'desc'), limit(10));
+        const snap2 = await getDocs(qy);
+        const arr = snap2.docs.map(d=>{
+          const data = d.data();
+          const rawDate = data.date;
+          const isTs = !!rawDate?.toDate;
+          return {
+            id: d.id,
+            pharmacy: data.pharmacy || '',
+            product: data.product || '',
+            status: data.status || '',
+            dateType: isTs ? 'Timestamp' : typeof rawDate,
+            datePreview: isTs ? rawDate.toDate() : rawDate
+          };
+        });
+        console.table(arr);
+        const mix = arr.reduce((acc,r)=>(acc[r.dateType]=(acc[r.dateType]||0)+1,acc),{});
+        if(mix.string){
+          show('warn','⚠️ Mezcla de tipos en "date" (string vs Timestamp).', mix);
+        }else{
+          show('info','✅ Orden por fecha funcionando. Tipos de "date":', mix);
+        }
+      }catch(e){
+        const m = String(e.message||'').match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/);
+        const idxLink = m ? m[0] : null;
+        const actions = idxLink ? `<a href="${idxLink}" target="_blank" rel="noopener">Crear índice sugerido</a>` : '';
+        show('warn','📚 Falta un índice compuesto para la consulta con orderBy/where.', e.message, actions);
+      }
+    }catch(e){
+      show('error','❌ Error inicializando el diagnóstico.', `${e.name}: ${e.message}`);
+    }
+  })();
+</script>
+<!-- ========== FIN DEBUG BAR ========== -->
+
 </body>
 </html>
