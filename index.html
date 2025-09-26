@@ -73,7 +73,7 @@
 
     // Presupuesto
     const BUDGET_TOTAL = 500000;
-    let totalLegalizado = 0; // Variable global para el monto legalizado
+    let totalLegalizado = 0;
 
     // Utilidades
     const $ = sel => document.querySelector(sel);
@@ -95,7 +95,7 @@
     }
     function toDate(d){
       if(d instanceof Date) return d;
-      if(d?.toDate) return d.toDate(); // Firestore Timestamp
+      if(d?.toDate) return d.toDate();
       if(typeof d==="string") return new Date(d+"T00:00:00");
       return new Date(d);
     }
@@ -130,7 +130,6 @@
         </tr>`;
     }
 
-    // Cálculo de total
     function calculateTotal(){
       const q = Number($('#quantity').value||0);
       const up = Number($('#unitPrice').value||0);
@@ -140,7 +139,7 @@
       $('#total-container').style.display = (q>0 && up>0) ? 'block' : 'none';
     }
 
-    // ========= Lógica de Legalización CORREGIDA =========
+    // ========= Lógica de Legalización CORREGIDA Y MEJORADA =========
     async function getLegalizado() {
       try {
         const docRef = doc(db, "budget_meta", "main");
@@ -163,15 +162,12 @@
       }
       const docRef = doc(db, "budget_meta", "main");
       try {
-        // Intenta actualizar el documento. Esto funcionará si ya existe.
         await updateDoc(docRef, { total: increment(parsedAmount) });
         showToast(`✅ ${formatCurrency(parsedAmount)} legalizados correctamente.`, "success");
-        await loadPayments(); // Recargamos todo para reflejar el cambio
+        await loadPayments();
       } catch (e) {
-        // Si el error es 'not-found', significa que el documento no existe.
         if (e.code === 'not-found') {
           try {
-            // Lo creamos por primera vez con setDoc.
             await setDoc(docRef, { total: parsedAmount });
             showToast(`✅ ${formatCurrency(parsedAmount)} legalizados correctamente.`, "success");
             await loadPayments();
@@ -180,14 +176,12 @@
             showToast("❌ Error al procesar la legalización.", "error");
           }
         } else {
-          // Si es otro tipo de error (ej. permisos), lo mostramos.
           console.error("Error al legalizar monto:", e);
-          showToast("❌ Error al procesar la legalización.", "error");
+          showToast("❌ Error al procesar la legalización. Revisa los permisos en Firebase.", "error");
         }
       }
     }
 
-    // ========= Backfill y normalización =========
     async function backfillMissingStatus(docs){
       const toFix = docs.filter(d => !("status" in d.data()));
       if(toFix.length===0) return;
@@ -208,7 +202,6 @@
       });
     }
 
-    // ========= Consulta robusta con Fallback =========
     async function loadPayments(){
       const tbody = $('#payments-table');
       tbody.innerHTML = spinnerRow()+spinnerRow()+spinnerRow();
@@ -366,7 +359,7 @@
       $('#porcentaje-usado').textContent = `${isFinite(pct)?pct.toFixed(1):0}%`;
 
       const bar = $('#budget-progress');
-      bar.style.width = `${Math.max(0, Math.min(pct,100))}%`; // Asegura que el ancho esté entre 0 y 100
+      bar.style.width = `${Math.max(0, Math.min(pct,100))}%`;
       bar.className = 'progress-bar';
       if(pct>=90){bar.classList.add('bg-danger')}
       else if(pct>=75){bar.classList.add('bg-warning')}
@@ -411,7 +404,7 @@
         const info=getPaymentStatus(payload.status);
         showToast(`✅ Pago registrado como: ${info.label}`,"success");
       }catch(e){
-        console.error(e); showToast("❌ Error al registrar el pago","error");
+        console.error(e); showToast("❌ Error al registrar el pago. Revisa los permisos en Firebase.","error");
       }
     }
 
