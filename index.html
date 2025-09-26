@@ -49,13 +49,13 @@
   </style>
 
   <script type="module">
-    // Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    // Firebase (usando la versión que especificaste)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
     import {
       getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc, setDoc, increment, getDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
-    // ========= TUS DATOS CORRECTOS DE FIREBASE =========
+    // TUS DATOS CORRECTOS DE FIREBASE
     const firebaseConfig = {
       apiKey: "AIzaSyB2glK3jtje7juBG7gMl4bzh6xG_Zz2YNU",
       authDomain: "crm-farmacias.firebaseapp.com",
@@ -64,7 +64,6 @@
       messagingSenderId: "251276216502",
       appId: "1:251276216502:web:374f708e2ff040192d3e17"
     };
-    // =====================================================
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -323,7 +322,7 @@
       if(payments.length===0){
         tbody.innerHTML = `
           <tr><td colspan="9" class="text-center text-muted py-4">
-            <i class="fa-regular fa-folder-open me-2"></i>No se encontraron pagos con los filtros aplicados.
+            <i class="fa-regular fa-folder-open me-2"></i>No se encontraron pagos. ¡Prueba a crear uno!
           </td></tr>`;
       }
 
