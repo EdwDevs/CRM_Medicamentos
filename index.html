@@ -53,7 +53,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
     import {
-      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc, setDoc, increment
+      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc, setDoc, increment, getDoc
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // Config
@@ -140,13 +140,13 @@
       $('#total-container').style.display = (q>0 && up>0) ? 'block' : 'none';
     }
 
-    // ========= NUEVO: Lógica de Legalización =========
+    // ========= Lógica de Legalización CORREGIDA =========
     async function getLegalizado() {
       try {
         const docRef = doc(db, "budget_meta", "main");
-        const docSnap = await getDocs(query(collection(db, "budget_meta"), where("__name__", "==", "main")));
-        if (!docSnap.empty) {
-          return docSnap.docs[0].data().total || 0;
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          return docSnap.data().total || 0;
         }
         return 0;
       } catch (e) {
@@ -156,19 +156,34 @@
     }
 
     async function legalizarMonto(amount) {
-      if (!amount || amount <= 0) {
-        showToast("El monto a legalizar debe ser mayor a cero.", "error");
+      const parsedAmount = Number(amount);
+      if (!parsedAmount || parsedAmount <= 0) {
+        showToast("El monto a legalizar debe ser un número mayor a cero.", "error");
         return;
       }
+      const docRef = doc(db, "budget_meta", "main");
       try {
-        const docRef = doc(db, "budget_meta", "main");
-        // Usamos set con merge para crear el documento si no existe, e increment para sumar de forma segura.
-        await setDoc(docRef, { total: increment(Number(amount)) }, { merge: true });
-        showToast(`✅ ${formatCurrency(amount)} legalizados correctamente.`, "success");
+        // Intenta actualizar el documento. Esto funcionará si ya existe.
+        await updateDoc(docRef, { total: increment(parsedAmount) });
+        showToast(`✅ ${formatCurrency(parsedAmount)} legalizados correctamente.`, "success");
         await loadPayments(); // Recargamos todo para reflejar el cambio
       } catch (e) {
-        console.error("Error al legalizar monto:", e);
-        showToast("❌ Error al procesar la legalización.", "error");
+        // Si el error es 'not-found', significa que el documento no existe.
+        if (e.code === 'not-found') {
+          try {
+            // Lo creamos por primera vez con setDoc.
+            await setDoc(docRef, { total: parsedAmount });
+            showToast(`✅ ${formatCurrency(parsedAmount)} legalizados correctamente.`, "success");
+            await loadPayments();
+          } catch (e2) {
+            console.error("Error al crear documento de legalización:", e2);
+            showToast("❌ Error al procesar la legalización.", "error");
+          }
+        } else {
+          // Si es otro tipo de error (ej. permisos), lo mostramos.
+          console.error("Error al legalizar monto:", e);
+          showToast("❌ Error al procesar la legalización.", "error");
+        }
       }
     }
 
@@ -198,7 +213,6 @@
       const tbody = $('#payments-table');
       tbody.innerHTML = spinnerRow()+spinnerRow()+spinnerRow();
 
-      // Primero, obtenemos el valor legalizado más reciente
       totalLegalizado = await getLegalizado();
 
       const pf = $('#filter-product').value || "";
@@ -323,11 +337,10 @@
           </td></tr>`;
       }
 
-      updateStats(payments, totalLegalizado); // Pasamos el valor legalizado
+      updateStats(payments, totalLegalizado);
       updatePharmacyFilter(payments);
     }
 
-    // ========= ACTUALIZADO: Lógica de Estadísticas =========
     function updateStats(payments, legalizado){
       $('#total-pagos').textContent = payments.length;
 
@@ -342,19 +355,18 @@
       $('#total-procesados').textContent = proc;
 
       const totalBruto = payments.reduce((s,p)=> s + Number(p.totalAmount||0), 0);
-      const totalNeto = totalBruto - legalizado; // Calculamos el pago neto
+      const totalNeto = totalBruto - legalizado;
       const restante = BUDGET_TOTAL - totalNeto;
       const pct = (totalNeto/BUDGET_TOTAL)*100;
 
-      // Actualizamos la UI para mostrar el neto y el legalizado
       $('#total-pagado').textContent = formatCurrency(totalNeto);
       $('#total-pagado-label').textContent = "Total Pagado (Neto)";
-      $('#total-legalizado').textContent = formatCurrency(legalizado); // Mostramos el valor legalizado
+      $('#total-legalizado').textContent = formatCurrency(legalizado);
       $('#presupuesto-restante').textContent = formatCurrency(restante);
       $('#porcentaje-usado').textContent = `${isFinite(pct)?pct.toFixed(1):0}%`;
 
       const bar = $('#budget-progress');
-      bar.style.width = `${Math.min(pct,100)}%`;
+      bar.style.width = `${Math.max(0, Math.min(pct,100))}%`; // Asegura que el ancho esté entre 0 y 100
       bar.className = 'progress-bar';
       if(pct>=90){bar.classList.add('bg-danger')}
       else if(pct>=75){bar.classList.add('bg-warning')}
@@ -389,7 +401,7 @@
           quantity:Number(quantity),
           unitPrice:Number(unitPrice),
           totalAmount:Number(totalAmount),
-          amount:Number(totalAmount), // compat con datos antiguos
+          amount:Number(totalAmount),
           date:new Date(date+"T00:00:00"),
           notes:notes||"",
           status:status||"pendiente"
@@ -428,11 +440,10 @@
 
     async function viewPayment(id){
       try{
-        const qy = query(collection(db,"payments"), where("__name__","==",id));
-        const snap = await getDocs(qy);
-        if(!snap.empty){
-          const d = snap.docs[0];
-          openDetailsModal({id:d.id, ...d.data()});
+        const docRef = doc(db, "payments", id);
+        const docSnap = await getDoc(docRef);
+        if(docSnap.exists()){
+          openDetailsModal({id:docSnap.id, ...docSnap.data()});
         }else{
           showToast("No se encontraron detalles del pago.","error");
         }
@@ -442,7 +453,6 @@
       }
     }
 
-    // Modal de detalles
     function openDetailsModal(payment){
       const modalTitle = $('#detailsTitle');
       const modalBody = $('#detailsBody');
@@ -472,13 +482,10 @@
       modal.show();
     }
 
-    // Eventos
     document.addEventListener("DOMContentLoaded", ()=>{
-      // Fecha por defecto hoy (zona CO aproximada)
       const today = new Date(); const yyyy=today.getFullYear(); const mm=String(today.getMonth()+1).padStart(2,'0'); const dd=String(today.getDate()).padStart(2,'0');
       $('#date').value = `${yyyy}-${mm}-${dd}`;
 
-      // Listeners formulario
       $('#quantity').addEventListener('input', calculateTotal);
       $('#unitPrice').addEventListener('input', calculateTotal);
 
@@ -509,26 +516,23 @@
         }
       });
 
-      // ========= NUEVO: Listener para el formulario de legalización =========
       $('#legalizar-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const amount = $('#legalizar-amount').value;
         await legalizarMonto(amount);
         
-        $('#legalizar-amount').value = ''; // Limpiar input
+        $('#legalizar-amount').value = '';
         const legalizarModalEl = document.getElementById('legalizarModal');
         const legalizarModal = bootstrap.Modal.getOrCreateInstance(legalizarModalEl);
         legalizarModal.hide();
       });
 
-      // Filtros y acciones
       $$('.refresh-btn').forEach(btn=>btn.addEventListener('click', loadPayments));
       $('#filter-product').addEventListener('change', loadPayments);
       $('#filter-pharmacy').addEventListener('change', loadPayments);
       $('#filter-date').addEventListener('change', loadPayments);
       $('#filter-status').addEventListener('change', loadPayments);
 
-      // Tabla: acciones delegadas
       $('#payments-table').addEventListener('click', (e)=>{
         const btn = e.target.closest('button'); if(!btn) return;
         const action = btn.dataset.action;
@@ -538,20 +542,17 @@
         if(action==="toggle") togglePaymentStatus(id, btn.dataset.status);
       });
 
-      // Botones para abrir modales
       $$('.js-open-form').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           const m = new bootstrap.Modal(document.getElementById('formModal'));
           m.show();
         });
       });
-      // ========= NUEVO: Listener para abrir modal de legalización =========
       $('#open-legalizar-modal').addEventListener('click', () => {
         const m = new bootstrap.Modal(document.getElementById('legalizarModal'));
         m.show();
       });
 
-      // Carga inicial
       loadPayments();
     });
   </script>
@@ -591,7 +592,6 @@
               </div>
               <div class="d-flex justify-content-between mt-1">
                 <small class="text-light">Presupuesto total: $500,000 COP</small>
-                <!-- NUEVO: Display del total legalizado -->
                 <small class="text-light">Legalizado: <strong id="total-legalizado">$0</strong></small>
               </div>
             </div>
@@ -599,7 +599,6 @@
               <i class="fas fa-exclamation-triangle me-2"></i>
               <strong>¡Presupuesto excedido!</strong> Superado por: <span id="exceso-presupuesto">$0</span>
             </div>
-            <!-- NUEVO: Botón para legalizar -->
             <div class="d-grid mt-3">
               <button id="open-legalizar-modal" class="btn btn-info"><i class="fas fa-check-double me-2"></i>Legalizar Gasto</button>
             </div>
@@ -802,7 +801,7 @@
     </div>
   </div>
 
-  <!-- NUEVO: Modal para Legalizar Gasto -->
+  <!-- Modal para Legalizar Gasto -->
   <div class="modal fade" id="legalizarModal" tabindex="-1" aria-labelledby="legalizarModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
