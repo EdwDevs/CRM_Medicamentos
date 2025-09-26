@@ -53,7 +53,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
     import {
-      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc
+      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc, setDoc, increment
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // Config
@@ -73,6 +73,7 @@
 
     // Presupuesto
     const BUDGET_TOTAL = 500000;
+    let totalLegalizado = 0; // Variable global para el monto legalizado
 
     // Utilidades
     const $ = sel => document.querySelector(sel);
@@ -139,7 +140,39 @@
       $('#total-container').style.display = (q>0 && up>0) ? 'block' : 'none';
     }
 
-    // ========= NUEVO: Backfill y normalización =========
+    // ========= NUEVO: Lógica de Legalización =========
+    async function getLegalizado() {
+      try {
+        const docRef = doc(db, "budget_meta", "main");
+        const docSnap = await getDocs(query(collection(db, "budget_meta"), where("__name__", "==", "main")));
+        if (!docSnap.empty) {
+          return docSnap.docs[0].data().total || 0;
+        }
+        return 0;
+      } catch (e) {
+        console.error("Error al obtener monto legalizado:", e);
+        return 0;
+      }
+    }
+
+    async function legalizarMonto(amount) {
+      if (!amount || amount <= 0) {
+        showToast("El monto a legalizar debe ser mayor a cero.", "error");
+        return;
+      }
+      try {
+        const docRef = doc(db, "budget_meta", "main");
+        // Usamos set con merge para crear el documento si no existe, e increment para sumar de forma segura.
+        await setDoc(docRef, { total: increment(Number(amount)) }, { merge: true });
+        showToast(`✅ ${formatCurrency(amount)} legalizados correctamente.`, "success");
+        await loadPayments(); // Recargamos todo para reflejar el cambio
+      } catch (e) {
+        console.error("Error al legalizar monto:", e);
+        showToast("❌ Error al procesar la legalización.", "error");
+      }
+    }
+
+    // ========= Backfill y normalización =========
     async function backfillMissingStatus(docs){
       const toFix = docs.filter(d => !("status" in d.data()));
       if(toFix.length===0) return;
@@ -164,6 +197,9 @@
     async function loadPayments(){
       const tbody = $('#payments-table');
       tbody.innerHTML = spinnerRow()+spinnerRow()+spinnerRow();
+
+      // Primero, obtenemos el valor legalizado más reciente
+      totalLegalizado = await getLegalizado();
 
       const pf = $('#filter-product').value || "";
       const phf = $('#filter-pharmacy').value || "";
@@ -287,11 +323,12 @@
           </td></tr>`;
       }
 
-      updateStats(payments);
+      updateStats(payments, totalLegalizado); // Pasamos el valor legalizado
       updatePharmacyFilter(payments);
     }
 
-    function updateStats(payments){
+    // ========= ACTUALIZADO: Lógica de Estadísticas =========
+    function updateStats(payments, legalizado){
       $('#total-pagos').textContent = payments.length;
 
       const c = (k)=>payments.filter(p=>p.product===k).length;
@@ -304,11 +341,15 @@
       $('#total-pendientes').textContent = pend;
       $('#total-procesados').textContent = proc;
 
-      const total = payments.reduce((s,p)=> s + Number(p.totalAmount||0), 0);
-      const restante = BUDGET_TOTAL - total;
-      const pct = (total/BUDGET_TOTAL)*100;
+      const totalBruto = payments.reduce((s,p)=> s + Number(p.totalAmount||0), 0);
+      const totalNeto = totalBruto - legalizado; // Calculamos el pago neto
+      const restante = BUDGET_TOTAL - totalNeto;
+      const pct = (totalNeto/BUDGET_TOTAL)*100;
 
-      $('#total-pagado').textContent = formatCurrency(total);
+      // Actualizamos la UI para mostrar el neto y el legalizado
+      $('#total-pagado').textContent = formatCurrency(totalNeto);
+      $('#total-pagado-label').textContent = "Total Pagado (Neto)";
+      $('#total-legalizado').textContent = formatCurrency(legalizado); // Mostramos el valor legalizado
       $('#presupuesto-restante').textContent = formatCurrency(restante);
       $('#porcentaje-usado').textContent = `${isFinite(pct)?pct.toFixed(1):0}%`;
 
@@ -320,9 +361,9 @@
       else{bar.classList.add('bg-success')}
 
       const alert = $('#budget-alert');
-      if(total>BUDGET_TOTAL){
+      if(totalNeto > BUDGET_TOTAL){
         alert.style.display='block';
-        $('#exceso-presupuesto').textContent = formatCurrency(total-BUDGET_TOTAL);
+        $('#exceso-presupuesto').textContent = formatCurrency(totalNeto - BUDGET_TOTAL);
       }else{
         alert.style.display='none';
       }
@@ -460,13 +501,24 @@
           $('#total-container').style.display='none';
           $('#total-value').value='';
 
-          // Cierra el modal de forma segura (exista o no la instancia previa)
           const formModalEl = document.getElementById('formModal');
           const formModal = bootstrap.Modal.getOrCreateInstance(formModalEl);
           formModal.hide();
         }else{
           showToast('⚠️ Por favor completa todos los campos requeridos','error');
         }
+      });
+
+      // ========= NUEVO: Listener para el formulario de legalización =========
+      $('#legalizar-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const amount = $('#legalizar-amount').value;
+        await legalizarMonto(amount);
+        
+        $('#legalizar-amount').value = ''; // Limpiar input
+        const legalizarModalEl = document.getElementById('legalizarModal');
+        const legalizarModal = bootstrap.Modal.getOrCreateInstance(legalizarModalEl);
+        legalizarModal.hide();
       });
 
       // Filtros y acciones
@@ -486,12 +538,17 @@
         if(action==="toggle") togglePaymentStatus(id, btn.dataset.status);
       });
 
-      // Botones para abrir modal de formulario (móvil y desktop) - ¡sin IDs duplicados!
+      // Botones para abrir modales
       $$('.js-open-form').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           const m = new bootstrap.Modal(document.getElementById('formModal'));
           m.show();
         });
+      });
+      // ========= NUEVO: Listener para abrir modal de legalización =========
+      $('#open-legalizar-modal').addEventListener('click', () => {
+        const m = new bootstrap.Modal(document.getElementById('legalizarModal'));
+        m.show();
       });
 
       // Carga inicial
@@ -518,7 +575,7 @@
             <div class="row text-center">
               <div class="col-6">
                 <div class="number" id="total-pagado">$0</div>
-                <div>Total Pagado</div>
+                <div id="total-pagado-label">Total Pagado</div>
               </div>
               <div class="col-6">
                 <div class="number" id="presupuesto-restante">$500,000</div>
@@ -532,11 +589,19 @@
               <div class="progress" role="progressbar" aria-label="Progreso de presupuesto">
                 <div id="budget-progress" class="progress-bar bg-success" style="width:0%"></div>
               </div>
-              <small class="text-light">Presupuesto total: $500,000 COP</small>
+              <div class="d-flex justify-content-between mt-1">
+                <small class="text-light">Presupuesto total: $500,000 COP</small>
+                <!-- NUEVO: Display del total legalizado -->
+                <small class="text-light">Legalizado: <strong id="total-legalizado">$0</strong></small>
+              </div>
             </div>
             <div id="budget-alert" class="alert mt-3" style="display:none;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;border:0;border-radius:10px">
               <i class="fas fa-exclamation-triangle me-2"></i>
               <strong>¡Presupuesto excedido!</strong> Superado por: <span id="exceso-presupuesto">$0</span>
+            </div>
+            <!-- NUEVO: Botón para legalizar -->
+            <div class="d-grid mt-3">
+              <button id="open-legalizar-modal" class="btn btn-info"><i class="fas fa-check-double me-2"></i>Legalizar Gasto</button>
             </div>
           </div>
         </div>
@@ -732,6 +797,27 @@
         <div class="modal-body" id="detailsBody"></div>
         <div class="p-3 pt-0 text-end">
           <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUEVO: Modal para Legalizar Gasto -->
+  <div class="modal fade" id="legalizarModal" tabindex="-1" aria-labelledby="legalizarModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="card-header" id="legalizarModalTitle"><i class="fas fa-check-double me-2"></i>Legalizar Gasto</div>
+        <div class="modal-body">
+          <p class="text-muted">Ingresa el monto total que ya ha sido legalizado. Este valor se restará del total pagado, liberando presupuesto.</p>
+          <form id="legalizar-form">
+            <div class="mb-3">
+              <label class="form-label" for="legalizar-amount">Monto a Legalizar (COP)</label>
+              <input id="legalizar-amount" type="number" inputmode="numeric" min="1" step="1" class="form-control" required placeholder="Ej: 150000"/>
+            </div>
+            <div class="d-grid">
+              <button class="btn btn-success" type="submit"><i class="fas fa-save me-2"></i>Guardar Legalización</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
