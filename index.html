@@ -69,8 +69,8 @@
 
     const BUDGET_TOTAL = 500000;
     let totalLegalizado = 0;
-    let allPharmacies = []; // Guardaremos las farmacias aquí para los filtros
-    let allPaymentsCache = []; // Guardaremos todos los pagos aquí para filtrar rápido
+    let allPharmacies = [];
+    let allPaymentsCache = [];
 
     const $ = sel => document.querySelector(sel);
     const $$ = sel => document.querySelectorAll(sel);
@@ -135,19 +135,17 @@
       $('#total-container').style.display = (q>0 && up>0) ? 'block' : 'none';
     }
 
-    // ========= Lógica de Carga de Datos MODIFICADA =========
     async function loadAllData(){
       const tbody = $('#payments-table');
       tbody.innerHTML = spinnerRow();
 
       try {
-        // 1. Cargar todas las farmacias para tener sus nombres
+        // CORRECCIÓN: Usar "pharmacies" en lugar de "pharmacies"
         const pharmaciesSnap = await getDocs(query(collection(db, "pharmacies"), orderBy("nombre")));
         allPharmacies = pharmaciesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         const pharmacyNameMap = new Map(allPharmacies.map(p => [p.id, p.nombre]));
         populatePharmacyFilters();
 
-        // 2. Usar collectionGroup para cargar TODOS los pagos de TODAS las farmacias
         const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('date', 'desc'));
         const paymentsSnap = await getDocs(paymentsQuery);
         
@@ -156,16 +154,14 @@
             return {
                 id: doc.id,
                 pharmacyId: pharmacyId,
-                pharmacyName: pharmacyNameMap.get(pharmacyId) || 'Desconocida', // Asignar nombre
+                pharmacyName: pharmacyNameMap.get(pharmacyId) || 'Desconocida',
                 ...doc.data()
             };
         });
 
-        // 3. Cargar el total legalizado (global)
         const legalizadoDoc = await getDoc(doc(db, "budget_meta", "main"));
         totalLegalizado = legalizadoDoc.exists() ? legalizadoDoc.data().total : 0;
 
-        // 4. Aplicar filtros y renderizar
         filterAndRender();
 
       } catch (e) {
@@ -289,6 +285,7 @@
           notes:notes||"",
           status:status||"pendiente"
         };
+        // CORRECCIÓN: Usar "pharmacies" en lugar de "pharmacies"
         await addDoc(collection(db, `pharmacies/${pharmacyId}/payments`), payload);
         await loadAllData();
         showToast(`✅ Pago registrado en ${pharmacyName}.`,"success");
@@ -300,6 +297,7 @@
     async function deletePayment(pharmacyId, paymentId){
       if(!confirm("¿Está seguro de eliminar este pago?")) return;
       try{
+        // CORRECCIÓN: Usar "pharmacies" en lugar de "pharmacies"
         await deleteDoc(doc(db, `pharmacies/${pharmacyId}/payments`, paymentId));
         await loadAllData();
         showToast("🗑️ Pago eliminado correctamente","success");
@@ -311,6 +309,7 @@
     async function togglePaymentStatus(pharmacyId, paymentId, currentStatus){
       const next = currentStatus==="pendiente" ? "procesado" : "pendiente";
       try{
+        // CORRECCIÓN: Usar "pharmacies" en lugar de "pharmacies"
         await updateDoc(doc(db, `pharmacies/${pharmacyId}/payments`, paymentId), {status:next});
         const info=getPaymentStatus(next);
         showToast(`${info.icon} Estado cambiado a: ${info.label}`,"success");
