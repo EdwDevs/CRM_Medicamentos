@@ -1006,114 +1006,152 @@
   <span class="dbg-actions" id="dbg-actions"></span>
 </div>
 
-<script type="module">
-  // ----- Helpers UI -----
-  const $dbg = (sel)=>document.querySelector(sel);
-  const bar  = $dbg('#debug-bar');
-  const msg  = $dbg('#dbg-msg');
-  const extra= $dbg('#dbg-extra');
-  const acts = $dbg('#dbg-actions');
-  $dbg('.dbg-close').addEventListener('click', ()=> bar.style.display='none');
+<!-- ========== RUNTIME HEALTH PANEL (carga y filtros) ========== -->
+<style>
+  #health-panel{
+    position:fixed;right:16px;top:16px;z-index:3000;min-width:280px;
+    background:#0b2e13;color:#d1f7d6;border:1px solid #198754; border-radius:12px;
+    box-shadow:0 10px 28px rgba(0,0,0,.22); font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;
+    display:none
+  }
+  #health-panel header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#146c43;border-radius:12px 12px 0 0}
+  #health-panel .body{padding:10px 12px}
+  #health-panel .kv{display:flex;justify-content:space-between;gap:10px}
+  #health-panel .kv + .kv{margin-top:4px}
+  #health-panel .muted{opacity:.85}
+  #health-panel .btns{display:flex;gap:8px;margin-top:10px}
+  #health-panel button{background:#198754;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer}
+  #health-panel .ghost{background:transparent;border:1px solid #d1f7d6;color:#d1f7d6}
+  #health-panel pre{margin:8px 0 0;background:#0a1f18;border:1px solid #1b5f47;border-radius:8px;color:#c8f3d2;padding:6px;max-height:140px;overflow:auto}
+</style>
 
-  function show(type, text, details=null, actionHtml=""){
-    bar.className = `debug-${type}`;
-    msg.textContent = text;
-    if(details){
-      extra.style.display = 'block';
-      extra.textContent = (typeof details === 'string') ? details : JSON.stringify(details, null, 2);
-    }else{
-      extra.style.display = 'none';
-      extra.textContent = '';
-    }
-    acts.innerHTML = actionHtml || "";
-    bar.style.display = 'block';
-    console[type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'log']('DEBUG:', text, details || '');
+<div id="health-panel" role="status" aria-live="polite">
+  <header>
+    <strong>Health • Pagos</strong>
+    <button class="ghost" id="hp-close" title="Ocultar">✕</button>
+  </header>
+  <div class="body">
+    <div class="kv"><span>Total A (server):</span><span id="hp-a">—</span></div>
+    <div class="kv"><span>Total B (fecha):</span><span id="hp-b">—</span></div>
+    <div class="kv"><span>Total C (cliente):</span><span id="hp-c">—</span></div>
+    <div class="kv"><span class="muted">Antes de filtros UI:</span><span id="hp-pre">—</span></div>
+    <div class="kv"><span class="muted">Después filtros UI:</span><span id="hp-post">—</span></div>
+    <div class="kv"><span>Filtros:</span><span id="hp-filters">—</span></div>
+    <div class="btns">
+      <button id="hp-reset">Reset filtros</button>
+      <button class="ghost" id="hp-copy">Copiar estado</button>
+    </div>
+    <pre id="hp-log" style="display:none"></pre>
+  </div>
+</div>
+
+<script type="module">
+(() => {
+  const $ = s => document.querySelector(s);
+  const panel = $('#health-panel');
+  const logEl = $('#hp-log');
+  const state = { A:null, B:null, C:null, pre:null, post:null, filters:null, trace:[] };
+
+  // Muestra el panel
+  function show(){ panel.style.display='block'; }
+  function hide(){ panel.style.display='none'; }
+  $('#hp-close').addEventListener('click', hide);
+  $('#hp-copy').addEventListener('click', ()=>{
+    navigator.clipboard.writeText(JSON.stringify(state, null, 2)).then(()=>alert('Estado copiado al portapapeles'));
+  });
+  $('#hp-reset').addEventListener('click', ()=>{
+    const f = id => document.getElementById(id);
+    if(f('filter-product')) f('filter-product').value = '';
+    if(f('filter-status')) f('filter-status').value = '';
+    if(f('filter-pharmacy')) f('filter-pharmacy').value = '';
+    if(f('filter-date')) f('filter-date').value = '';
+    (window.loadPayments || (()=>{}))(); // recarga con filtros limpios
+  });
+
+  function setKV(id, val){ const el = document.getElementById(id); if(el) el.textContent = val; }
+  function setFiltersKV(){
+    const v = (id)=> (document.getElementById(id)?.value || '');
+    const filters = {
+      product: v('filter-product'),
+      status:  v('filter-status'),
+      pharmacy:v('filter-pharmacy'),
+      month:   v('filter-date')
+    };
+    state.filters = filters;
+    setKV('hp-filters', Object.entries(filters).map(([k,v])=>`${k}:${v||'∅'}`).join(' · '));
   }
 
-  // Captura errores JS globales (por si tu script se rompe antes de cargar datos)
-  window.addEventListener('error', e=>{
-    show('error','⚠️ Error de JavaScript en la página.', `${e.message}\n${e.filename}:${e.lineno}`);
-  });
-  window.addEventListener('unhandledrejection', e=>{
-    show('error','🤯 Promesa rechazada sin manejar.', String(e.reason));
-  });
+  // Hookea loadPayments para medir antes/después de filtros
+  const originalLoad = window.loadPayments;
+  if (typeof originalLoad === 'function') {
+    window.loadPayments = async function patchedLoadPayments(){
+      setFiltersKV();
+      show();
 
-  // ----- Diagnóstico Firestore -----
-  (async ()=>{
-    try{
-      const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
-      const {
-        getFirestore, collection, getDocs, query, orderBy, limit
-      } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+      // captura trazas internas si tu implementación expone intentos
+      state.trace.push({ t: Date.now(), msg: 'loadPayments() start', filters: state.filters });
 
-      // Config del proyecto (la misma de tu app)
-      const firebaseConfig = {
-        apiKey: "AIzaSyDK2Aoz1kxq1dDXKkemRIYCFAFtxgw4dZs",
-        authDomain: "crm-medicamentos.firebaseapp.com",
-        projectId: "crm-medicamentos",
-        storageBucket: "crm-medicamentos.appspot.com",
-        messagingSenderId: "638953546971",
-        appId: "1:638953546971:web:4f811cdd7dd72dc7cfd8fe",
-        measurementId: "G-RPZNJSCX12"
+      // Monkey-patch de helpers internos para contabilizar:
+      // 1) conteos por intento A/B/C (si tu función usa variables locales, no las vemos aquí;
+      //    así que medimos en puntos determinísticos usando stubs globales)
+      let countA=null, countB=null, countC=null;
+
+      // Exponemos stubs temporales a nivel global para que tu loadPayments las llame si quieres instrumentar más:
+      window.__HP_MARK_A__ = (n)=>{ countA=n; state.A=n; setKV('hp-a', n); };
+      window.__HP_MARK_B__ = (n)=>{ countB=n; state.B=n; setKV('hp-b', n); };
+      window.__HP_MARK_C__ = (n)=>{ countC=n; state.C=n; setKV('hp-c', n); };
+
+      // Proxy de renderPayments para medir pre/post filtros UI
+      const originalRender = window.renderPayments;
+      window.renderPayments = function wrappedRender(paymentsRaw){
+        // pre = tamaño del array entregado a renderPayments
+        state.pre = Array.isArray(paymentsRaw) ? paymentsRaw.length : 0;
+        setKV('hp-pre', state.pre);
+
+        try {
+          originalRender.apply(this, arguments);
+        } finally {
+          // post = filas efectivamente pintadas en el DOM
+          const tbody = document.getElementById('payments-table');
+          const painted = tbody ? tbody.querySelectorAll('tr').length : 0;
+          state.post = painted;
+          setKV('hp-post', painted);
+          state.trace.push({ t: Date.now(), msg: 'render', pre: state.pre, post: state.post });
+          logEl.style.display = 'block';
+          logEl.textContent = JSON.stringify(state, null, 2);
+        }
       };
 
-      // App aislada para debug (no interfiere con la principal)
-      const app = getApps().find(a=>a.name==='crm-debug') || initializeApp(firebaseConfig, 'crm-debug');
-      const db  = getFirestore(app);
-
-      // Paso 1: Smoke test SIN índices (nunca debe fallar por índices)
-      let rows = [];
       try{
-        const snap = await getDocs(collection(db, 'payments'));
-        rows = snap.docs.map(d=>({ id: d.id, ...d.data() }));
-        console.table(rows.slice(0,10));
-        if(rows.length === 0){
-          show('warn','ℹ️ La colección "payments" no tiene documentos o estás en otro proyecto.', null);
-        }else{
-          show('info',`✅ Conexión OK. Se encontraron ${rows.length} doc(s) en "payments".`, null);
-        }
+        // Ejecuta tu carga real
+        await originalLoad();
       }catch(e){
-        // Permisos u otros errores “duros”
-        show('error','❌ No se pudo leer la colección "payments". ¿Reglas de seguridad?', `${e.code||e.name}: ${e.message}`);
-        return; // no seguimos si falla el smoke test
+        state.trace.push({ t: Date.now(), msg: 'loadPayments error', err: String(e?.message||e) });
+        logEl.style.display = 'block';
+        logEl.textContent = JSON.stringify(state, null, 2) + '\n\nERROR: ' + (e?.stack || e);
+        throw e;
+      }finally{
+        // Limpieza de stubs para no “contaminar” el global
+        delete window.__HP_MARK_A__;
+        delete window.__HP_MARK_B__;
+        delete window.__HP_MARK_C__;
+        window.renderPayments = originalRender;
       }
+    };
+  } else {
+    // Si no existe loadPayments, mostramos alerta
+    show();
+    setKV('hp-a','—'); setKV('hp-b','—'); setKV('hp-c','—');
+    setKV('hp-pre','—'); setKV('hp-post','—');
+    setKV('hp-filters','(loadPayments no encontrada)');
+  }
 
-      // Paso 2: Prueba de orden/índices como tu consulta real
-      try{
-        const qy = query(collection(db, 'payments'), orderBy('date', 'desc'), limit(10));
-        const snap2 = await getDocs(qy);
-        const arr = snap2.docs.map(d=>{
-          const data = d.data();
-          const rawDate = data.date;
-          const isTs = !!rawDate?.toDate;
-          return {
-            id: d.id,
-            pharmacy: data.pharmacy || '',
-            product: data.product || '',
-            status: data.status || '',
-            dateType: isTs ? 'Timestamp' : typeof rawDate,
-            datePreview: isTs ? rawDate.toDate() : rawDate
-          };
-        });
-        console.table(arr);
-        const mix = arr.reduce((acc,r)=>(acc[r.dateType]=(acc[r.dateType]||0)+1,acc),{});
-        if(mix.string){
-          show('warn','⚠️ Mezcla de tipos en "date" (string vs Timestamp).', mix);
-        }else{
-          show('info','✅ Orden por fecha funcionando. Tipos de "date":', mix);
-        }
-      }catch(e){
-        const m = String(e.message||'').match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/);
-        const idxLink = m ? m[0] : null;
-        const actions = idxLink ? `<a href="${idxLink}" target="_blank" rel="noopener">Crear índice sugerido</a>` : '';
-        show('warn','📚 Falta un índice compuesto para la consulta con orderBy/where.', e.message, actions);
-      }
-    }catch(e){
-      show('error','❌ Error inicializando el diagnóstico.', `${e.name}: ${e.message}`);
-    }
-  })();
+  // Primera medición (al entrar)
+  setFiltersKV();
+  show();
+})();
 </script>
-<!-- ========== FIN DEBUG BAR ========== -->
+<!-- ========== /RUNTIME HEALTH PANEL ========== -->
 
 </body>
 </html>
