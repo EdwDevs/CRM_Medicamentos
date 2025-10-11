@@ -3,49 +3,830 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CRM Control de Pagos - Medicamentos (con filtros robustos)</title>
+  <meta name="description" content="Sistema profesional de gestión de pagos para medicamentos">
+  <title>CRM Control de Pagos - Medicamentos</title>
 
   <!-- Bootstrap & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
 
   <style>
-    :root{
-      --primary:#2c3e50; --secondary:#3498db; --success:#27ae60;
-      --warning:#f39c12; --danger:#e74c3c; --light:#ecf0f1; --dark:#34495e;
+    /* ============================================
+       SISTEMA DE DISEÑO - Variables CSS
+       ============================================ */
+    :root {
+      /* Colores primarios */
+      --primary-50: #eef2ff;
+      --primary-100: #e0e7ff;
+      --primary-500: #6366f1;
+      --primary-600: #4f46e5;
+      --primary-700: #4338ca;
+      
+      /* Colores secundarios */
+      --secondary-500: #8b5cf6;
+      --secondary-600: #7c3aed;
+      
+      /* Colores semánticos */
+      --success-500: #10b981;
+      --success-600: #059669;
+      --warning-500: #f59e0b;
+      --warning-600: #d97706;
+      --danger-500: #ef4444;
+      --danger-600: #dc2626;
+      --info-500: #06b6d4;
+      --info-600: #0891b2;
+      
+      /* Neutros */
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      
+      /* Espaciado (escala 8pt) */
+      --space-1: 0.5rem;   /* 8px */
+      --space-2: 1rem;     /* 16px */
+      --space-3: 1.5rem;   /* 24px */
+      --space-4: 2rem;     /* 32px */
+      --space-5: 2.5rem;   /* 40px */
+      --space-6: 3rem;     /* 48px */
+      
+      /* Tipografía */
+      --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --font-size-xs: 0.75rem;
+      --font-size-sm: 0.875rem;
+      --font-size-base: 1rem;
+      --font-size-lg: 1.125rem;
+      --font-size-xl: 1.25rem;
+      --font-size-2xl: 1.5rem;
+      --font-size-3xl: 1.875rem;
+      --font-size-4xl: 2.25rem;
+      
+      /* Sombras */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      
+      /* Border radius */
+      --radius-sm: 0.375rem;
+      --radius: 0.5rem;
+      --radius-md: 0.75rem;
+      --radius-lg: 1rem;
+      --radius-xl: 1.5rem;
+      --radius-full: 9999px;
+      
+      /* Transiciones */
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
     }
-    html,body{background:#f8f9fa;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue","Noto Sans",sans-serif;}
-    .app-header{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;padding:1rem 0 1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.12);position:sticky;top:0;z-index:20}
-    .app-header .lead{opacity:.95}
-    .card{border:0;border-radius:14px;box-shadow:0 6px 16px rgba(15,23,42,.06)}
-    .card-header{border:0;border-radius:14px 14px 0 0;background:var(--primary);color:#fff;font-weight:600}
-    .stats-card{padding:1rem;text-align:center}
-    .stats-card .number{font-size:1.8rem;font-weight:800;color:var(--primary)}
-    .budget-card{background:linear-gradient(135deg,#2c3e50,#3f5370);color:#fff}
-    .budget-card .number{color:#fff}
-    .budget-info{background:rgba(255,255,255,.12);border-radius:10px;padding:.8rem;margin-top:.75rem}
-    .badge-descongel{background:#3498db}
-    .badge-multidol400{background:#2ecc71}
-    .badge-multidol800{background:#9b59b6}
-    .status-toggle-btn{border:none !important;border-radius:20px;padding:.35rem .7rem;font-size:.85rem}
-    .status-stats{background:linear-gradient(135deg,#8e44ad,#9b59b6);color:#fff}
-    .toast-notification{position:fixed;top:16px;right:16px;background:#27ae60;color:#fff;padding:.9rem 1.1rem;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:2000;transition:opacity .3s}
-    .toast-error{background:#e74c3c}
-    .loading-skeleton{height:12px;background:linear-gradient(90deg,#eee 25%,#f5f5f5 37%,#eee 63%);background-size:400% 100%;animation:skeleton 1.4s ease infinite;border-radius:6px}
-    @keyframes skeleton{0%{background-position:100% 0}100%{background-position:0 0}}
-    .table-wrap{width:100%}
-    @media (max-width: 768px){
-      .table thead{display:none}
-      .table tbody tr{display:block;background:#fff;border-radius:12px;margin-bottom:.75rem;box-shadow:0 4px 14px rgba(0,0,0,.06)}
-      .table tbody td{display:flex;justify-content:space-between;gap:12px;padding:.75rem 1rem;border-bottom:1px dashed #eee}
-      .table tbody td:last-child{border-bottom:0}
-      .table tbody td::before{content:attr(data-label);font-weight:600;color:#6b7280}
-      .action-buttons .btn{min-width:40px}
+    
+    /* ============================================
+       RESET Y BASE
+       ============================================ */
+    * {
+      transition: background-color var(--transition-base), 
+                  color var(--transition-base),
+                  border-color var(--transition-base),
+                  opacity var(--transition-base),
+                  transform var(--transition-base);
     }
-    .modal-content{border:0;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.22)}
-    .form-control,.form-select{min-height:46px;font-size:16px}
-    .btn{min-height:44px}
-    .table-hover>tbody>tr:hover>*{background:rgba(52,152,219,.04)}
+    
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    html, body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      color: var(--gray-900);
+      line-height: 1.5;
+    }
+    
+    /* ============================================
+       HEADER
+       ============================================ */
+    .app-header {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: var(--gray-900);
+      padding: var(--space-3) 0;
+      box-shadow: var(--shadow-lg);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      border-bottom: 2px solid var(--primary-500);
+    }
+    
+    .app-header h1 {
+      font-weight: 800;
+      font-size: var(--font-size-2xl);
+      background: linear-gradient(135deg, var(--primary-600), var(--secondary-500));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: var(--space-1);
+    }
+    
+    .app-header .lead {
+      color: var(--gray-600);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      margin: 0;
+    }
+    
+    /* ============================================
+       CARDS
+       ============================================ */
+    .card {
+      border: 0;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      background: white;
+      overflow: hidden;
+      transition: transform var(--transition-base), 
+                  box-shadow var(--transition-base);
+    }
+    
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-2xl);
+    }
+    
+    .card-header {
+      border: 0;
+      background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+      color: white;
+      font-weight: 700;
+      padding: var(--space-3);
+      font-size: var(--font-size-lg);
+      letter-spacing: 0.025em;
+    }
+    
+    .card-body {
+      padding: var(--space-3);
+    }
+    
+    /* ============================================
+       STATS CARDS
+       ============================================ */
+    .stats-card {
+      padding: var(--space-3);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      height: 100%;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .stats-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-500), var(--secondary-500));
+    }
+    
+    .stats-card .stat-icon-bg {
+      position: absolute;
+      right: var(--space-2);
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 4rem;
+      opacity: 0.08;
+      color: var(--primary-500);
+    }
+    
+    .stats-card .number {
+      font-size: var(--font-size-4xl);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary-600), var(--secondary-500));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: var(--space-1);
+      line-height: 1;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .stats-card .label {
+      color: var(--gray-600);
+      font-weight: 600;
+      font-size: var(--font-size-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* ============================================
+       BUDGET CARD
+       ============================================ */
+    .budget-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .budget-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+      animation: pulse-glow 4s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { 
+        transform: scale(1); 
+        opacity: 0.5; 
+      }
+      50% { 
+        transform: scale(1.15); 
+        opacity: 0.8; 
+      }
+    }
+    
+    .budget-card .number {
+      color: white !important;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      -webkit-text-fill-color: white;
+      font-size: var(--font-size-3xl);
+    }
+    
+    .budget-card .label {
+      color: rgba(255,255,255,0.95);
+      font-weight: 600;
+      font-size: var(--font-size-sm);
+    }
+    
+    .budget-info {
+      background: rgba(255,255,255,0.15);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      margin-top: var(--space-3);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    /* ============================================
+       BADGES
+       ============================================ */
+    .badge-descongel {
+      background: linear-gradient(135deg, var(--info-500), var(--info-600));
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-full);
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+      font-size: var(--font-size-sm);
+    }
+    
+    .badge-multidol400 {
+      background: linear-gradient(135deg, var(--success-500), var(--success-600));
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-full);
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      font-size: var(--font-size-sm);
+    }
+    
+    .badge-multidol800 {
+      background: linear-gradient(135deg, var(--secondary-500), var(--secondary-600));
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-full);
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+      font-size: var(--font-size-sm);
+    }
+    
+    /* ============================================
+       STATUS BUTTONS
+       ============================================ */
+    .status-toggle-btn {
+      border: none !important;
+      border-radius: var(--radius-full);
+      padding: 0.5rem 1.25rem;
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition-base);
+    }
+    
+    .status-toggle-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .status-toggle-btn:active {
+      transform: translateY(0);
+      box-shadow: var(--shadow);
+    }
+    
+    .status-toggle-btn:focus-visible {
+      outline: 3px solid var(--primary-500);
+      outline-offset: 2px;
+    }
+    
+    /* ============================================
+       STATUS STATS
+       ============================================ */
+    .status-stats {
+      background: linear-gradient(135deg, var(--secondary-500), var(--secondary-600));
+      color: white;
+    }
+    
+    .status-stats.success-stat {
+      background: linear-gradient(135deg, var(--success-500), var(--success-600));
+    }
+    
+    .status-stats.warning-stat {
+      background: linear-gradient(135deg, var(--warning-500), var(--warning-600));
+    }
+    
+    .status-stats .number {
+      color: white !important;
+      -webkit-text-fill-color: white;
+    }
+    
+    .status-stats .label {
+      color: rgba(255,255,255,0.95);
+    }
+    
+    /* ============================================
+       TOAST NOTIFICATIONS
+       ============================================ */
+    .toast-notification {
+      position: fixed;
+      top: var(--space-3);
+      right: var(--space-3);
+      background: white;
+      color: var(--gray-900);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-2xl);
+      z-index: 2000;
+      animation: slideIn var(--transition-slow) ease;
+      border-left: 4px solid var(--success-500);
+      min-width: 300px;
+      max-width: 500px;
+    }
+    
+    .toast-error {
+      border-left-color: var(--danger-500);
+    }
+    
+    @keyframes slideIn {
+      from { 
+        transform: translateX(120%); 
+        opacity: 0; 
+      }
+      to { 
+        transform: translateX(0); 
+        opacity: 1; 
+      }
+    }
+    
+    /* ============================================
+       LOADING SKELETON
+       ============================================ */
+    .loading-skeleton {
+      height: 16px;
+      background: linear-gradient(90deg, 
+        var(--gray-200) 0%, 
+        var(--gray-100) 20%, 
+        var(--gray-200) 40%, 
+        var(--gray-200) 100%);
+      background-size: 200% 100%;
+      animation: skeleton 1.5s ease-in-out infinite;
+      border-radius: var(--radius);
+    }
+    
+    @keyframes skeleton {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    .skeleton-card {
+      padding: var(--space-3);
+      border-radius: var(--radius-lg);
+      background: white;
+    }
+    
+    /* ============================================
+       TABLE
+       ============================================ */
+    .table-responsive {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    
+    .table {
+      border-collapse: separate;
+      border-spacing: 0 var(--space-1);
+      margin-bottom: 0;
+    }
+    
+    .table thead th {
+      background: var(--gray-50);
+      color: var(--gray-700);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: var(--font-size-xs);
+      letter-spacing: 0.05em;
+      padding: var(--space-2) var(--space-2);
+      border: none;
+      white-space: nowrap;
+    }
+    
+    .table tbody tr {
+      background: white;
+      box-shadow: var(--shadow);
+      transition: all var(--transition-base);
+    }
+    
+    .table tbody tr:hover {
+      transform: scale(1.01);
+      box-shadow: var(--shadow-lg);
+      z-index: 1;
+    }
+    
+    .table tbody td {
+      padding: var(--space-2) var(--space-2);
+      border: none;
+      vertical-align: middle;
+      font-size: var(--font-size-sm);
+    }
+    
+    .table tbody tr td:first-child {
+      border-radius: var(--radius-md) 0 0 var(--radius-md);
+    }
+    
+    .table tbody tr td:last-child {
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    }
+    
+    /* ============================================
+       ACTION BUTTONS
+       ============================================ */
+    .action-buttons {
+      display: flex;
+      gap: var(--space-1);
+      justify-content: flex-end;
+    }
+    
+    .action-buttons .btn {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: all var(--transition-base);
+    }
+    
+    .action-buttons .btn:hover {
+      transform: translateY(-2px);
+    }
+    
+    .action-buttons .btn:focus-visible {
+      outline: 3px solid var(--primary-500);
+      outline-offset: 2px;
+    }
+    
+    .btn-outline-secondary:hover {
+      background: var(--info-500);
+      border-color: var(--info-500);
+      color: white;
+    }
+    
+    .btn-outline-danger:hover {
+      background: var(--danger-500);
+      border-color: var(--danger-500);
+      color: white;
+    }
+    
+    /* ============================================
+       FORMS
+       ============================================ */
+    .form-control, .form-select {
+      min-height: 48px;
+      border-radius: var(--radius-md);
+      border: 2px solid var(--gray-200);
+      padding: var(--space-2);
+      transition: all var(--transition-base);
+      font-size: var(--font-size-base);
+    }
+    
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+      outline: none;
+    }
+    
+    .form-control:disabled, .form-select:disabled {
+      background-color: var(--gray-50);
+      cursor: not-allowed;
+    }
+    
+    .form-label {
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: var(--space-1);
+      font-size: var(--font-size-sm);
+    }
+    
+    .form-label i {
+      color: var(--primary-500);
+    }
+    
+    /* ============================================
+       BUTTONS
+       ============================================ */
+    .btn {
+      min-height: 48px;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      transition: all var(--transition-base);
+      font-size: var(--font-size-base);
+      padding: var(--space-2) var(--space-3);
+      border: 2px solid transparent;
+    }
+    
+    .btn:focus-visible {
+      outline: 3px solid var(--primary-500);
+      outline-offset: 2px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-600), var(--secondary-500));
+      border: none;
+      box-shadow: var(--shadow-lg);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-xl);
+      background: linear-gradient(135deg, var(--primary-700), var(--secondary-600));
+    }
+    
+    .btn-primary:active {
+      transform: translateY(0);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .btn-outline-light {
+      border-color: rgba(255,255,255,0.8);
+      color: white;
+    }
+    
+    .btn-outline-light:hover {
+      background: white;
+      color: var(--primary-600);
+    }
+    
+    /* ============================================
+       MODAL
+       ============================================ */
+    .modal-content {
+      border: 0;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-2xl);
+      overflow: hidden;
+    }
+    
+    .modal-backdrop {
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+    }
+    
+    /* ============================================
+       FAB BUTTON
+       ============================================ */
+    .fab-button {
+      background: linear-gradient(135deg, var(--primary-600), var(--secondary-500));
+      box-shadow: var(--shadow-xl);
+      transition: all var(--transition-slow);
+      border: none;
+      color: white;
+    }
+    
+    .fab-button:hover {
+      transform: scale(1.1) rotate(90deg);
+      box-shadow: 0 20px 40px rgba(99, 102, 241, 0.5);
+      background: linear-gradient(135deg, var(--primary-700), var(--secondary-600));
+    }
+    
+    .fab-button:active {
+      transform: scale(1.05) rotate(90deg);
+    }
+    
+    .fab-button:focus-visible {
+      outline: 4px solid rgba(99, 102, 241, 0.5);
+      outline-offset: 4px;
+    }
+    
+    /* ============================================
+       PROGRESS BAR
+       ============================================ */
+    .progress {
+      height: 12px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.2);
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      border-radius: var(--radius-full);
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    /* ============================================
+       ALERTS
+       ============================================ */
+    #budget-alert {
+      animation: shake 0.5s ease;
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+    
+    /* ============================================
+       EMPTY STATE
+       ============================================ */
+    .empty-state {
+      padding: var(--space-6) var(--space-3);
+      text-align: center;
+      color: var(--gray-500);
+    }
+    
+    .empty-state-icon {
+      font-size: 4rem;
+      color: var(--gray-300);
+      margin-bottom: var(--space-3);
+    }
+    
+    .empty-state-title {
+      font-size: var(--font-size-xl);
+      font-weight: 700;
+      color: var(--gray-700);
+      margin-bottom: var(--space-2);
+    }
+    
+    .empty-state-text {
+      font-size: var(--font-size-base);
+      color: var(--gray-500);
+    }
+    
+    /* ============================================
+       FOOTER
+       ============================================ */
+    footer {
+      color: white;
+      margin-top: var(--space-6);
+      padding: var(--space-4) 0;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      font-size: var(--font-size-sm);
+    }
+    
+    /* ============================================
+       FILTER TOGGLE (Mobile)
+       ============================================ */
+    .filter-toggle {
+      display: none;
+    }
+    
+    @media (max-width: 768px) {
+      .filter-toggle {
+        display: block;
+      }
+      
+      .filters-collapsible {
+        margin-top: var(--space-2);
+      }
+    }
+    
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 768px) {
+      .app-header h1 {
+        font-size: var(--font-size-xl);
+      }
+      
+      .table thead {
+        display: none;
+      }
+      
+      .table tbody tr {
+        display: block;
+        background: white;
+        border-radius: var(--radius-lg);
+        margin-bottom: var(--space-2);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+      }
+      
+      .table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-3);
+        border-bottom: 1px solid var(--gray-100);
+      }
+      
+      .table tbody td:last-child {
+        border-bottom: 0;
+      }
+      
+      .table tbody td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--gray-700);
+        font-size: var(--font-size-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      
+      .stats-card .number {
+        font-size: var(--font-size-3xl);
+      }
+      
+      .action-buttons {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .toast-notification {
+        right: var(--space-2);
+        left: var(--space-2);
+        min-width: auto;
+      }
+    }
+    
+    /* ============================================
+       UTILITIES
+       ============================================ */
+    .text-gradient {
+      background: linear-gradient(135deg, var(--primary-600), var(--secondary-500));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    /* Accessibility: Reduce motion */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+    
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+      .card {
+        border: 2px solid var(--gray-900);
+      }
+      
+      .btn {
+        border: 2px solid currentColor;
+      }
+    }
   </style>
 
   <script type="module">
@@ -56,7 +837,6 @@
       getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Config
     const firebaseConfig = {
       apiKey: "AIzaSyDK2Aoz1kxq1dDXKkemRIYCFAFtxgw4dZs",
       authDomain: "crm-medicamentos.firebaseapp.com",
@@ -68,13 +848,10 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    try { getAnalytics(app); } catch(e){ /* Analytics puede fallar en http/local */ }
+    try { getAnalytics(app); } catch(e){ }
     const db = getFirestore(app);
 
-    // Presupuesto
     const BUDGET_TOTAL = 500000;
-
-    // Utilidades
     const $ = sel => document.querySelector(sel);
     const $$ = sel => document.querySelectorAll(sel);
 
@@ -83,6 +860,7 @@
       multidol400:{name:"Multidol 400mg", cls:"multidol400", icon:"💊"},
       multidol800:{name:"Multidol 800mg", cls:"multidol800", icon:"💊"}
     };
+
     function getProductName(k){return (PRODUCTS[k]?.name)||k}
     function getProductClass(k){return (PRODUCTS[k]?.cls)||""}
     function getProductIcon(k){return (PRODUCTS[k]?.icon)||"📦"}
@@ -94,7 +872,7 @@
     }
     function toDate(d){
       if(d instanceof Date) return d;
-      if(d?.toDate) return d.toDate(); // Firestore Timestamp
+      if(d?.toDate) return d.toDate();
       if(typeof d==="string") return new Date(d+"T00:00:00");
       return new Date(d);
     }
@@ -112,24 +890,26 @@
       const el = document.createElement("div");
       el.id=id;
       el.className=`toast-notification ${type==="error"?"toast-error":""}`;
+      el.setAttribute('role', 'alert');
+      el.setAttribute('aria-live', 'polite');
       el.innerHTML=`<i class="fas fa-${icon} me-2"></i>${msg}`;
       document.body.appendChild(el);
-      setTimeout(()=>{el.style.opacity="0"; setTimeout(()=>el.remove(),300)},3000);
+      setTimeout(()=>{el.style.opacity="0"; setTimeout(()=>el.remove(),300)},3500);
     }
     function spinnerRow(){
       return `
         <tr>
           <td colspan="9">
-            <div class="p-3">
-              <div class="loading-skeleton mb-2" style="height:16px;width:35%"></div>
-              <div class="loading-skeleton mb-2" style="height:12px;width:80%"></div>
-              <div class="loading-skeleton" style="height:12px;width:55%"></div>
+            <div class="skeleton-card">
+              <div class="loading-skeleton mb-2" style="height:20px;width:40%"></div>
+              <div class="loading-skeleton mb-2" style="height:16px;width:85%"></div>
+              <div class="loading-skeleton mb-2" style="height:16px;width:70%"></div>
+              <div class="loading-skeleton" style="height:16px;width:60%"></div>
             </div>
           </td>
         </tr>`;
     }
 
-    // Cálculo de total
     function calculateTotal(){
       const q = Number($('#quantity').value||0);
       const up = Number($('#unitPrice').value||0);
@@ -139,7 +919,6 @@
       $('#total-container').style.display = (q>0 && up>0) ? 'block' : 'none';
     }
 
-    // ========= NUEVO: Backfill y normalización =========
     async function backfillMissingStatus(docs){
       const toFix = docs.filter(d => !("status" in d.data()));
       if(toFix.length===0) return;
@@ -150,6 +929,7 @@
         }catch(e){ console.warn("Backfill status error", e); }
       }
     }
+
     function normalizeClientData(payments){
       return payments.map(p=>{
         const date = toDate(p.date);
@@ -160,7 +940,6 @@
       });
     }
 
-    // ========= Consulta robusta con Fallback =========
     async function loadPayments(){
       const tbody = $('#payments-table');
       tbody.innerHTML = spinnerRow()+spinnerRow()+spinnerRow();
@@ -223,7 +1002,7 @@
         }catch(e2){
           console.error("Fallback también falló:", e2);
           tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">
-            Error al cargar datos. Revisa la consola para más detalles.
+            <i class="fas fa-exclamation-triangle me-2"></i>Error al cargar datos. Revisa la consola para más detalles.
           </td></tr>`;
         }
       }
@@ -235,8 +1014,8 @@
       row.innerHTML = `
         <td colspan="9" class="text-center text-warning py-3">
           <i class="fa-solid fa-triangle-exclamation me-2"></i>
-          Esta combinación de filtros requiere un índice compuesto para mejorar rendimiento.
-          <a href="${url}" target="_blank" rel="noopener" class="ms-1">Crear índice en Firebase</a>.
+          Esta combinación requiere un índice compuesto.
+          <a href="${url}" target="_blank" rel="noopener" class="ms-1">Crear índice</a>
         </td>`;
       tbody.prepend(row);
     }
@@ -254,14 +1033,19 @@
           <td data-label="Fecha">${formatDate(p.date)}</td>
           <td data-label="Farmacia"><strong>${p.pharmacy||"-"}</strong></td>
           <td data-label="Producto">
-            <span class="me-1">${getProductIcon(p.product)}</span>
+            <span class="me-2" style="font-size:1.5rem" role="img" aria-label="${getProductName(p.product)}">${getProductIcon(p.product)}</span>
             <span class="badge badge-${getProductClass(p.product)}">${getProductName(p.product)}</span>
           </td>
           <td data-label="Cant."><strong>${p.quantity||1}</strong></td>
           <td data-label="Valor Unit.">${formatCurrency(p.unitPrice)}</td>
           <td data-label="Total"><strong>${formatCurrency(p.totalAmount)}</strong></td>
           <td data-label="Estado" class="text-center">
-            <button class="btn btn-sm status-toggle-btn ${st.class}" data-action="toggle" data-id="${p.id}" data-status="${p.status}" title="Cambiar estado">
+            <button class="btn btn-sm status-toggle-btn ${st.class}" 
+                    data-action="toggle" 
+                    data-id="${p.id}" 
+                    data-status="${p.status}" 
+                    title="Cambiar estado"
+                    aria-label="Cambiar estado del pago">
               ${st.icon} ${st.label}
             </button>
           </td>
@@ -269,11 +1053,19 @@
             <small class="text-muted">${p.notes ? (p.notes.length>60 ? p.notes.slice(0,60)+"…" : p.notes) : "Sin descripción"}</small>
           </td>
           <td data-label="Acciones" class="action-buttons">
-            <button class="btn btn-sm btn-outline-secondary me-1" data-action="view" data-id="${p.id}" title="Ver detalles">
-              <i class="fas fa-eye"></i>
+            <button class="btn btn-sm btn-outline-secondary" 
+                    data-action="view" 
+                    data-id="${p.id}" 
+                    title="Ver detalles"
+                    aria-label="Ver detalles del pago">
+              <i class="fas fa-eye" aria-hidden="true"></i>
             </button>
-            <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${p.id}" title="Eliminar">
-              <i class="fas fa-trash"></i>
+            <button class="btn btn-sm btn-outline-danger" 
+                    data-action="delete" 
+                    data-id="${p.id}" 
+                    title="Eliminar"
+                    aria-label="Eliminar pago">
+              <i class="fas fa-trash" aria-hidden="true"></i>
             </button>
           </td>
         `;
@@ -282,8 +1074,14 @@
 
       if(payments.length===0){
         tbody.innerHTML = `
-          <tr><td colspan="9" class="text-center text-muted py-4">
-            <i class="fa-regular fa-folder-open me-2"></i>No se encontraron pagos con los filtros aplicados.
+          <tr><td colspan="9">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <i class="fa-regular fa-folder-open"></i>
+              </div>
+              <div class="empty-state-title">No hay pagos registrados</div>
+              <div class="empty-state-text">No se encontraron pagos con los filtros aplicados.</div>
+            </div>
           </td></tr>`;
       }
 
@@ -314,6 +1112,7 @@
 
       const bar = $('#budget-progress');
       bar.style.width = `${Math.min(pct,100)}%`;
+      bar.setAttribute('aria-valuenow', Math.min(pct,100));
       bar.className = 'progress-bar';
       if(pct>=90){bar.classList.add('bg-danger')}
       else if(pct>=75){bar.classList.add('bg-warning')}
@@ -348,7 +1147,7 @@
           quantity:Number(quantity),
           unitPrice:Number(unitPrice),
           totalAmount:Number(totalAmount),
-          amount:Number(totalAmount), // compat con datos antiguos
+          amount:Number(totalAmount),
           date:new Date(date+"T00:00:00"),
           notes:notes||"",
           status:status||"pendiente"
@@ -401,7 +1200,6 @@
       }
     }
 
-    // Modal de detalles
     function openDetailsModal(payment){
       const modalTitle = $('#detailsTitle');
       const modalBody = $('#detailsBody');
@@ -410,8 +1208,8 @@
 
       modalTitle.textContent = `Pago • ${getProductName(payment.product)}`;
       modalBody.innerHTML = `
-        <div class="d-flex align-items-center mb-2">
-          <span class="me-2">${getProductIcon(payment.product)}</span>
+        <div class="d-flex align-items-center mb-3">
+          <span class="me-2" style="font-size:2.5rem" role="img" aria-label="${getProductName(payment.product)}">${getProductIcon(payment.product)}</span>
           <span class="badge badge-${getProductClass(payment.product)}">${getProductName(payment.product)}</span>
         </div>
         <ul class="list-group list-group-flush">
@@ -431,13 +1229,13 @@
       modal.show();
     }
 
-    // Eventos
     document.addEventListener("DOMContentLoaded", ()=>{
-      // Fecha por defecto hoy (zona CO aproximada)
-      const today = new Date(); const yyyy=today.getFullYear(); const mm=String(today.getMonth()+1).padStart(2,'0'); const dd=String(today.getDate()).padStart(2,'0');
+      const today = new Date(); 
+      const yyyy=today.getFullYear(); 
+      const mm=String(today.getMonth()+1).padStart(2,'0'); 
+      const dd=String(today.getDate()).padStart(2,'0');
       $('#date').value = `${yyyy}-${mm}-${dd}`;
 
-      // Listeners formulario
       $('#quantity').addEventListener('input', calculateTotal);
       $('#unitPrice').addEventListener('input', calculateTotal);
 
@@ -460,7 +1258,6 @@
           $('#total-container').style.display='none';
           $('#total-value').value='';
 
-          // Cierra el modal de forma segura (exista o no la instancia previa)
           const formModalEl = document.getElementById('formModal');
           const formModal = bootstrap.Modal.getOrCreateInstance(formModalEl);
           formModal.hide();
@@ -469,16 +1266,15 @@
         }
       });
 
-      // Filtros y acciones
       $$('.refresh-btn').forEach(btn=>btn.addEventListener('click', loadPayments));
       $('#filter-product').addEventListener('change', loadPayments);
       $('#filter-pharmacy').addEventListener('change', loadPayments);
       $('#filter-date').addEventListener('change', loadPayments);
       $('#filter-status').addEventListener('change', loadPayments);
 
-      // Tabla: acciones delegadas
       $('#payments-table').addEventListener('click', (e)=>{
-        const btn = e.target.closest('button'); if(!btn) return;
+        const btn = e.target.closest('button'); 
+        if(!btn) return;
         const action = btn.dataset.action;
         const id = btn.dataset.id;
         if(action==="delete") deletePayment(id);
@@ -486,7 +1282,6 @@
         if(action==="toggle") togglePaymentStatus(id, btn.dataset.status);
       });
 
-      // Botones para abrir modal de formulario (móvil y desktop) - ¡sin IDs duplicados!
       $$('.js-open-form').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           const m = new bootstrap.Modal(document.getElementById('formModal'));
@@ -494,48 +1289,53 @@
         });
       });
 
-      // Carga inicial
       loadPayments();
     });
   </script>
 </head>
 <body>
   <!-- Header -->
-  <header class="app-header">
+  <header class="app-header" role="banner">
     <div class="container">
-      <h1 class="h4 mb-1"><i class="fas fa-pills me-2"></i>CRM Control de Pagos</h1>
-      <p class="lead mb-0">Filtros robustos con fallback y normalización de datos</p>
+      <h1 class="h3 mb-1">
+        <i class="fas fa-pills me-2" aria-hidden="true"></i>
+        CRM Control de Pagos
+      </h1>
+      <p class="lead mb-0">Sistema profesional de gestión de medicamentos</p>
     </div>
   </header>
 
-  <main class="container my-3">
+  <main class="container my-4" role="main">
     <!-- Presupuesto + KPIs -->
-    <div class="row g-3 mb-2">
+    <div class="row g-3 mb-4">
       <div class="col-lg-6">
         <div class="card budget-card">
-          <div class="card-header"><i class="fas fa-wallet me-2"></i>Control de Presupuesto</div>
-          <div class="card-body">
+          <div class="card-header">
+            <i class="fas fa-wallet me-2" aria-hidden="true"></i>Control de Presupuesto
+          </div>
+          <div class="card-body position-relative">
             <div class="row text-center">
               <div class="col-6">
-                <div class="number" id="total-pagado">$0</div>
-                <div>Total Pagado</div>
+                <div class="number" id="total-pagado" aria-label="Total pagado">$0</div>
+                <div class="label">Total Pagado</div>
               </div>
               <div class="col-6">
-                <div class="number" id="presupuesto-restante">$500,000</div>
-                <div>Presupuesto Restante</div>
+                <div class="number" id="presupuesto-restante" aria-label="Presupuesto restante">$500,000</div>
+                <div class="label">Restante</div>
               </div>
             </div>
             <div class="budget-info">
               <div class="d-flex justify-content-between mb-2">
-                <span>Progreso</span><strong id="porcentaje-usado">0%</strong>
+                <span>Progreso</span>
+                <strong id="porcentaje-usado">0%</strong>
               </div>
-              <div class="progress" role="progressbar" aria-label="Progreso de presupuesto">
+              <div class="progress" role="progressbar" aria-label="Progreso del presupuesto" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                 <div id="budget-progress" class="progress-bar bg-success" style="width:0%"></div>
               </div>
-              <small class="text-light">Presupuesto total: $500,000 COP</small>
+              <small class="text-light mt-2 d-block">Presupuesto total: $500,000 COP</small>
             </div>
-            <div id="budget-alert" class="alert mt-3" style="display:none;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;border:0;border-radius:10px">
-              <i class="fas fa-exclamation-triangle me-2"></i>
+            <div id="budget-alert" class="alert mt-3" role="alert" style="display:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:0">
+              <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>
               <strong>¡Presupuesto excedido!</strong> Superado por: <span id="exceso-presupuesto">$0</span>
             </div>
           </div>
@@ -546,57 +1346,70 @@
         <div class="row g-3">
           <div class="col-4">
             <div class="card stats-card">
+              <i class="fas fa-snowflake stat-icon-bg" aria-hidden="true"></i>
               <div class="number" id="total-descongel">0</div>
-              <div>Descongel x100</div>
+              <div class="label">Descongel x100</div>
             </div>
           </div>
           <div class="col-4">
             <div class="card stats-card">
+              <i class="fas fa-capsules stat-icon-bg" aria-hidden="true"></i>
               <div class="number" id="total-multidol400">0</div>
-              <div>Multidol 400mg</div>
+              <div class="label">Multidol 400mg</div>
             </div>
           </div>
           <div class="col-4">
             <div class="card stats-card">
+              <i class="fas fa-pills stat-icon-bg" aria-hidden="true"></i>
               <div class="number" id="total-multidol800">0</div>
-              <div>Multidol 800mg</div>
+              <div class="label">Multidol 800mg</div>
             </div>
           </div>
           <div class="col-6">
-            <div class="card stats-card status-stats">
+            <div class="card stats-card status-stats warning-stat">
+              <i class="fas fa-clock stat-icon-bg" style="color:rgba(255,255,255,0.2)" aria-hidden="true"></i>
               <div class="number" id="total-pendientes">0</div>
-              <div>⏳ Pendientes</div>
+              <div class="label">⏳ Pendientes</div>
             </div>
           </div>
           <div class="col-6">
-            <div class="card stats-card status-stats">
+            <div class="card stats-card status-stats success-stat">
+              <i class="fas fa-check-circle stat-icon-bg" style="color:rgba(255,255,255,0.2)" aria-hidden="true"></i>
               <div class="number" id="total-procesados">0</div>
-              <div>✅ Procesados</div>
+              <div class="label">✅ Procesados</div>
             </div>
           </div>
           <div class="col-12">
             <div class="card stats-card">
+              <i class="fas fa-file-invoice-dollar stat-icon-bg" aria-hidden="true"></i>
               <div class="number" id="total-pagos">0</div>
-              <div>Total de Pagos Registrados</div>
+              <div class="label">Total Pagos</div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Filtros + Historial -->
+    <!-- Filtros -->
     <div class="row g-3">
       <div class="col-12">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <div><i class="fas fa-filter me-2"></i>Filtros</div>
-            <button class="btn btn-sm btn-outline-light refresh-btn"><i class="fas fa-rotate"></i> <span class="d-none d-md-inline">Actualizar</span></button>
+            <div>
+              <i class="fas fa-filter me-2" aria-hidden="true"></i>Filtros
+            </div>
+            <button class="btn btn-sm btn-light refresh-btn" aria-label="Actualizar datos">
+              <i class="fas fa-rotate me-1" aria-hidden="true"></i> 
+              <span class="d-none d-md-inline">Actualizar</span>
+            </button>
           </div>
           <div class="card-body">
             <div class="row g-3">
               <div class="col-6 col-md-3">
-                <label class="form-label" for="filter-product">Producto</label>
-                <select id="filter-product" class="form-select">
+                <label class="form-label" for="filter-product">
+                  <i class="fas fa-box me-1" aria-hidden="true"></i> Producto
+                </label>
+                <select id="filter-product" class="form-select" aria-label="Filtrar por producto">
                   <option value="">Todos</option>
                   <option value="descongel">Descongel x100 cápsulas</option>
                   <option value="multidol400">Multidol 400mg</option>
@@ -604,22 +1417,28 @@
                 </select>
               </div>
               <div class="col-6 col-md-3">
-                <label class="form-label" for="filter-pharmacy">Farmacia</label>
-                <select id="filter-pharmacy" class="form-select">
+                <label class="form-label" for="filter-pharmacy">
+                  <i class="fas fa-store me-1" aria-hidden="true"></i> Farmacia
+                </label>
+                <select id="filter-pharmacy" class="form-select" aria-label="Filtrar por farmacia">
                   <option value="">Todas</option>
                 </select>
               </div>
               <div class="col-6 col-md-3">
-                <label class="form-label" for="filter-status">Estado</label>
-                <select id="filter-status" class="form-select">
+                <label class="form-label" for="filter-status">
+                  <i class="fas fa-tag me-1" aria-hidden="true"></i> Estado
+                </label>
+                <select id="filter-status" class="form-select" aria-label="Filtrar por estado">
                   <option value="">Todos</option>
                   <option value="pendiente">⏳ Pendiente</option>
                   <option value="procesado">✅ Procesado</option>
                 </select>
               </div>
               <div class="col-6 col-md-3">
-                <label class="form-label" for="filter-date">Mes</label>
-                <input id="filter-date" type="month" class="form-control"/>
+                <label class="form-label" for="filter-date">
+                  <i class="fas fa-calendar me-1" aria-hidden="true"></i> Mes
+                </label>
+                <input id="filter-date" type="month" class="form-control" aria-label="Filtrar por mes"/>
               </div>
             </div>
           </div>
@@ -629,14 +1448,23 @@
       <!-- Historial -->
       <div class="col-12">
         <div class="card">
-          <div class="card-header"><i class="fas fa-list me-2"></i>Historial de Pagos</div>
+          <div class="card-header">
+            <i class="fas fa-list me-2" aria-hidden="true"></i>Historial de Pagos
+          </div>
           <div class="card-body">
             <div class="table-responsive table-wrap">
               <table class="table table-hover align-middle">
                 <thead>
                   <tr>
-                    <th>Fecha</th><th>Farmacia</th><th>Producto</th><th>Cant.</th>
-                    <th>Valor Unit.</th><th>Total</th><th>Estado</th><th>Descripción</th><th>Acciones</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Farmacia</th>
+                    <th scope="col">Producto</th>
+                    <th scope="col">Cant.</th>
+                    <th scope="col">Valor Unit.</th>
+                    <th scope="col">Total</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Descripción</th>
+                    <th scope="col">Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="payments-table"></tbody>
@@ -647,10 +1475,14 @@
       </div>
     </div>
 
-    <!-- Sección Rápida (móvil) -->
-    <div class="d-md-none d-flex gap-2 mt-2">
-      <button class="btn btn-primary flex-fill js-open-form"><i class="fa fa-plus me-2"></i>Registrar pago</button>
-      <button class="btn btn-outline-secondary flex-fill refresh-btn"><i class="fa fa-rotate me-2"></i>Actualizar</button>
+    <!-- Botones móvil -->
+    <div class="d-md-none d-flex gap-2 mt-3">
+      <button class="btn btn-primary flex-fill js-open-form">
+        <i class="fa fa-plus me-2" aria-hidden="true"></i>Registrar pago
+      </button>
+      <button class="btn btn-outline-light flex-fill refresh-btn">
+        <i class="fa fa-rotate me-2" aria-hidden="true"></i>Actualizar
+      </button>
     </div>
   </main>
 
@@ -658,65 +1490,85 @@
   <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="card-header" id="formModalTitle"><i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Pago</div>
-        <div class="modal-body">
+        <div class="card-header" id="formModalTitle">
+          <i class="fas fa-plus-circle me-2" aria-hidden="true"></i>Registrar Nuevo Pago
+        </div>
+        <div class="modal-body p-4">
           <form id="payment-form">
             <div class="mb-3">
-              <label class="form-label" for="pharmacy">Nombre de Farmacia</label>
-              <input id="pharmacy" type="text" class="form-control" required placeholder="Ej: Droguería Bucaramanga"/>
+              <label class="form-label" for="pharmacy">
+                <i class="fas fa-store me-1" aria-hidden="true"></i> Nombre de Farmacia
+              </label>
+              <input id="pharmacy" type="text" class="form-control" required placeholder="Ej: Droguería Bucaramanga" aria-required="true"/>
             </div>
             <div class="mb-3">
-              <label class="form-label" for="product">Producto</label>
-              <select id="product" class="form-select" required>
+              <label class="form-label" for="product">
+                <i class="fas fa-box me-1" aria-hidden="true"></i> Producto
+              </label>
+              <select id="product" class="form-select" required aria-required="true">
                 <option value="">Seleccionar producto</option>
                 <option value="descongel">Descongel x100 cápsulas</option>
                 <option value="multidol400">Multidol 400mg</option>
                 <option value="multidol800">Multidol 800mg</option>
               </select>
             </div>
-            <div class="row g-2">
+            <div class="row g-3">
               <div class="col-6">
-                <label class="form-label" for="quantity">Cantidad</label>
-                <input id="quantity" type="number" inputmode="numeric" min="1" step="1" class="form-control" required placeholder="Ej: 5"/>
+                <label class="form-label" for="quantity">
+                  <i class="fas fa-hashtag me-1" aria-hidden="true"></i> Cantidad
+                </label>
+                <input id="quantity" type="number" inputmode="numeric" min="1" step="1" class="form-control" required placeholder="Ej: 5" aria-required="true"/>
               </div>
               <div class="col-6">
-                <label class="form-label" for="unitPrice">Valor Unit. (COP)</label>
-                <input id="unitPrice" type="number" inputmode="numeric" min="0" step="100" class="form-control" required placeholder="Ej: 5000"/>
+                <label class="form-label" for="unitPrice">
+                  <i class="fas fa-dollar-sign me-1" aria-hidden="true"></i> Valor Unit.
+                </label>
+                <input id="unitPrice" type="number" inputmode="numeric" min="0" step="100" class="form-control" required placeholder="Ej: 5000" aria-required="true"/>
               </div>
             </div>
 
             <div id="total-container" class="mt-3" style="display:none">
-              <div class="alert d-flex align-items-center mb-0" style="background:linear-gradient(135deg,#27ae60,#1f8e4e);color:#fff;border:0">
-                <div class="me-3"><i class="fa-solid fa-sack-dollar"></i></div>
+              <div class="alert d-flex align-items-center mb-0" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:0;border-radius:var(--radius-lg);padding:1.25rem">
+                <div class="me-3" style="font-size:2rem">
+                  <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i>
+                </div>
                 <div>
                   <div class="small">Total a pagar</div>
-                  <div id="total-display" class="fw-bold fs-5">$0</div>
+                  <div id="total-display" class="fw-bold fs-4">$0</div>
                 </div>
               </div>
               <input type="hidden" id="total-value" value="">
             </div>
 
-            <div class="row g-2 mt-2">
+            <div class="row g-3 mt-2">
               <div class="col-6">
-                <label class="form-label" for="status">Estado</label>
-                <select id="status" class="form-select" required>
+                <label class="form-label" for="status">
+                  <i class="fas fa-tag me-1" aria-hidden="true"></i> Estado
+                </label>
+                <select id="status" class="form-select" required aria-required="true">
                   <option value="pendiente">⏳ Pendiente</option>
                   <option value="procesado">✅ Procesado</option>
                 </select>
               </div>
               <div class="col-6">
-                <label class="form-label" for="date">Fecha</label>
-                <input id="date" type="date" class="form-control" required />
+                <label class="form-label" for="date">
+                  <i class="fas fa-calendar me-1" aria-hidden="true"></i> Fecha
+                </label>
+                <input id="date" type="date" class="form-control" required aria-required="true"/>
               </div>
             </div>
 
             <div class="mt-3">
-              <label class="form-label" for="notes">Descripción/Notas</label>
-              <textarea id="notes" rows="2" class="form-control" placeholder="Ej: Pago correspondiente a agosto"></textarea>
+              <label class="form-label" for="notes">
+                <i class="fas fa-sticky-note me-1" aria-hidden="true"></i> Descripción/Notas
+              </label>
+              <textarea id="notes" rows="3" class="form-control" placeholder="Ej: Pago correspondiente a agosto"></textarea>
             </div>
 
-            <div class="d-grid mt-3">
-              <button class="btn btn-primary" type="submit"><i class="fas fa-save me-2"></i>Guardar</button>
+            <div class="d-grid gap-2 mt-4">
+              <button class="btn btn-primary btn-lg" type="submit">
+                <i class="fas fa-save me-2" aria-hidden="true"></i>Guardar Pago
+              </button>
             </div>
           </form>
         </div>
@@ -725,29 +1577,32 @@
   </div>
 
   <!-- Modal: Detalles -->
-  <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="card-header"><span id="detailsTitle">Pago</span></div>
-        <div class="modal-body" id="detailsBody"></div>
-        <div class="p-3 pt-0 text-end">
+        <div class="card-header">
+          <span id="detailsTitle">Detalles del Pago</span>
+        </div>
+        <div class="modal-body p-4" id="detailsBody"></div>
+        <div class="p-4 pt-0 text-end">
           <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <footer class="text-center py-3 text-muted">
-    CRM Control de Pagos &copy; 2025 — Sistema de gestión de medicamentos
+  <footer class="text-center" role="contentinfo">
+    <strong>CRM Control de Pagos</strong> © 2025 — Sistema profesional de gestión
   </footer>
 
-  <!-- Botón flotante (desktop/tablet) -->
-  <button class="btn btn-primary position-fixed d-none d-md-inline-flex align-items-center justify-content-center js-open-form"
-          style="right:18px;bottom:22px;border-radius:28px;width:56px;height:56px" title="Registrar pago">
-    <i class="fa fa-plus"></i>
+  <!-- FAB Button -->
+  <button class="btn btn-primary fab-button position-fixed d-none d-md-inline-flex align-items-center justify-content-center js-open-form"
+          style="right:24px;bottom:24px;border-radius:50%;width:64px;height:64px" 
+          title="Registrar nuevo pago"
+          aria-label="Registrar nuevo pago">
+    <i class="fa fa-plus" style="font-size:1.5rem" aria-hidden="true"></i>
   </button>
 
-  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
