@@ -929,6 +929,19 @@
 
     // --- CONFIGURACIÓN GLOBAL DE LA APP ---
 
+    // ***** INICIO DE LA MODIFICACIÓN *****
+    // PARA PRUEBAS LOCALES: Configuración de Firebase pre-llenada con tus claves originales.
+    // Si estás en un entorno (como Canvas) que inyecta las variables globales, ESTO SE IGNORARÁ.
+    const localFirebaseConfig = {
+      apiKey: "AIzaSyDK2Aoz1kxq1dDXKkemRIYCFAFtxgw4dZs",
+      authDomain: "crm-medicamentos.firebaseapp.com",
+      projectId: "crm-medicamentos",
+      storageBucket: "crm-medicamentos.appspot.com",
+      messagingSenderId: "638953546971",
+      appId: "1:638953546971:web:4f811cdd7dd72dc7cfd8fe"
+    };
+    // ***** FIN DE LA MODIFICACIÓN *****
+
     // Obtener config/auth del entorno (¡No hardcodear!)
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     
@@ -937,6 +950,10 @@
     try {
       if (typeof __firebase_config === 'string' && __firebase_config.trim().startsWith('{')) {
          firebaseConfig = JSON.parse(__firebase_config);
+         console.log("Configuración global __firebase_config cargada.");
+      } else if (localFirebaseConfig.apiKey) {
+         firebaseConfig = localFirebaseConfig;
+         console.log("Usando localFirebaseConfig para pruebas.");
       }
     } catch (e) {
        console.error("Error al parsear __firebase_config. Usando config vacía.", e);
@@ -1227,6 +1244,7 @@
      * Inicializa Firebase y maneja la autenticación del usuario.
      */
     async function initFirebase() {
+      // La comprobación de apiKey se hace aquí, después de que firebaseConfig se haya poblado
       if (!firebaseConfig.apiKey) {
         console.error("Configuración de Firebase no encontrada o inválida. La app no funcionará.");
         showToast("Error crítico: Falta configuración", "error");
