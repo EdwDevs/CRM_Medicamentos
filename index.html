@@ -12,8 +12,8 @@
 
   <style>
     /* ============================================
-        SISTEMA DE DISEÑO - Variables CSS
-        ============================================ */
+       SISTEMA DE DISEÑO - Variables CSS
+       ============================================ */
     :root {
       /* Colores primarios */
       --primary-50: #eef2ff;
@@ -90,8 +90,8 @@
     }
     
     /* ============================================
-        RESET Y BASE
-        ============================================ */
+       RESET Y BASE
+       ============================================ */
     * {
       transition: background-color var(--transition-base), 
                   color var(--transition-base),
@@ -114,8 +114,8 @@
     }
     
     /* ============================================
-        HEADER
-        ============================================ */
+       HEADER
+       ============================================ */
     .app-header {
       background: rgba(255, 255, 255, 0.98);
       backdrop-filter: blur(12px);
@@ -145,20 +145,10 @@
       font-weight: 500;
       margin: 0;
     }
-
-    #user-id-display {
-      font-size: 0.7rem;
-      background-color: var(--primary-50);
-      color: var(--primary-700);
-      padding: 2px 6px;
-      border-radius: var(--radius-sm);
-      font-weight: 600;
-      letter-spacing: 0.05em;
-    }
     
     /* ============================================
-        CARDS
-        ============================================ */
+       CARDS
+       ============================================ */
     .card {
       border: 0;
       border-radius: var(--radius-xl);
@@ -187,33 +177,10 @@
     .card-body {
       padding: var(--space-3);
     }
-
-    /* Estilo para la tarjeta de IA */
-    .gemini-card-header {
-      background: linear-gradient(135deg, var(--secondary-600), var(--primary-600));
-    }
-
-    .gemini-result {
-      background: var(--gray-50);
-      border-radius: var(--radius-md);
-      padding: var(--space-2);
-      white-space: pre-wrap;
-      font-family: var(--font-sans);
-      font-size: var(--font-size-sm);
-      border: 1px solid var(--gray-200);
-    }
-
-    .gemini-loader {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      color: var(--gray-600);
-      font-weight: 500;
-    }
     
     /* ============================================
-        STATS CARDS
-        ============================================ */
+       STATS CARDS
+       ============================================ */
     .stats-card {
       padding: var(--space-3);
       text-align: center;
@@ -271,8 +238,8 @@
     }
     
     /* ============================================
-        BUDGET CARD
-        ============================================ */
+       BUDGET CARD
+       ============================================ */
     .budget-card {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -326,8 +293,8 @@
     }
     
     /* ============================================
-        BADGES
-        ============================================ */
+       BADGES
+       ============================================ */
     .badge-descongel {
       background: linear-gradient(135deg, var(--info-500), var(--info-600));
       padding: 0.5rem 1rem;
@@ -356,8 +323,8 @@
     }
     
     /* ============================================
-        STATUS BUTTONS
-        ============================================ */
+       STATUS BUTTONS
+       ============================================ */
     .status-toggle-btn {
       border: none !important;
       border-radius: var(--radius-full);
@@ -385,8 +352,8 @@
     }
     
     /* ============================================
-        STATUS STATS
-        ============================================ */
+       STATUS STATS
+       ============================================ */
     .status-stats {
       background: linear-gradient(135deg, var(--secondary-500), var(--secondary-600));
       color: white;
@@ -410,8 +377,8 @@
     }
     
     /* ============================================
-        TOAST NOTIFICATIONS
-        ============================================ */
+       TOAST NOTIFICATIONS
+       ============================================ */
     .toast-notification {
       position: fixed;
       top: var(--space-3);
@@ -426,12 +393,6 @@
       border-left: 4px solid var(--success-500);
       min-width: 300px;
       max-width: 500px;
-      opacity: 1;
-      transition: opacity 0.3s ease;
-    }
-
-    .toast-notification.fade-out {
-      opacity: 0;
     }
     
     .toast-error {
@@ -450,8 +411,8 @@
     }
     
     /* ============================================
-        LOADING SKELETON
-        ============================================ */
+       LOADING SKELETON
+       ============================================ */
     .loading-skeleton {
       height: 16px;
       background: linear-gradient(90deg, 
@@ -476,8 +437,8 @@
     }
     
     /* ============================================
-        TABLE
-        ============================================ */
+       TABLE
+       ============================================ */
     .table-responsive {
       border-radius: var(--radius-lg);
       overflow: hidden;
@@ -529,8 +490,8 @@
     }
     
     /* ============================================
-        ACTION BUTTONS
-        ============================================ */
+       ACTION BUTTONS
+       ============================================ */
     .action-buttons {
       display: flex;
       gap: var(--space-1);
@@ -570,8 +531,8 @@
     }
     
     /* ============================================
-        FORMS
-        ============================================ */
+       FORMS
+       ============================================ */
     .form-control, .form-select {
       min-height: 48px;
       border-radius: var(--radius-md);
@@ -604,8 +565,8 @@
     }
     
     /* ============================================
-        BUTTONS
-        ============================================ */
+       BUTTONS
+       ============================================ */
     .btn {
       min-height: 48px;
       border-radius: var(--radius-md);
@@ -638,12 +599,6 @@
       transform: translateY(0);
       box-shadow: var(--shadow-md);
     }
-
-    .btn-primary:disabled {
-      background: var(--gray-300);
-      box-shadow: none;
-      transform: none;
-    }
     
     .btn-outline-light {
       border-color: rgba(255,255,255,0.8);
@@ -654,19 +609,10 @@
       background: white;
       color: var(--primary-600);
     }
-
-    .btn-danger {
-      background-color: var(--danger-600);
-      border-color: var(--danger-600);
-    }
-    .btn-danger:hover {
-      background-color: var(--danger-700);
-      border-color: var(--danger-700);
-    }
     
     /* ============================================
-        MODAL
-        ============================================ */
+       MODAL
+       ============================================ */
     .modal-content {
       border: 0;
       border-radius: var(--radius-xl);
@@ -678,30 +624,10 @@
       background-color: rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(4px);
     }
-
-    /* Estilo para el modal de confirmación de peligro */
-    #confirmModal .modal-header {
-      background: linear-gradient(135deg, var(--danger-500), var(--danger-600));
-      color: white;
-      font-weight: 700;
-      border-bottom: 0;
-      padding: var(--space-3);
-    }
-
-    #confirmModal .modal-body {
-      padding: var(--space-3);
-      font-size: var(--font-size-lg);
-      color: var(--gray-700);
-    }
-
-    #confirmModal .modal-footer {
-      border-top: 0;
-      padding: var(--space-3);
-    }
     
     /* ============================================
-        FAB BUTTON
-        ============================================ */
+       FAB BUTTON
+       ============================================ */
     .fab-button {
       background: linear-gradient(135deg, var(--primary-600), var(--secondary-500));
       box-shadow: var(--shadow-xl);
@@ -726,8 +652,8 @@
     }
     
     /* ============================================
-        PROGRESS BAR
-        ============================================ */
+       PROGRESS BAR
+       ============================================ */
     .progress {
       height: 12px;
       border-radius: var(--radius-full);
@@ -742,8 +668,8 @@
     }
     
     /* ============================================
-        ALERTS
-        ============================================ */
+       ALERTS
+       ============================================ */
     #budget-alert {
       animation: shake 0.5s ease;
       border-radius: var(--radius-lg);
@@ -757,8 +683,8 @@
     }
     
     /* ============================================
-        EMPTY STATE
-        ============================================ */
+       EMPTY STATE
+       ============================================ */
     .empty-state {
       padding: var(--space-6) var(--space-3);
       text-align: center;
@@ -784,8 +710,8 @@
     }
     
     /* ============================================
-        FOOTER
-        ============================================ */
+       FOOTER
+       ============================================ */
     footer {
       color: white;
       margin-top: var(--space-6);
@@ -795,8 +721,8 @@
     }
     
     /* ============================================
-        FILTER TOGGLE (Mobile)
-        ============================================ */
+       FILTER TOGGLE (Mobile)
+       ============================================ */
     .filter-toggle {
       display: none;
     }
@@ -812,8 +738,8 @@
     }
     
     /* ============================================
-        RESPONSIVE
-        ============================================ */
+       RESPONSIVE
+       ============================================ */
     @media (max-width: 768px) {
       .app-header h1 {
         font-size: var(--font-size-xl);
@@ -871,8 +797,8 @@
     }
     
     /* ============================================
-        UTILITIES
-        ============================================ */
+       UTILITIES
+       ============================================ */
     .text-gradient {
       background: linear-gradient(135deg, var(--primary-600), var(--secondary-500));
       -webkit-background-clip: text;
@@ -903,518 +829,214 @@
     }
   </style>
 
-  <!-- Firebase SDKs - v11.6.1 -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { 
-      getAuth, 
-      onAuthStateChanged, 
-      signInAnonymously, 
-      signInWithCustomToken 
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    // Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
     import {
-      getFirestore,
-      collection,
-      addDoc,
-      deleteDoc,
-      doc,
-      query,
-      where,
-      orderBy,
-      updateDoc,
-      onSnapshot,
-      Timestamp,
-      setLogLevel
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // --- CONFIGURACIÓN GLOBAL DE LA APP ---
-
-    // ***** INICIO DE LA MODIFICACIÓN *****
-    // PARA PRUEBAS LOCALES: Configuración de Firebase pre-llenada con tus claves originales.
-    // Si estás en un entorno (como Canvas) que inyecta las variables globales, ESTO SE IGNORARÁ.
-    const localFirebaseConfig = {
+    const firebaseConfig = {
       apiKey: "AIzaSyDK2Aoz1kxq1dDXKkemRIYCFAFtxgw4dZs",
       authDomain: "crm-medicamentos.firebaseapp.com",
       projectId: "crm-medicamentos",
       storageBucket: "crm-medicamentos.appspot.com",
       messagingSenderId: "638953546971",
-      appId: "1:638953546971:web:4f811cdd7dd72dc7cfd8fe"
+      appId: "1:638953546971:web:4f811cdd7dd72dc7cfd8fe",
+      measurementId: "G-RPZNJSCX12"
     };
-    // ***** FIN DE LA MODIFICACIÓN *****
 
-    // Obtener config/auth del entorno (¡No hardcodear!)
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    
-    // FIX: Robust JSON parsing
-    let firebaseConfig = {};
-    try {
-      if (typeof __firebase_config === 'string' && __firebase_config.trim().startsWith('{')) {
-         firebaseConfig = JSON.parse(__firebase_config);
-         console.log("Configuración global __firebase_config cargada.");
-      } else if (localFirebaseConfig.apiKey) {
-         firebaseConfig = localFirebaseConfig;
-         console.log("Usando localFirebaseConfig para pruebas.");
-      }
-    } catch (e) {
-       console.error("Error al parsear __firebase_config. Usando config vacía.", e);
-       // firebaseConfig permanece como {}
-    }
-    
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-    // Estado global de la aplicación
-    const appState = {
-      db: null,
-      auth: null,
-      userId: null,
-      paymentsUnsubscribe: null,
-      formModal: null,
-      detailsModal: null,
-      confirmModal: null
-    };
+    const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch(e){ }
+    const db = getFirestore(app);
 
     const BUDGET_TOTAL = 500000;
     const $ = sel => document.querySelector(sel);
     const $$ = sel => document.querySelectorAll(sel);
 
     const PRODUCTS = {
-      descongel: {name: "Descongel x100 cápsulas", cls: "descongel", icon: "❄️"},
-      multidol400: {name: "Multidol 400mg", cls: "multidol400", icon: "💊"},
-      multidol800: {name: "Multidol 800mg", cls: "multidol800", icon: "💊"}
+      descongel:{name:"Descongel x100 cápsulas", cls:"descongel", icon:"❄️"},
+      multidol400:{name:"Multidol 400mg", cls:"multidol400", icon:"💊"},
+      multidol800:{name:"Multidol 800mg", cls:"multidol800", icon:"💊"}
     };
-    
-    // --- FUNCIONES UTILITARIAS ---
 
-    function getProductName(k) { return (PRODUCTS[k]?.name) || k }
-    function getProductClass(k) { return (PRODUCTS[k]?.cls) || "" }
-    function getProductIcon(k) { return (PRODUCTS[k]?.icon) || "📦" }
-    
-    function getPaymentStatus(s) {
-      const map = {
-        pendiente: {label: "Pendiente", class: "bg-warning text-dark", icon: "⏳"},
-        procesado: {label: "Procesado", class: "bg-success text-white", icon: "✅"}
-      };
-      return map[s] || map.pendiente;
+    function getProductName(k){return (PRODUCTS[k]?.name)||k}
+    function getProductClass(k){return (PRODUCTS[k]?.cls)||""}
+    function getProductIcon(k){return (PRODUCTS[k]?.icon)||"📦"}
+    function getPaymentStatus(s){
+      const map={
+        pendiente:{label:"Pendiente", class:"bg-warning text-dark", icon:"⏳"},
+        procesado:{label:"Procesado", class:"bg-success text-white", icon:"✅"}
+      };return map[s]||map.pendiente
     }
-
-    function toDate(d) {
-      if (d instanceof Date) return d;
-      if (d?.toDate) return d.toDate(); // Firestore Timestamp
-      if (typeof d === "string") return new Date(d + "T00:00:00"); // Asumir local
+    function toDate(d){
+      if(d instanceof Date) return d;
+      if(d?.toDate) return d.toDate();
+      if(typeof d==="string") return new Date(d+"T00:00:00");
       return new Date(d);
     }
-
-    function formatDate(d) {
+    function formatDate(d){
       const dt = toDate(d);
-      return dt.toLocaleDateString("es-CO", {year: "numeric", month: "short", day: "numeric"});
+      return dt.toLocaleDateString("es-CO",{year:"numeric",month:"short",day:"numeric"});
     }
-
-    function formatCurrency(v) {
-      const n = Number(v || 0);
-      return new Intl.NumberFormat("es-CO", {style: "currency", currency: "COP", minimumFractionDigits: 0, maximumFractionDigits: 0}).format(n);
+    function formatCurrency(v){
+      const n = Number(v||0);
+      return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
     }
-
-    function showToast(msg, type = "success") {
-      const id = "toast-" + Date.now();
-      const icon = type === "success" ? "check-circle" : "exclamation-circle";
+    function showToast(msg,type="success"){
+      const id="toast-"+Date.now();
+      const icon = type==="success" ? "check-circle" : "exclamation-circle";
       const el = document.createElement("div");
-      el.id = id;
-      el.className = `toast-notification ${type === "error" ? "toast-error" : ""}`;
+      el.id=id;
+      el.className=`toast-notification ${type==="error"?"toast-error":""}`;
       el.setAttribute('role', 'alert');
       el.setAttribute('aria-live', 'polite');
-      el.innerHTML = `<i class="fas fa-${icon} me-2"></i>${msg}`;
+      el.innerHTML=`<i class="fas fa-${icon} me-2"></i>${msg}`;
       document.body.appendChild(el);
-      setTimeout(() => {
-        el.classList.add('fade-out');
-        setTimeout(() => el.remove(), 300);
-      }, 3500);
+      setTimeout(()=>{el.style.opacity="0"; setTimeout(()=>el.remove(),300)},3500);
     }
-
-    function spinnerRow() {
+    function spinnerRow(){
       return `
         <tr>
           <td colspan="9">
             <div class="skeleton-card">
               <div class="loading-skeleton mb-2" style="height:20px;width:40%"></div>
               <div class="loading-skeleton mb-2" style="height:16px;width:85%"></div>
-              <div class="loading-skeleton" style="height:16px;width:70%"></div>
+              <div class="loading-skeleton mb-2" style="height:16px;width:70%"></div>
+              <div class="loading-skeleton" style="height:16px;width:60%"></div>
             </div>
           </td>
         </tr>`;
     }
 
-    function calculateTotal() {
-      const q = Number($('#quantity').value || 0);
-      const up = Number($('#unitPrice').value || 0);
-      const total = q * up;
+    function calculateTotal(){
+      const q = Number($('#quantity').value||0);
+      const up = Number($('#unitPrice').value||0);
+      const total = q*up;
       $('#total-display').textContent = formatCurrency(total);
       $('#total-value').value = String(total);
-      $('#total-container').style.display = (q > 0 && up > 0) ? 'block' : 'none';
+      $('#total-container').style.display = (q>0 && up>0) ? 'block' : 'none';
     }
 
-    // --- LÓGICA DE GEMINI API ---
-
-    /**
-     * Llama a la API de Gemini v1.5 Flash con reintentos.
-     * @param {string} userQuery - El prompt del usuario.
-     * @param {string | null} systemPrompt - El prompt del sistema (opcional).
-     * @param {boolean} useGrounding - Si se debe usar Google Search grounding (opcional).
-     * @returns {Promise<string | null>} - El texto de la respuesta o null si falla.
-     */
-    async function callGemini(userQuery, systemPrompt = null, useGrounding = false) {
-      const apiKey = ""; // La clave se inyecta en el entorno
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-      const payload = {
-        contents: [{ parts: [{ text: userQuery }] }],
-      };
-
-      if (systemPrompt) {
-        payload.systemInstruction = {
-          parts: [{ text: systemPrompt }]
-        };
-      }
-
-      if (useGrounding) {
-        payload.tools = [{ "google_search": {} }];
-      }
-
-      let delay = 1000;
-      for (let i = 0; i < 3; i++) { // 3 intentos
-        try {
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          const result = await response.json();
-          const candidate = result.candidates?.[0];
-
-          if (candidate && candidate.content?.parts?.[0]?.text) {
-            return candidate.content.parts[0].text;
-          } else {
-            console.warn("Respuesta de Gemini inesperada:", result);
-            return null; // Formato de respuesta no esperado
-          }
-
-        } catch (error) {
-          console.error(`Intento ${i + 1} fallido:`, error);
-          if (i < 2) {
-            await new Promise(res => setTimeout(res, delay));
-            delay *= 2;
-          }
-        }
-      }
-      return null; // Falló después de todos los intentos
-    }
-
-    /**
-     * 1. GEMINI: Genera el Resumen Ejecutivo del Dashboard
-     */
-    async function handleGenerateSummary() {
-      const btn = $('#gemini-summary-btn');
-      const loader = $('#gemini-summary-loader');
-      const resultEl = $('#gemini-summary-result');
-
-      btn.disabled = true;
-      loader.style.display = 'block';
-      resultEl.style.display = 'none';
-
-      // Recopilar KPIs
-      const kpis = {
-        totalPagado: $('#total-pagado').textContent,
-        presupuestoRestante: $('#presupuesto-restante').textContent,
-        porcentajeUsado: $('#porcentaje-usado').textContent,
-        totalPagos: $('#total-pagos').textContent,
-        totalDescongel: $('#total-descongel').textContent,
-        totalMultidol400: $('#total-multidol400').textContent,
-        totalMultidol800: $('#total-multidol800').textContent,
-        totalPendientes: $('#total-pendientes').textContent,
-        totalProcesados: $('#total-procesados').textContent,
-      };
-
-      // Recopilar Filtros
-      const filters = {
-        producto: $('#filter-product').value || "Todos",
-        farmacia: $('#filter-pharmacy').value || "Todas",
-        estado: $('#filter-status').value || "Todos",
-        mes: $('#filter-date').value || "Todos",
-      };
-
-      const systemPrompt = "Eres un analista financiero para un distribuidor de medicamentos. Tu trabajo es crear un resumen ejecutivo breve y accionable (3-4 frases) basado en los datos de gastos y los filtros aplicados. Sé directo y profesional.";
-      const userQuery = `
-        Datos de KPIs Actuales:
-        ${JSON.stringify(kpis, null, 2)}
-
-        Filtros Aplicados:
-        ${JSON.stringify(filters, null, 2)}
-
-        Basado en estos datos y filtros, genera el resumen ejecutivo.
-      `;
-
-      const summary = await callGemini(userQuery, systemPrompt);
-
-      loader.style.display = 'none';
-      if (summary) {
-        resultEl.textContent = summary;
-        resultEl.style.display = 'block';
-      } else {
-        showToast("❌ No se pudo generar el resumen de IA.", "error");
-      }
-      btn.disabled = false;
-    }
-
-    /**
-     * 2. GEMINI: Optimiza la nota del formulario
-     */
-    async function handleOptimizeNotes() {
-      const btn = $('#gemini-notes-btn');
-      const loader = $('#gemini-notes-loader');
-      const textarea = $('#notes');
-      
-      const originalText = textarea.value;
-      if (!originalText.trim()) {
-        showToast("⚠️ Escribe una nota para optimizar.", "error");
-        return;
-      }
-
-      btn.disabled = true;
-      loader.style.display = 'block';
-
-      const systemPrompt = "Eres un asistente de CRM. Reescribe la siguiente nota de pago para que sea más profesional, clara y concisa, pero mantén todos los detalles clave. Responde únicamente con la nota reescrita.";
-      const userQuery = `Nota original: "${originalText}"`;
-
-      const optimizedNote = await callGemini(userQuery, systemPrompt);
-
-      loader.style.display = 'none';
-      btn.disabled = false;
-
-      if (optimizedNote) {
-        textarea.value = optimizedNote.trim().replace(/^"|"$/g, ''); // Limpiar comillas
-        showToast("✨ Nota optimizada por IA.", "success");
-      } else {
-        showToast("❌ No se pudo optimizar la nota.", "error");
-      }
-    }
-
-    /**
-     * 3. GEMINI: Busca información de la farmacia (con Grounding)
-     */
-    async function handleFetchPharmacyInfo() {
-      const btn = $('#gemini-pharmacy-btn');
-      const loader = $('#gemini-pharmacy-loader');
-      const resultEl = $('#gemini-pharmacy-result');
-      const input = $('#pharmacy');
-
-      const pharmacyName = input.value;
-      if (!pharmacyName.trim()) {
-        showToast("⚠️ Escribe un nombre de farmacia para buscar.", "error");
-        return;
-      }
-
-      btn.disabled = true;
-      loader.style.display = 'block';
-      resultEl.style.display = 'none';
-
-      const systemPrompt = "Eres un asistente que busca información de empresas. Responde con un resumen de una sola frase sobre la farmacia indicada, basado en la búsqueda de Google.";
-      const userQuery = `Dame un resumen de una frase sobre esta farmacia: "${pharmacyName}"`;
-
-      const info = await callGemini(userQuery, systemPrompt, true); // true = usar grounding
-
-      loader.style.display = 'none';
-      btn.disabled = false;
-
-      if (info) {
-        resultEl.textContent = info;
-        resultEl.style.display = 'block';
-      } else {
-        showToast("❌ No se pudo encontrar información.", "error");
-      }
-    }
-
-
-    // --- LÓGICA DE FIREBASE ---
-
-    /**
-     * Inicializa Firebase y maneja la autenticación del usuario.
-     */
-    async function initFirebase() {
-      // La comprobación de apiKey se hace aquí, después de que firebaseConfig se haya poblado
-      if (!firebaseConfig.apiKey) {
-        console.error("Configuración de Firebase no encontrada o inválida. La app no funcionará.");
-        showToast("Error crítico: Falta configuración", "error");
-        return;
-      }
-
-      try {
-        const app = initializeApp(firebaseConfig);
-        appState.db = getFirestore(app);
-        appState.auth = getAuth(app);
-        setLogLevel('Debug'); // Habilitar logs de Firestore
-
-        if (initialAuthToken) {
-          await signInWithCustomToken(appState.auth, initialAuthToken);
-        } else {
-          await signInAnonymously(appState.auth);
-        }
-
-        // El listener principal que arranca la app post-auth
-        onAuthStateChanged(appState.auth, (user) => {
-          if (user) {
-            appState.userId = user.uid;
-            console.log("Usuario autenticado:", appState.userId);
-            $('#user-id-display').textContent = `ID: ${appState.userId}`;
-            // Ahora que tenemos usuario, cargamos los datos
-            loadPayments(); 
-          } else {
-            appState.userId = null;
-            if (appState.paymentsUnsubscribe) appState.paymentsUnsubscribe();
-            console.warn("Usuario no autenticado.");
-          }
-        });
-
-      } catch (e) {
-        console.error("Error inicializando Firebase:", e);
-        showToast("No se pudo conectar a Firebase", "error");
-      }
-    }
-
-    /**
-     * Función asíncrona para rellenar estados faltantes.
-     * Se ejecuta en segundo plano sin bloquear la UI.
-     */
-    function backfillMissingStatus(docs) {
+    async function backfillMissingStatus(docs){
       const toFix = docs.filter(d => !("status" in d.data()));
-      if (toFix.length === 0) return;
-
-      console.log(`Rellenando ${toFix.length} registros sin estado...`);
+      if(toFix.length===0) return;
       const batchSize = Math.min(toFix.length, 10);
-      
-      for(let i = 0; i < batchSize; i++) {
-        const docRef = doc(appState.db, "artifacts", appId, "users", appState.userId, "payments", toFix[i].id);
-        updateDoc(docRef, { status: "pendiente" })
-          .catch(e => console.warn("Error en backfill:", e));
+      for(let i=0;i<batchSize;i++){
+        try{
+          await updateDoc(doc(db,"payments",toFix[i].id), { status:"pendiente" });
+        }catch(e){ console.warn("Backfill status error", e); }
       }
     }
 
-    /**
-     * Normaliza los datos del cliente para consistencia.
-     */
-    function normalizeClientData(payments) {
-      return payments.map(p => {
+    function normalizeClientData(payments){
+      return payments.map(p=>{
         const date = toDate(p.date);
         const unitPrice = Number(p.unitPrice ?? p.amount ?? 0);
-        const totalAmount = Number(p.totalAmount ?? p.amount ?? (Number(p.quantity || 1) * unitPrice));
+        const totalAmount = Number(p.totalAmount ?? p.amount ?? (Number(p.quantity||1)*unitPrice));
         const status = p.status || "pendiente";
         return {...p, date, unitPrice, totalAmount, status};
       });
     }
 
-    /**
-     * Carga los pagos usando onSnapshot para datos en tiempo real.
-     */
-    function loadPayments() {
-      if (!appState.userId || !appState.db) {
-        console.warn("Intento de carga sin autenticación.");
-        return;
-      }
-
-      // Cancelar cualquier listener anterior
-      if (appState.paymentsUnsubscribe) {
-        appState.paymentsUnsubscribe();
-      }
-
+    async function loadPayments(){
       const tbody = $('#payments-table');
-      tbody.innerHTML = spinnerRow() + spinnerRow() + spinnerRow();
+      tbody.innerHTML = spinnerRow()+spinnerRow()+spinnerRow();
 
-      // Construir la consulta dinámica
       const pf = $('#filter-product').value || "";
       const phf = $('#filter-pharmacy').value || "";
       const df = $('#filter-date').value || "";
       const sf = $('#filter-status').value || "";
 
       const constraints = [];
-      if (df) {
-        const start = new Date(df + "-01T00:00:00");
-        const end = new Date(start); 
-        end.setMonth(end.getMonth() + 1);
-        constraints.push(where("date", ">=", start));
-        constraints.push(where("date", "<", end));
+      let start=null, end=null;
+      if(df){
+        start = new Date(df+"-01T00:00:00");
+        end = new Date(start); end.setMonth(end.getMonth()+1);
+        constraints.push(where("date",">=",start));
+        constraints.push(where("date","<",end));
       }
-      if (pf) constraints.push(where("product", "==", pf));
-      if (phf) constraints.push(where("pharmacy", "==", phf));
-      if (sf) constraints.push(where("status", "==", sf));
-      
-      // La consulta de ordenación DEBE coincidir con el campo de rango (date)
-      constraints.push(orderBy("date", "desc"));
+      if(pf) constraints.push(where("product","==",pf));
+      if(phf) constraints.push(where("pharmacy","==",phf));
+      if(sf) constraints.push(where("status","==",sf));
+      constraints.push(orderBy("date","desc"));
 
-      try {
-        const collectionPath = collection(appState.db, "artifacts", appId, "users", appState.userId, "payments");
-        const qy = query(collectionPath, ...constraints);
+      try{
+        const qy = query(collection(db,"payments"), ...constraints);
+        const snap = await getDocs(qy);
+        await backfillMissingStatus(snap.docs);
+        const payments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+        renderPayments(payments);
+      }catch(error){
+        console.error("Error o índice faltante, aplicando fallback:", error);
+        const msg = String(error?.message || "");
+        const match = msg.match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/);
 
-        // Escuchar cambios en tiempo real
-        appState.paymentsUnsubscribe = onSnapshot(qy, (snap) => {
-          const payments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        try{
+          const baseConstraints = [];
+          if(start && end){
+            baseConstraints.push(where("date",">=",start));
+            baseConstraints.push(where("date","<",end));
+          }
+          baseConstraints.push(orderBy("date","desc"));
+          const qBase = query(collection(db,"payments"), ...baseConstraints);
+          const snapAll = await getDocs(qBase);
+
+          await backfillMissingStatus(snapAll.docs);
+
+          let payments = snapAll.docs.map(d => ({ id:d.id, ...d.data() }));
+          payments = normalizeClientData(payments);
+
+          payments = payments.filter(p=>{
+            const okP = pf ? p.product === pf : true;
+            const okPh = phf ? (p.pharmacy === phf) : true;
+            const okS = sf ? (p.status === sf) : true;
+            return okP && okPh && okS;
+          });
+
           renderPayments(payments);
-          
-          // Ejecutar el backfill en segundo plano
-          backfillMissingStatus(snap.docs);
-
-        }, (error) => {
-          console.error("Error en onSnapshot, ¿falta índice?:", error);
-          tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">
-            <i class="fas fa-exclamation-triangle me-2"></i>Error al cargar datos.
-          </td></tr>`;
-          
-          // Mostrar ayuda para crear el índice
-          const msg = String(error?.message || "");
-          const match = msg.match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/);
-          if (match) {
+          if(match){
             showIndexHelp(match[0]);
           }
-        });
-
-      } catch (error) {
-        console.error("Error al construir la consulta:", error);
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">
-          <i class="fas fa-exclamation-triangle me-2"></i>Error grave en la aplicación.
-        </td></tr>`;
+        }catch(e2){
+          console.error("Fallback también falló:", e2);
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>Error al cargar datos. Revisa la consola para más detalles.
+          </td></tr>`;
+        }
       }
     }
 
-    function showIndexHelp(url) {
+    function showIndexHelp(url){
       const tbody = $('#payments-table');
       const row = document.createElement('tr');
       row.innerHTML = `
         <td colspan="9" class="text-center text-warning py-3">
           <i class="fa-solid fa-triangle-exclamation me-2"></i>
-          Esta combinación de filtros requiere un índice compuesto en Firestore.
-          <a href="${url}" target="_blank" rel="noopener" class="ms-1 fw-bold">Crear índice aquí</a>
+          Esta combinación requiere un índice compuesto.
+          <a href="${url}" target="_blank" rel="noopener" class="ms-1">Crear índice</a>
         </td>`;
       tbody.prepend(row);
     }
 
-    function renderPayments(raw) {
+    function renderPayments(raw){
       const tbody = $('#payments-table');
       tbody.innerHTML = "";
+
       const payments = normalizeClientData(raw);
 
-      payments.forEach(p => {
+      payments.forEach(p=>{
         const st = getPaymentStatus(p.status);
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td data-label="Fecha">${formatDate(p.date)}</td>
-          <td data-label="Farmacia"><strong>${p.pharmacy || "-"}</strong></td>
+          <td data-label="Farmacia"><strong>${p.pharmacy||"-"}</strong></td>
           <td data-label="Producto">
             <span class="me-2" style="font-size:1.5rem" role="img" aria-label="${getProductName(p.product)}">${getProductIcon(p.product)}</span>
             <span class="badge badge-${getProductClass(p.product)}">${getProductName(p.product)}</span>
           </td>
-          <td data-label="Cant."><strong>${p.quantity || 1}</strong></td>
+          <td data-label="Cant."><strong>${p.quantity||1}</strong></td>
           <td data-label="Valor Unit.">${formatCurrency(p.unitPrice)}</td>
           <td data-label="Total"><strong>${formatCurrency(p.totalAmount)}</strong></td>
           <td data-label="Estado" class="text-center">
@@ -1428,7 +1050,7 @@
             </button>
           </td>
           <td data-label="Descripción">
-            <small class="text-muted">${p.notes ? (p.notes.length > 60 ? p.notes.slice(0, 60) + "…" : p.notes) : "Sin descripción"}</small>
+            <small class="text-muted">${p.notes ? (p.notes.length>60 ? p.notes.slice(0,60)+"…" : p.notes) : "Sin descripción"}</small>
           </td>
           <td data-label="Acciones" class="action-buttons">
             <button class="btn btn-sm btn-outline-secondary" 
@@ -1450,7 +1072,7 @@
         tbody.appendChild(tr);
       });
 
-      if (payments.length === 0) {
+      if(payments.length===0){
         tbody.innerHTML = `
           <tr><td colspan="9">
             <div class="empty-state">
@@ -1467,141 +1089,122 @@
       updatePharmacyFilter(payments);
     }
 
-    function updateStats(payments) {
+    function updateStats(payments){
       $('#total-pagos').textContent = payments.length;
 
-      const c = (k) => payments.filter(p => p.product === k).length;
+      const c = (k)=>payments.filter(p=>p.product===k).length;
       $('#total-descongel').textContent = c('descongel');
       $('#total-multidol400').textContent = c('multidol400');
       $('#total-multidol800').textContent = c('multidol800');
 
-      const pend = payments.filter(p => p.status === 'pendiente').length;
-      const proc = payments.filter(p => p.status === 'procesado').length;
+      const pend = payments.filter(p=>p.status==='pendiente').length;
+      const proc = payments.filter(p=>p.status==='procesado').length;
       $('#total-pendientes').textContent = pend;
       $('#total-procesados').textContent = proc;
 
-      const total = payments.reduce((s, p) => s + Number(p.totalAmount || 0), 0);
+      const total = payments.reduce((s,p)=> s + Number(p.totalAmount||0), 0);
       const restante = BUDGET_TOTAL - total;
-      const pct = (total / BUDGET_TOTAL) * 100;
+      const pct = (total/BUDGET_TOTAL)*100;
 
       $('#total-pagado').textContent = formatCurrency(total);
       $('#presupuesto-restante').textContent = formatCurrency(restante);
-      $('#porcentaje-usado').textContent = `${isFinite(pct) ? pct.toFixed(1) : 0}%`;
+      $('#porcentaje-usado').textContent = `${isFinite(pct)?pct.toFixed(1):0}%`;
 
       const bar = $('#budget-progress');
-      bar.style.width = `${Math.min(pct, 100)}%`;
-      bar.setAttribute('aria-valuenow', Math.min(pct, 100));
+      bar.style.width = `${Math.min(pct,100)}%`;
+      bar.setAttribute('aria-valuenow', Math.min(pct,100));
       bar.className = 'progress-bar';
-      if (pct >= 90) { bar.classList.add('bg-danger') }
-      else if (pct >= 75) { bar.classList.add('bg-warning') }
-      else { bar.classList.add('bg-success') }
+      if(pct>=90){bar.classList.add('bg-danger')}
+      else if(pct>=75){bar.classList.add('bg-warning')}
+      else{bar.classList.add('bg-success')}
 
       const alert = $('#budget-alert');
-      if (total > BUDGET_TOTAL) {
-        alert.style.display = 'block';
-        $('#exceso-presupuesto').textContent = formatCurrency(total - BUDGET_TOTAL);
-      } else {
-        alert.style.display = 'none';
+      if(total>BUDGET_TOTAL){
+        alert.style.display='block';
+        $('#exceso-presupuesto').textContent = formatCurrency(total-BUDGET_TOTAL);
+      }else{
+        alert.style.display='none';
       }
     }
 
-    function updatePharmacyFilter(payments) {
+    function updatePharmacyFilter(payments){
       const sel = $('#filter-pharmacy');
       const current = sel.value;
-      const names = [...new Set(payments.map(p => p.pharmacy).filter(Boolean))].sort();
+      const names = [...new Set(payments.map(p=>p.pharmacy).filter(Boolean))].sort();
       sel.innerHTML = '<option value="">Todas</option>';
-      names.forEach(n => {
-        const opt = document.createElement('option');
-        opt.value = n; opt.textContent = n; sel.appendChild(opt);
+      names.forEach(n=>{
+        const opt=document.createElement('option');
+        opt.value=n; opt.textContent=n; sel.appendChild(opt);
       });
-      if (names.includes(current)) sel.value = current;
+      if(names.includes(current)) sel.value=current;
     }
 
-    async function addPayment(payload, btn) {
-      const originalHtml = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Guardando...`;
-
-      try {
-        const collectionPath = collection(appState.db, "artifacts", appId, "users", appState.userId, "payments");
-        await addDoc(collectionPath, payload);
-        
-        const info = getPaymentStatus(payload.status);
-        showToast(`✅ Pago registrado como: ${info.label}`, "success");
-        return true; // Éxito
-      } catch (e) {
-        console.error(e); 
-        showToast("❌ Error al registrar el pago", "error");
-        return false; // Fallo
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
+    async function addPayment(pharmacy,product,quantity,unitPrice,totalAmount,date,notes,status){
+      try{
+        const payload = {
+          pharmacy,
+          product,
+          quantity:Number(quantity),
+          unitPrice:Number(unitPrice),
+          totalAmount:Number(totalAmount),
+          amount:Number(totalAmount),
+          date:new Date(date+"T00:00:00"),
+          notes:notes||"",
+          status:status||"pendiente"
+        };
+        await addDoc(collection(db,"payments"),payload);
+        await loadPayments();
+        const info=getPaymentStatus(payload.status);
+        showToast(`✅ Pago registrado como: ${info.label}`,"success");
+      }catch(e){
+        console.error(e); showToast("❌ Error al registrar el pago","error");
       }
     }
 
-    async function confirmDeletePayment() {
-      const id = $('#confirmModal').dataset.deleteId;
-      if (!id) return;
-
-      const btn = $('#confirm-modal-btn');
-      btn.disabled = true;
-
-      try {
-        const docRef = doc(appState.db, "artifacts", appId, "users", appState.userId, "payments", id);
-        await deleteDoc(docRef);
-        showToast("🗑️ Pago eliminado correctamente", "success");
-        appState.confirmModal.hide();
-      } catch (e) {
-        console.error(e); 
-        showToast("❌ Error al eliminar el pago", "error");
-      } finally {
-        btn.disabled = false;
-        delete $('#confirmModal').dataset.deleteId;
+    async function deletePayment(id){
+      if(!confirm("¿Está seguro de eliminar este pago?")) return;
+      try{
+        await deleteDoc(doc(db,"payments",id));
+        await loadPayments();
+        showToast("🗑️ Pago eliminado correctamente","success");
+      }catch(e){
+        console.error(e); showToast("❌ Error al eliminar el pago","error");
       }
     }
 
-    function promptDeletePayment(id) {
-      $('#confirmModal').dataset.deleteId = id;
-      $('#confirm-modal-body').textContent = "¿Está seguro de eliminar este pago? Esta acción no se puede deshacer.";
-      appState.confirmModal.show();
-    }
-
-    async function togglePaymentStatus(id, currentStatus) {
-      const next = currentStatus === "pendiente" ? "procesado" : "pendiente";
-      try {
-        const docRef = doc(appState.db, "artifacts", appId, "users", appState.userId, "payments", id);
-        await updateDoc(docRef, {status: next});
-        
-        const info = getPaymentStatus(next);
-        showToast(`${info.icon} Estado cambiado a: ${info.label}`, "success");
-        // No es necesario llamar a loadPayments(), onSnapshot lo hará
-      } catch (e) {
-        console.error(e); 
-        showToast("❌ Error al cambiar el estado", "error");
+    async function togglePaymentStatus(id,currentStatus){
+      const next = currentStatus==="pendiente" ? "procesado" : "pendiente";
+      try{
+        await updateDoc(doc(db,"payments",id),{status:next});
+        const info=getPaymentStatus(next);
+        showToast(`${info.icon} Estado cambiado a: ${info.label}`,"success");
+        await loadPayments();
+      }catch(e){
+        console.error(e); showToast("❌ Error al cambiar el estado","error");
       }
     }
 
-    function viewPayment(id) {
-      const docRef = doc(appState.db, "artifacts", appId, "users", appState.userId, "payments", id);
-      
-      const unsub = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          openDetailsModal({id: docSnap.id, ...docSnap.data()});
-        } else {
-          showToast("No se encontraron detalles del pago.", "error");
+    async function viewPayment(id){
+      try{
+        const qy = query(collection(db,"payments"), where("__name__","==",id));
+        const snap = await getDocs(qy);
+        if(!snap.empty){
+          const d = snap.docs[0];
+          openDetailsModal({id:d.id, ...d.data()});
+        }else{
+          showToast("No se encontraron detalles del pago.","error");
         }
-        unsub(); // Dejar de escuchar después de la primera lectura
-      }, (e) => {
+      }catch(e){
         console.error(e);
-        showToast("❌ Error al obtener detalles del pago", "error");
-      });
+        showToast("❌ Error al obtener detalles del pago","error");
+      }
     }
 
-    function openDetailsModal(payment) {
+    function openDetailsModal(payment){
       const modalTitle = $('#detailsTitle');
       const modalBody = $('#detailsBody');
       const dt = toDate(payment.date);
-      const status = getPaymentStatus(payment.status || 'pendiente');
+      const status = getPaymentStatus(payment.status||'pendiente');
 
       modalTitle.textContent = `Pago • ${getProductName(payment.product)}`;
       modalBody.innerHTML = `
@@ -1610,111 +1213,83 @@
           <span class="badge badge-${getProductClass(payment.product)}">${getProductName(payment.product)}</span>
         </div>
         <ul class="list-group list-group-flush">
-          <li class="list-group-item"><strong>Farmacia:</strong> ${payment.pharmacy || "-"}</li>
+          <li class="list-group-item"><strong>Farmacia:</strong> ${payment.pharmacy||"-"}</li>
           <li class="list-group-item"><strong>Fecha:</strong> ${formatDate(dt)}</li>
-          <li class="list-group-item"><strong>Cantidad:</strong> ${payment.quantity || 1}</li>
+          <li class="list-group-item"><strong>Cantidad:</strong> ${payment.quantity||1}</li>
           <li class="list-group-item"><strong>Valor Unitario:</strong> ${formatCurrency(payment.unitPrice ?? payment.amount ?? 0)}</li>
           <li class="list-group-item"><strong>Total:</strong> ${formatCurrency(payment.totalAmount ?? payment.amount ?? 0)}</li>
           <li class="list-group-item">
             <strong>Estado:</strong>
             <span class="ms-2 badge ${status.class}">${status.icon} ${status.label}</span>
           </li>
-          <li class="list-group-item"><strong>Notas:</strong> ${payment.notes || "—"}</li>
+          <li class="list-group-item"><strong>Notas:</strong> ${payment.notes||"—"}</li>
           <li class="list-group-item"><small class="text-muted">ID: ${payment.id}</small></li>
         </ul>`;
-      appState.detailsModal.show();
+      const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+      modal.show();
     }
-    
-    // --- INICIALIZACIÓN DE EVENTOS ---
 
-    document.addEventListener("DOMContentLoaded", () => {
-      // Inicializar Modales de Bootstrap
-      appState.formModal = new bootstrap.Modal(document.getElementById('formModal'));
-      appState.detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
-      appState.confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-
-      // Poner fecha de hoy por defecto
+    document.addEventListener("DOMContentLoaded", ()=>{
       const today = new Date(); 
-      const yyyy = today.getFullYear(); 
-      const mm = String(today.getMonth() + 1).padStart(2, '0'); 
-      const dd = String(today.getDate()).padStart(2, '0');
+      const yyyy=today.getFullYear(); 
+      const mm=String(today.getMonth()+1).padStart(2,'0'); 
+      const dd=String(today.getDate()).padStart(2,'0');
       $('#date').value = `${yyyy}-${mm}-${dd}`;
 
       $('#quantity').addEventListener('input', calculateTotal);
       $('#unitPrice').addEventListener('input', calculateTotal);
 
-      // Evento de envío del formulario
-      $('#payment-form').addEventListener('submit', async (e) => {
+      $('#payment-form').addEventListener('submit', (e)=>{
         e.preventDefault();
-        const pharmacy = $('#pharmacy').value.trim();
-        const product = $('#product').value;
-        const quantity = $('#quantity').value;
-        const unitPrice = $('#unitPrice').value;
-        const totalAmount = $('#total-value').value;
-        const date = $('#date').value;
-        const notes = $('#notes').value;
-        const status = $('#status').value;
+        const pharmacy=$('#pharmacy').value.trim();
+        const product=$('#product').value;
+        const quantity=$('#quantity').value;
+        const unitPrice=$('#unitPrice').value;
+        const totalAmount=$('#total-value').value;
+        const date=$('#date').value;
+        const notes=$('#notes').value;
+        const status=$('#status').value;
 
-        if (pharmacy && product && quantity && unitPrice && totalAmount && date) {
-          const payload = {
-            pharmacy,
-            product,
-            quantity: Number(quantity),
-            unitPrice: Number(unitPrice),
-            totalAmount: Number(totalAmount),
-            date: Timestamp.fromDate(new Date(date + "T00:00:00")),
-            notes: notes || "",
-            status: status || "pendiente"
-          };
-          
-          const success = await addPayment(payload, e.submitter);
+        if(pharmacy && product && quantity && unitPrice && totalAmount && date){
+          addPayment(pharmacy,product,quantity,unitPrice,totalAmount,date,notes,status);
+          e.target.reset();
+          $('#date').value = `${yyyy}-${mm}-${dd}`;
+          $('#status').value = 'pendiente';
+          $('#total-container').style.display='none';
+          $('#total-value').value='';
 
-          if (success) {
-            e.target.reset();
-            $('#date').value = `${yyyy}-${mm}-${dd}`;
-            $('#status').value = 'pendiente';
-            $('#total-container').style.display = 'none';
-            $('#total-value').value = '';
-            appState.formModal.hide();
-          }
-        } else {
-          showToast('⚠️ Por favor completa todos los campos requeridos', 'error');
+          const formModalEl = document.getElementById('formModal');
+          const formModal = bootstrap.Modal.getOrCreateInstance(formModalEl);
+          formModal.hide();
+        }else{
+          showToast('⚠️ Por favor completa todos los campos requeridos','error');
         }
       });
 
-      // Eventos de filtros
-      $$('.refresh-btn').forEach(btn => btn.addEventListener('click', loadPayments));
+      $$('.refresh-btn').forEach(btn=>btn.addEventListener('click', loadPayments));
       $('#filter-product').addEventListener('change', loadPayments);
       $('#filter-pharmacy').addEventListener('change', loadPayments);
       $('#filter-date').addEventListener('change', loadPayments);
       $('#filter-status').addEventListener('change', loadPayments);
 
-      // Delegación de eventos en la tabla
-      $('#payments-table').addEventListener('click', (e) => {
+      $('#payments-table').addEventListener('click', (e)=>{
         const btn = e.target.closest('button'); 
-        if (!btn) return;
+        if(!btn) return;
         const action = btn.dataset.action;
         const id = btn.dataset.id;
-        if (action === "delete") promptDeletePayment(id);
-        if (action === "view") viewPayment(id);
-        if (action === "toggle") togglePaymentStatus(id, btn.dataset.status);
+        if(action==="delete") deletePayment(id);
+        if(action==="view") viewPayment(id);
+        if(action==="toggle") togglePaymentStatus(id, btn.dataset.status);
       });
 
-      // Botones para abrir modal de formulario
-      $$('.js-open-form').forEach(btn => {
-        btn.addEventListener('click', () => appState.formModal.show());
+      $$('.js-open-form').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const m = new bootstrap.Modal(document.getElementById('formModal'));
+          m.show();
+        });
       });
 
-      // Listener para el botón de confirmación
-      $('#confirm-modal-btn').addEventListener('click', confirmDeletePayment);
-
-      // --- Listeners de GEMINI ---
-      $('#gemini-summary-btn').addEventListener('click', handleGenerateSummary);
-      $('#gemini-notes-btn').addEventListener('click', handleOptimizeNotes);
-      $('#gemini-pharmacy-btn').addEventListener('click', handleFetchPharmacyInfo);
-
-      // Iniciar la aplicación
-      initFirebase();
+      loadPayments();
     });
   </script>
 </head>
@@ -1722,18 +1297,11 @@
   <!-- Header -->
   <header class="app-header" role="banner">
     <div class="container">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <h1 class="h3 mb-1">
-            <i class="fas fa-pills me-2" aria-hidden="true"></i>
-            CRM Control de Pagos
-          </h1>
-          <p class="lead mb-0">Sistema profesional de gestión de medicamentos</p>
-        </div>
-        <div class="text-end">
-          <span id="user-id-display" title="ID de usuario autenticado">Cargando...</span>
-        </div>
-      </div>
+      <h1 class="h3 mb-1">
+        <i class="fas fa-pills me-2" aria-hidden="true"></i>
+        CRM Control de Pagos
+      </h1>
+      <p class="lead mb-0">Sistema profesional de gestión de medicamentos</p>
     </div>
   </header>
 
@@ -1822,7 +1390,7 @@
       </div>
     </div>
 
-    <!-- Filtros y Análisis IA -->
+    <!-- Filtros -->
     <div class="row g-3">
       <div class="col-12">
         <div class="card">
@@ -1877,28 +1445,6 @@
         </div>
       </div>
 
-      <!-- NUEVO: Tarjeta de Análisis con IA -->
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header gemini-card-header">
-            <i class="fas fa-magic me-2" aria-hidden="true"></i>Análisis con IA
-          </div>
-          <div class="card-body">
-            <p class="text-muted">Obtenga un resumen de la situación actual basado en los KPIs y filtros seleccionados.</p>
-            <button id="gemini-summary-btn" class="btn btn-primary">
-              ✨ Generar Resumen Ejecutivo
-            </button>
-            <div id="gemini-summary-loader" style="display:none;" class="mt-3 gemini-loader">
-              <div class="spinner-border spinner-border-sm" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
-              Analizando datos...
-            </div>
-            <div id="gemini-summary-result" class="mt-3 gemini-result" style="display:none;"></div>
-          </div>
-        </div>
-      </div>
-
       <!-- Historial -->
       <div class="col-12">
         <div class="card">
@@ -1921,9 +1467,7 @@
                     <th scope="col">Acciones</th>
                   </tr>
                 </thead>
-                <tbody id="payments-table">
-                  <!-- El contenido se carga dinámicamente -->
-                </tbody>
+                <tbody id="payments-table"></tbody>
               </table>
             </div>
           </div>
@@ -1955,20 +1499,8 @@
               <label class="form-label" for="pharmacy">
                 <i class="fas fa-store me-1" aria-hidden="true"></i> Nombre de Farmacia
               </label>
-              <!-- NUEVO: Grupo de input para botón de IA -->
-              <div class="input-group">
-                <input id="pharmacy" type="text" class="form-control" required placeholder="Ej: Droguería Bucaramanga" aria-required="true"/>
-                <button class="btn btn-outline-secondary" type="button" id="gemini-pharmacy-btn" title="Buscar información de la farmacia">
-                  ✨ Info
-                </button>
-              </div>
-              <div id="gemini-pharmacy-loader" style="display:none;" class="form-text gemini-loader mt-2">
-                 <div class="spinner-border spinner-border-sm" role="status"></div>
-                 Buscando...
-              </div>
-              <div id="gemini-pharmacy-result" class="form-text text-primary fw-bold" style="display:none;"></div>
+              <input id="pharmacy" type="text" class="form-control" required placeholder="Ej: Droguería Bucaramanga" aria-required="true"/>
             </div>
-            
             <div class="mb-3">
               <label class="form-label" for="product">
                 <i class="fas fa-box me-1" aria-hidden="true"></i> Producto
@@ -2031,14 +1563,6 @@
                 <i class="fas fa-sticky-note me-1" aria-hidden="true"></i> Descripción/Notas
               </label>
               <textarea id="notes" rows="3" class="form-control" placeholder="Ej: Pago correspondiente a agosto"></textarea>
-              <!-- NUEVO: Botón para optimizar nota -->
-              <button class="btn btn-sm btn-outline-primary mt-2" type="button" id="gemini-notes-btn">
-                ✨ Optimizar Nota
-              </button>
-              <div id="gemini-notes-loader" style="display:none;" class="form-text gemini-loader mt-2">
-                 <div class="spinner-border spinner-border-sm" role="status"></div>
-                 Optimizando...
-              </div>
             </div>
 
             <div class="d-grid gap-2 mt-4">
@@ -2066,28 +1590,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Modal: Confirmar Eliminación -->
-  <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header" id="confirmModalLabel">
-          <i class="fas fa-exclamation-triangle me-2"></i>
-          Confirmar Acción
-        </div>
-        <div class="modal-body" id="confirm-modal-body">
-          ¿Está seguro?
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-danger" id="confirm-modal-btn">
-            <i class="fas fa-trash me-2"></i>Eliminar
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
 
   <footer class="text-center" role="contentinfo">
     <strong>CRM Control de Pagos</strong> © 2025 — Sistema profesional de gestión
