@@ -556,14 +556,22 @@
       const select = $('#filter-pharmacy');
       const current = select.value;
       const pharmacies = [...new Set(payments.map(p => p.pharmacy))].sort();
-      
-      if (select.options.length <= 1) { // Solo llenar si está vacío para no resetear selección
-        pharmacies.forEach(ph => {
-          const opt = document.createElement('option');
-          opt.value = ph; opt.textContent = ph;
-          select.appendChild(opt);
-        });
-      }
+      const fragment = document.createDocumentFragment();
+      const allOption = document.createElement('option');
+      allOption.value = '';
+      allOption.textContent = '🏥 Todas las farmacias';
+      fragment.appendChild(allOption);
+
+      pharmacies.forEach(ph => {
+        const opt = document.createElement('option');
+        opt.value = ph;
+        opt.textContent = ph;
+        fragment.appendChild(opt);
+      });
+
+      select.textContent = '';
+      select.appendChild(fragment);
+      select.value = pharmacies.includes(current) ? current : '';
     }
 
     // --- ACCIONES CRUD ---
