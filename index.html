@@ -582,12 +582,27 @@
       btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
       try {
+        const quantity = Number($('#quantity').value);
+        const unitPrice = Number($('#unitPrice').value);
+        const totalValueInput = $('#total-value').value;
+
+        if (quantity <= 0) {
+          showToast("La cantidad debe ser mayor a 0", "error");
+          return;
+        }
+
+        if (unitPrice < 0) {
+          showToast("El precio unitario no puede ser negativo", "error");
+          return;
+        }
+
+        const totalAmount = totalValueInput ? Number(totalValueInput) : quantity * unitPrice;
         const data = {
           pharmacy: $('#pharmacy').value.trim(),
           product: $('#product').value,
-          quantity: Number($('#quantity').value),
-          unitPrice: Number($('#unitPrice').value),
-          totalAmount: Number($('#total-value').value),
+          quantity,
+          unitPrice,
+          totalAmount,
           date: new Date($('#date').value + "T00:00:00"),
           status: $('#status').value,
           notes: $('#notes').value
