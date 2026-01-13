@@ -122,6 +122,10 @@
       position: relative;
       overflow: hidden;
     }
+
+    .budget-card.over-budget {
+      background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+    }
     
     .budget-card::after {
       content: '';
@@ -533,16 +537,31 @@
     function updateDashboard(payments) {
       // KPI Principal
       const totalPaid = payments.reduce((acc, p) => acc + p.totalAmount, 0);
-      const percent = Math.min((totalPaid / BUDGET_TOTAL) * 100, 100);
+      const percentRaw = (totalPaid / BUDGET_TOTAL) * 100;
+      const percent = Math.min(percentRaw, 100);
+      const remaining = Math.max(BUDGET_TOTAL - totalPaid, 0);
+      const overBudget = Math.max(totalPaid - BUDGET_TOTAL, 0);
       
       $('#kpi-paid').textContent = fmtMoney(totalPaid);
-      $('#kpi-remaining').textContent = fmtMoney(BUDGET_TOTAL - totalPaid);
+      $('#kpi-remaining').textContent = fmtMoney(remaining);
       $('#budget-bar').style.width = `${percent}%`;
-      $('#budget-percent').textContent = `${percent.toFixed(1)}%`;
+      $('#budget-percent').textContent = `${percentRaw.toFixed(1)}%`;
 
       // Colores de barra
       const bar = $('#budget-bar');
-      bar.className = `progress-bar progress-bar-striped progress-bar-animated ${percent > 90 ? 'bg-danger' : percent > 70 ? 'bg-warning' : 'bg-success'}`;
+      bar.className = `progress-bar progress-bar-striped progress-bar-animated ${percentRaw > 100 ? 'bg-danger' : percent > 90 ? 'bg-danger' : percent > 70 ? 'bg-warning' : 'bg-success'}`;
+
+      const overBudgetEl = $('#kpi-overbudget');
+      const budgetCard = $('#budget-card');
+      if (overBudget > 0) {
+        overBudgetEl.textContent = `Sobrepresupuesto: ${fmtMoney(overBudget)}`;
+        overBudgetEl.classList.remove('d-none');
+        budgetCard.classList.add('over-budget');
+      } else {
+        overBudgetEl.textContent = '';
+        overBudgetEl.classList.add('d-none');
+        budgetCard.classList.remove('over-budget');
+      }
 
       // Contadores Cards
       const count = (key) => payments.filter(p => p.product === key).length;
@@ -710,12 +729,13 @@
     <div class="row g-4 mb-4">
       <!-- Tarjeta Presupuesto -->
       <div class="col-lg-5">
-        <div class="card budget-card h-100 shadow-lg">
+        <div class="card budget-card h-100 shadow-lg" id="budget-card">
           <div class="card-body d-flex flex-column justify-content-between p-4 position-relative z-1">
             <div>
               <div class="budget-label"><i class="fas fa-wallet me-1"></i> Presupuesto Ejecutado</div>
               <div class="budget-val" id="kpi-paid">$0</div>
               <div class="small opacity-75 mt-1">de <span id="kpi-remaining">$500,000</span> disponibles</div>
+              <div class="small fw-semibold mt-1 d-none" id="kpi-overbudget"></div>
             </div>
             
             <div class="glass-panel mt-4">
