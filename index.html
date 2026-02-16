@@ -437,8 +437,35 @@
         ...data,
         unitPrice: Number(data.unitPrice ?? data.amount ?? 0),
         totalAmount: Number(data.totalAmount ?? data.amount ?? (Number(data.quantity||1)*(data.unitPrice||0))),
-        status: data.status || "pendiente"
+        status: data.status || "pendiente",
+        reimbursedAmount: Number(data.reimbursedAmount ?? 0),
+        reimbursedDate: data.reimbursedDate ?? null
       };
+    }
+
+    function normalizeCashMovementData(data) {
+      const rawType = data.type === 'reintegro' ? 'reintegro' : 'egreso';
+      const normalizedReferenceIds = Array.isArray(data.referencePaymentIds)
+        ? data.referencePaymentIds.filter(Boolean)
+        : [];
+
+      return {
+        ...data,
+        type: rawType,
+        amount: Number(data.amount ?? 0),
+        date: data.date ?? null,
+        notes: data.notes ?? '',
+        referencePaymentIds: normalizedReferenceIds
+      };
+    }
+
+    async function getCashMovements() {
+      const q = query(collection(db, "cash_movements"), orderBy("date", "desc"));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...normalizeCashMovementData(docSnap.data())
+      }));
     }
 
     async function loadPayments() {
@@ -458,10 +485,12 @@
       
       try {
         // Intentamos traer lo más reciente (limite de seguridad)
-        const q = query(collection(db, "payments"), orderBy("date", "desc")); 
-        const snapshot = await getDocs(q);
-        
-        let payments = snapshot.docs.map(doc => ({id: doc.id, ...normalizeData(doc.data())}));
+        const [paymentsSnapshot, cashMovements] = await Promise.all([
+          getDocs(query(collection(db, "payments"), orderBy("date", "desc"))),
+          getCashMovements()
+        ]);
+
+        let payments = paymentsSnapshot.docs.map(doc => ({id: doc.id, ...normalizeData(doc.data())}));
 
         // Filtrado en Cliente (Client-side filtering) para máxima flexibilidad UX
         if (filters.prod) payments = payments.filter(p => p.product === filters.prod);
@@ -476,7 +505,7 @@
         }
 
         renderTable(payments);
-        updateDashboard(payments);
+        updateDashboard(payments, cashMovements);
         updateFiltersUI(payments); // Llenar select de farmacias dinámicamente
 
       } catch (error) {
@@ -534,14 +563,41 @@
       });
     }
 
-    function updateDashboard(payments) {
+    function updateDashboard(payments, cashMovements = []) {
       // KPI Principal
-      const amountFrom = (p, keys) => keys.reduce((value, key) => value ?? (p[key] !== undefined ? Number(p[key]) : undefined), undefined);
-      const egresos = payments.reduce((acc, p) => acc + Number(p.totalAmount || 0), 0);
-      const reintegros = payments.reduce((acc, p) => {
-        const value = amountFrom(p, ['reintegro', 'reintegros', 'companyContribution', 'companyTopUp', 'abonoEmpresa', 'abono']) ?? 0;
-        return acc + (Number.isFinite(value) ? value : 0);
+      const validMovements = cashMovements.filter(m => Number.isFinite(m.amount) && m.amount > 0);
+      const egresosFromMovements = validMovements
+        .filter(m => m.type === 'egreso')
+        .reduce((acc, m) => acc + m.amount, 0);
+      const reintegrosFromMovements = validMovements
+        .filter(m => m.type === 'reintegro')
+        .reduce((acc, m) => acc + m.amount, 0);
+
+      const paymentIdsWithEgreso = new Set(
+        validMovements
+          .filter(m => m.type === 'egreso')
+          .flatMap(m => m.referencePaymentIds)
+      );
+      const egresosLegacy = payments
+        .filter(p => !paymentIdsWithEgreso.has(p.id))
+        .reduce((acc, p) => acc + Number(p.totalAmount || 0), 0);
+
+      const legacyReintegros = payments.reduce((acc, p) => {
+        const amountFromLegacy = Number(
+          p.reimbursedAmount
+          ?? p.reintegro
+          ?? p.reintegros
+          ?? p.companyContribution
+          ?? p.companyTopUp
+          ?? p.abonoEmpresa
+          ?? p.abono
+          ?? 0
+        );
+        return acc + (Number.isFinite(amountFromLegacy) ? amountFromLegacy : 0);
       }, 0);
+
+      const egresos = egresosFromMovements + egresosLegacy;
+      const reintegros = reintegrosFromMovements + legacyReintegros;
       const available = BUDGET_TOTAL + reintegros - egresos;
 
       const baseUsageRaw = BUDGET_TOTAL > 0 ? (egresos / BUDGET_TOTAL) * 100 : 0;
@@ -636,7 +692,14 @@
           notes: $('#notes').value
         };
 
-        await addDoc(collection(db, "payments"), data);
+        const paymentRef = await addDoc(collection(db, "payments"), data);
+        await addDoc(collection(db, "cash_movements"), {
+          type: 'egreso',
+          amount: totalAmount,
+          date: data.date,
+          referencePaymentIds: [paymentRef.id],
+          notes: `Egreso por pago en farmacia ${data.pharmacy}`
+        });
         showToast("Pago registrado correctamente");
         bootstrap.Modal.getInstance($('#formModal')).hide();
         e.target.reset();
@@ -647,6 +710,56 @@
         showToast("Error al guardar", "error");
       } finally {
         btn.disabled = false; btn.innerHTML = originalText;
+      }
+    };
+
+    window.addReintegro = async (e) => {
+      e.preventDefault();
+      const btn = $('#btn-save-reintegro');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+      try {
+        const amount = Number($('#reintegro-amount').value || 0);
+        const dateInput = $('#reintegro-date').value;
+        const referencesRaw = $('#reintegro-reference').value;
+        const notes = $('#reintegro-notes').value.trim();
+
+        if (amount <= 0) {
+          showToast("El reintegro debe ser mayor a 0", "error");
+          return;
+        }
+
+        if (!dateInput) {
+          showToast("La fecha del reintegro es obligatoria", "error");
+          return;
+        }
+
+        const referencePaymentIds = referencesRaw
+          .split(',')
+          .map(id => id.trim())
+          .filter(Boolean);
+
+        await addDoc(collection(db, "cash_movements"), {
+          type: 'reintegro',
+          amount,
+          date: new Date(dateInput + "T00:00:00"),
+          referencePaymentIds,
+          notes
+        });
+
+        showToast("Reintegro registrado correctamente");
+        bootstrap.Modal.getInstance($('#reintegroModal')).hide();
+        e.target.reset();
+        $('#reintegro-date').value = new Date().toISOString().split('T')[0];
+        loadPayments();
+      } catch (error) {
+        console.error(error);
+        showToast("Error al registrar reintegro", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
       }
     };
 
@@ -702,8 +815,10 @@
       
       // Event Listeners
       $('#payment-form').addEventListener('submit', window.addItem);
+      $('#reintegro-form').addEventListener('submit', window.addReintegro);
       $('#quantity').addEventListener('input', calculateTotal);
       $('#unitPrice').addEventListener('input', calculateTotal);
+      $('#reintegro-date').value = new Date().toISOString().split('T')[0];
       
       // Listeners Filtros
       ['filter-product', 'filter-pharmacy', 'filter-status', 'filter-date'].forEach(id => {
@@ -725,6 +840,9 @@
         </h1>
       </div>
       <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#reintegroModal">
+          <i class="fas fa-hand-holding-dollar me-1"></i> Registrar reintegro
+        </button>
         <button class="btn btn-sm btn-light border rounded-pill px-3" onclick="location.reload()">
           <i class="fas fa-sync-alt text-secondary"></i>
         </button>
@@ -924,6 +1042,44 @@
             <div class="col-12 mt-4">
               <button type="submit" id="btn-save" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm">
                 Guardar Registro
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Reintegro -->
+  <div class="modal fade" id="reintegroModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-success"><i class="fas fa-hand-holding-dollar me-2"></i>Registrar reintegro</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="reintegro-form" class="row g-3">
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Monto</label>
+              <input type="number" id="reintegro-amount" class="form-control" placeholder="$" min="1" step="100" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Fecha</label>
+              <input type="date" id="reintegro-date" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">IDs de pagos (opcional)</label>
+              <input type="text" id="reintegro-reference" class="form-control" placeholder="id1,id2,id3">
+              <small class="text-muted">Separa múltiples IDs por coma.</small>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Notas (opcional)</label>
+              <textarea id="reintegro-notes" class="form-control" rows="2" placeholder="Detalle del reintegro..."></textarea>
+            </div>
+            <div class="col-12 mt-4">
+              <button type="submit" id="btn-save-reintegro" class="btn btn-success w-100 py-2 rounded-pill fw-bold shadow-sm">
+                Guardar reintegro
               </button>
             </div>
           </form>
