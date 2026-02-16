@@ -402,12 +402,22 @@
 
     // --- FUNCIONALIDAD UI ---
     function showToast(msg, type="success") {
+      const toastConfig = {
+        success: { color: 'var(--success)', icon: 'check-circle' },
+        error: { color: 'var(--danger)', icon: 'exclamation-circle' },
+        warning: { color: 'var(--warning)', icon: 'triangle-exclamation' }
+      };
+      const { color, icon } = toastConfig[type] || toastConfig.success;
       const el = document.createElement("div");
       el.className = "toast-custom";
-      el.style.borderLeftColor = type === "error" ? "var(--danger)" : "var(--success)";
-      el.innerHTML = `<i class="fas fa-${type === "error" ? "exclamation-circle" : "check-circle"}" style="color:${type === "error" ? "var(--danger)" : "var(--success)"}"></i> <strong>${msg}</strong>`;
+      el.style.borderLeftColor = color;
+      el.innerHTML = `<i class="fas fa-${icon}" style="color:${color}"></i> <strong>${msg}</strong>`;
       document.body.appendChild(el);
       setTimeout(() => { el.style.opacity="0"; el.style.transform="translateY(-10px)"; setTimeout(()=>el.remove(), 300) }, 3000);
+    }
+
+    function showCashMovementsWarning(show) {
+      $('#cash-movements-warning')?.classList.toggle('d-none', !show);
     }
 
     function toggleLoading(isLoading) {
@@ -470,6 +480,7 @@
 
     async function loadPayments() {
       toggleLoading(true);
+      showCashMovementsWarning(false);
       
       // Filtros
       const filters = {
@@ -484,11 +495,17 @@
       // Aquí usamos filtrado en cliente para robustez si fallan los índices.
       
       try {
-        // Intentamos traer lo más reciente (limite de seguridad)
-        const [paymentsSnapshot, cashMovements] = await Promise.all([
-          getDocs(query(collection(db, "payments"), orderBy("date", "desc"))),
-          getCashMovements()
-        ]);
+        // payments es crítico para renderizar; cash_movements se degrada si falla
+        const paymentsSnapshot = await getDocs(query(collection(db, "payments"), orderBy("date", "desc")));
+
+        let cashMovements = [];
+        try {
+          cashMovements = await getCashMovements();
+        } catch (cashError) {
+          console.warn("No se pudo cargar cash_movements. Se continúa en modo degradado:", cashError);
+          showCashMovementsWarning(true);
+          showToast("No se pudieron cargar los reintegros. Mostrando datos parciales.", "warning");
+        }
 
         let payments = paymentsSnapshot.docs.map(doc => ({id: doc.id, ...normalizeData(doc.data())}));
 
@@ -510,6 +527,7 @@
 
       } catch (error) {
         console.error("Error cargando datos:", error);
+        showCashMovementsWarning(false);
         $('#payments-table').innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4"><i class="fas fa-wifi me-2"></i>Error de conexión. Intente recargar.</td></tr>`;
       }
     }
@@ -945,6 +963,10 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div id="cash-movements-warning" class="small text-warning fw-semibold mb-2 d-none">
+      <i class="fas fa-triangle-exclamation me-1"></i>No se pudieron cargar los reintegros. KPIs mostrados en modo degradado.
     </div>
 
     <!-- Tabla de Datos -->
