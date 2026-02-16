@@ -433,13 +433,18 @@
 
     // Corrección de datos antiguos
     function normalizeData(data) {
+      const paymentReferences = Array.isArray(data.paymentReferences)
+        ? data.paymentReferences.map(ref => String(ref).trim()).filter(Boolean)
+        : [];
+
       return {
         ...data,
         unitPrice: Number(data.unitPrice ?? data.amount ?? 0),
         totalAmount: Number(data.totalAmount ?? data.amount ?? (Number(data.quantity||1)*(data.unitPrice||0))),
         status: data.status || "pendiente",
         reimbursedAmount: Number(data.reimbursedAmount ?? 0),
-        reimbursedDate: data.reimbursedDate ?? null
+        reimbursedDate: data.reimbursedDate ?? null,
+        paymentReferences
       };
     }
 
@@ -681,6 +686,11 @@
         }
 
         const totalAmount = totalValueInput ? Number(totalValueInput) : quantity * unitPrice;
+        const paymentReferences = $('#payment-references').value
+          .split(/[,\n]/)
+          .map(ref => ref.trim())
+          .filter(Boolean);
+
         const data = {
           pharmacy: $('#pharmacy').value.trim(),
           product: $('#product').value,
@@ -689,7 +699,8 @@
           totalAmount,
           date: new Date($('#date').value + "T00:00:00"),
           status: $('#status').value,
-          notes: $('#notes').value
+          notes: $('#notes').value,
+          paymentReferences
         };
 
         const paymentRef = await addDoc(collection(db, "payments"), data);
@@ -698,7 +709,9 @@
           amount: totalAmount,
           date: data.date,
           referencePaymentIds: [paymentRef.id],
-          notes: `Egreso por pago en farmacia ${data.pharmacy}`
+          notes: paymentReferences.length > 0
+            ? `Egreso por pago en farmacia ${data.pharmacy} (refs: ${paymentReferences.join(', ')})`
+            : `Egreso por pago en farmacia ${data.pharmacy}`
         });
         showToast("Pago registrado correctamente");
         bootstrap.Modal.getInstance($('#formModal')).hide();
@@ -792,6 +805,11 @@
       const status = data.status || "pendiente";
       const totalAmount = Number(data.totalAmount ?? 0);
       const prod = PRODUCTS[data.product] || {name: data.product};
+      const paymentReferences = Array.isArray(data.paymentReferences) ? data.paymentReferences : [];
+      const referencesHtml = paymentReferences.length > 0
+        ? `<div class="mt-3"><small class="text-muted d-block">Referencias de pago:</small><p class="mb-0 small">${paymentReferences.join(', ')}</p></div>`
+        : '<div class="mt-3"><small class="text-muted d-block">Referencias de pago:</small><p class="mb-0 small">Sin referencias</p></div>';
+
       $('#modal-detail-content').innerHTML = `
         <div class="text-center mb-4">
            <div class="display-1 text-secondary">${prod.icon || '📦'}</div>
@@ -802,6 +820,7 @@
            <div class="d-flex justify-content-between mb-2 border-bottom pb-2"><span>Farmacia:</span> <strong>${data.pharmacy}</strong></div>
            <div class="d-flex justify-content-between mb-2 border-bottom pb-2"><span>Total:</span> <strong class="text-primary fs-5">${fmtMoney(totalAmount)}</strong></div>
            <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <span>${fmtDate(data.date)}</span></div>
+           ${referencesHtml}
            <div class="mt-3"><small class="text-muted d-block">Notas:</small> <p class="mb-0 small">${data.notes || "Sin notas"}</p></div>
         </div>
       `;
@@ -1033,6 +1052,12 @@
                  <option value="pendiente">⏳ Pendiente</option>
                  <option value="procesado">✅ Procesado</option>
                </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Referencias de pago (opcional)</label>
+              <textarea id="payment-references" class="form-control" rows="2" placeholder="REF-001, REF-002 o una por línea"></textarea>
+              <small class="text-muted">Puedes agregar varias referencias separadas por coma o salto de línea.</small>
             </div>
 
             <div class="col-12">
