@@ -536,27 +536,36 @@
 
     function updateDashboard(payments) {
       // KPI Principal
-      const totalPaid = payments.reduce((acc, p) => acc + p.totalAmount, 0);
-      const percentRaw = (totalPaid / BUDGET_TOTAL) * 100;
-      const percent = Math.min(percentRaw, 100);
-      const remaining = Math.max(BUDGET_TOTAL - totalPaid, 0);
-      const overBudget = Math.max(totalPaid - BUDGET_TOTAL, 0);
-      
-      $('#kpi-paid').textContent = fmtMoney(totalPaid);
-      $('#kpi-remaining').textContent = fmtMoney(remaining);
-      $('#budget-bar').style.width = `${percent}%`;
-      $('#budget-percent').textContent = `${percentRaw.toFixed(1)}%`;
+      const amountFrom = (p, keys) => keys.reduce((value, key) => value ?? (p[key] !== undefined ? Number(p[key]) : undefined), undefined);
+      const egresos = payments.reduce((acc, p) => acc + Number(p.totalAmount || 0), 0);
+      const reintegros = payments.reduce((acc, p) => {
+        const value = amountFrom(p, ['reintegro', 'reintegros', 'companyContribution', 'companyTopUp', 'abonoEmpresa', 'abono']) ?? 0;
+        return acc + (Number.isFinite(value) ? value : 0);
+      }, 0);
+      const available = BUDGET_TOTAL + reintegros - egresos;
+
+      const baseUsageRaw = BUDGET_TOTAL > 0 ? (egresos / BUDGET_TOTAL) * 100 : 0;
+      const baseUsagePercent = Math.min(Math.max(baseUsageRaw, 0), 100);
+
+      $('#kpi-paid').textContent = fmtMoney(egresos);
+      $('#kpi-remaining').textContent = fmtMoney(available);
+      $('#budget-bar').style.width = `${baseUsagePercent}%`;
+      $('#budget-percent').textContent = `${baseUsageRaw.toFixed(1)}%`;
 
       // Colores de barra
       const bar = $('#budget-bar');
-      bar.className = `progress-bar progress-bar-striped progress-bar-animated ${percentRaw > 100 ? 'bg-danger' : percent > 90 ? 'bg-danger' : percent > 70 ? 'bg-warning' : 'bg-success'}`;
+      bar.className = `progress-bar progress-bar-striped progress-bar-animated ${baseUsageRaw > 100 ? 'bg-danger' : baseUsagePercent > 90 ? 'bg-danger' : baseUsagePercent > 70 ? 'bg-warning' : 'bg-success'}`;
 
       const overBudgetEl = $('#kpi-overbudget');
       const budgetCard = $('#budget-card');
-      if (overBudget > 0) {
-        overBudgetEl.textContent = `Sobrepresupuesto: ${fmtMoney(overBudget)}`;
+      if (available < 0) {
+        overBudgetEl.textContent = `Déficit actual: ${fmtMoney(Math.abs(available))}`;
         overBudgetEl.classList.remove('d-none');
         budgetCard.classList.add('over-budget');
+      } else if (reintegros > 0) {
+        overBudgetEl.textContent = `Reintegros acumulados: ${fmtMoney(reintegros)}`;
+        overBudgetEl.classList.remove('d-none');
+        budgetCard.classList.remove('over-budget');
       } else {
         overBudgetEl.textContent = '';
         overBudgetEl.classList.add('d-none');
@@ -732,15 +741,15 @@
         <div class="card budget-card h-100 shadow-lg" id="budget-card">
           <div class="card-body d-flex flex-column justify-content-between p-4 position-relative z-1">
             <div>
-              <div class="budget-label"><i class="fas fa-wallet me-1"></i> Presupuesto Ejecutado</div>
+              <div class="budget-label"><i class="fas fa-wallet me-1"></i> Egresos acumulados</div>
               <div class="budget-val" id="kpi-paid">$0</div>
-              <div class="small opacity-75 mt-1">de <span id="kpi-remaining">$500,000</span> disponibles</div>
+              <div class="small opacity-75 mt-1">Disponible actual: <span id="kpi-remaining">$500,000</span></div>
               <div class="small fw-semibold mt-1 d-none" id="kpi-overbudget"></div>
             </div>
             
             <div class="glass-panel mt-4">
               <div class="d-flex justify-content-between small mb-1 fw-bold">
-                <span>Consumo</span>
+                <span>Uso del fondo base</span>
                 <span id="budget-percent">0%</span>
               </div>
               <div class="progress bg-dark bg-opacity-25" style="height: 8px;">
