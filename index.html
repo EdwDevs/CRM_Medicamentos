@@ -684,10 +684,22 @@
       const select = $('#payment-references-select');
       if (!select) return;
 
-      const references = getAvailablePaymentReferencesByPharmacy($('#pharmacy')?.value || '');
+      const pharmacyValue = $('#pharmacy')?.value || '';
+      const references = getAvailablePaymentReferencesByPharmacy(pharmacyValue);
       const selectedValues = new Set(Array.from(select.selectedOptions).map(opt => opt.value));
 
       select.textContent = '';
+
+      if (!pharmacyValue.trim()) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Primero escribe la farmacia para cargar referencias';
+        opt.disabled = true;
+        opt.selected = true;
+        select.appendChild(opt);
+        select.disabled = true;
+        return;
+      }
 
       if (references.length === 0) {
         const opt = document.createElement('option');
@@ -733,9 +745,10 @@
         }
 
         const totalAmount = totalValueInput ? Number(totalValueInput) : quantity * unitPrice;
-        const paymentReferences = Array.from($('#payment-references-select').selectedOptions)
-          .map(option => option.value)
-          .filter(Boolean);
+        const referencesSelect = $('#payment-references-select');
+        const paymentReferences = referencesSelect
+          ? Array.from(referencesSelect.selectedOptions).map(option => option.value).filter(Boolean)
+          : [];
 
         const data = {
           pharmacy: $('#pharmacy').value.trim(),
