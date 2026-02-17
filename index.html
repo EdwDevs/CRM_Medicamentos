@@ -360,6 +360,9 @@
     import {
       getFirestore, collection, addDoc, getDocs, getDoc, deleteDoc, doc, query, orderBy, updateDoc
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getAuth, signInAnonymously, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     // --- CONFIGURACIÓN FIREBASE ---
     const firebaseConfig = {
@@ -375,6 +378,7 @@
     const app = initializeApp(firebaseConfig);
     try { getAnalytics(app); } catch(e){ console.warn("Analytics no soportado en este entorno"); }
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
     // --- CONSTANTES & UTILIDADES ---
     const BUDGET_TOTAL = 500000;
@@ -438,6 +442,20 @@
             <p class="text-muted mt-2 small">Sincronizando con Firebase...</p>
           </td></tr>`;
       }
+    }
+
+    async function ensureAuthAndLoadPayments() {
+      try {
+        if (!auth.currentUser) {
+          await signInAnonymously(auth);
+        }
+      } catch (authError) {
+        console.error("No fue posible autenticar de forma anónima:", authError);
+        $('#payments-table').innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4"><i class="fas fa-lock me-2"></i>No se pudo autenticar en Firebase. Verifique que Anonymous sign-in esté habilitado.</td></tr>`;
+        return;
+      }
+
+      await loadPayments();
     }
 
     // --- LOGICA DE NEGOCIO ---
@@ -931,10 +949,12 @@
       
       // Listeners Filtros
       ['filter-product', 'filter-pharmacy', 'filter-status', 'filter-date'].forEach(id => {
-        document.getElementById(id).addEventListener('change', loadPayments);
+        document.getElementById(id).addEventListener('change', ensureAuthAndLoadPayments);
       });
 
-      loadPayments();
+      onAuthStateChanged(auth, () => {
+        ensureAuthAndLoadPayments();
+      });
     });
   </script>
 </head>
