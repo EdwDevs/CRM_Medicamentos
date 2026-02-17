@@ -387,6 +387,8 @@
       multidol800: {name:"Multidol 800mg", cls:"multidol800", icon:"💊"}
     };
 
+    let allPaymentsCache = [];
+
     // Helpers de Formato
     const fmtMoney = (v) => new Intl.NumberFormat("es-CO", {style:"currency", currency:"COP", maximumFractionDigits:0}).format(v);
     const fmtDate = (d) => {
@@ -513,6 +515,8 @@
         }
 
         let payments = paymentsSnapshot.docs.map(doc => ({id: doc.id, ...normalizeData(doc.data())}));
+        allPaymentsCache = payments;
+        updatePaymentReferencesOptions();
 
         // Filtrado en Cliente (Client-side filtering) para máxima flexibilidad UX
         if (filters.prod) payments = payments.filter(p => p.product === filters.prod);
@@ -681,6 +685,61 @@
       select.value = pharmacies.includes(current) ? current : '';
     }
 
+    function getAvailablePaymentReferencesByPharmacy(pharmacy) {
+      const pharmacyName = (pharmacy || '').trim().toLowerCase();
+      if (!pharmacyName) return [];
+
+      return [...new Set(
+        allPaymentsCache
+          .filter(p => String(p.pharmacy || '').trim().toLowerCase() === pharmacyName)
+          .flatMap(p => Array.isArray(p.paymentReferences) ? p.paymentReferences : [])
+          .map(ref => String(ref).trim())
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+    }
+
+    function updatePaymentReferencesOptions() {
+      const select = $('#payment-references-select');
+      if (!select) return;
+
+      const pharmacyValue = $('#pharmacy')?.value || '';
+      const references = getAvailablePaymentReferencesByPharmacy(pharmacyValue);
+      const selectedValues = new Set(Array.from(select.selectedOptions).map(opt => opt.value));
+
+      select.textContent = '';
+
+      if (!pharmacyValue.trim()) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Primero escribe la farmacia para cargar referencias';
+        opt.disabled = true;
+        opt.selected = true;
+        select.appendChild(opt);
+        select.disabled = true;
+        return;
+      }
+
+      if (references.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Sin referencias disponibles para esta farmacia';
+        opt.disabled = true;
+        opt.selected = true;
+        select.appendChild(opt);
+        select.disabled = true;
+        return;
+      }
+
+      select.disabled = false;
+      references.forEach(reference => {
+        const opt = document.createElement('option');
+        opt.value = reference;
+        opt.textContent = reference;
+        if (selectedValues.has(reference)) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
     // --- ACCIONES CRUD ---
     window.addItem = async (e) => {
       e.preventDefault();
@@ -704,6 +763,10 @@
         }
 
         const totalAmount = totalValueInput ? Number(totalValueInput) : quantity * unitPrice;
+        const referencesSelect = $('#payment-references-select');
+        const paymentReferences = referencesSelect
+          ? Array.from(referencesSelect.selectedOptions).map(option => option.value).filter(Boolean)
+          : [];
         const paymentReferences = $('#payment-references').value
           .split(/[,\n]/)
           .map(ref => ref.trim())
@@ -855,6 +918,8 @@
       $('#reintegro-form').addEventListener('submit', window.addReintegro);
       $('#quantity').addEventListener('input', calculateTotal);
       $('#unitPrice').addEventListener('input', calculateTotal);
+      $('#pharmacy').addEventListener('input', updatePaymentReferencesOptions);
+      $('#formModal').addEventListener('shown.bs.modal', updatePaymentReferencesOptions);
       $('#reintegro-date').value = new Date().toISOString().split('T')[0];
       
       // Listeners Filtros
@@ -1077,6 +1142,11 @@
             </div>
 
             <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Seleccionar referencias (opcional)</label>
+              <select id="payment-references-select" class="form-select" multiple size="4" aria-label="Seleccionar varias referencias de pago">
+                <option value="" selected disabled>Primero escribe la farmacia para cargar referencias</option>
+              </select>
+              <small class="text-muted">Mantén presionada la tecla Ctrl (o Cmd) para elegir varias referencias.</small>
               <label class="form-label small fw-bold text-uppercase text-secondary">Referencias de pago (opcional)</label>
               <textarea id="payment-references" class="form-control" rows="2" placeholder="REF-001, REF-002 o una por línea"></textarea>
               <small class="text-muted">Puedes agregar varias referencias separadas por coma o salto de línea.</small>
