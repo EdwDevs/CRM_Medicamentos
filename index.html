@@ -611,395 +611,126 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { 
-            getFirestore, collection, addDoc, onSnapshot, 
-            doc, updateDoc, deleteDoc, query, where, getDocs, Timestamp, serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { db } from "./src/services/firebase.js";
+        import { loadPayments, getCashMovements, subscribePaymentReferences } from "./src/services/payments.js";
+        import { getProductConfig } from "./src/services/references.js";
+        import { renderTable, updateFiltersUI } from "./src/ui/table.js";
+        import { updateDashboard } from "./src/ui/dashboard.js";
+        import {
+            renderPaymentReferencesSelector,
+            handleCreatePaymentReference,
+            handleSavePayment,
+            handleSaveReintegro,
+            toggleStatus,
+            deleteItem,
+            openDetails
+        } from "./src/ui/modals.js";
 
-        // --- 1. CONFIGURACIÓN FIREBASE (Actualizada) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAaVSb70OFIoX48T9GbLmTcdXOSvKv2pRk",
-            authDomain: "zona1561-4de30.firebaseapp.com",
-            projectId: "zona1561-4de30",
-            storageBucket: "zona1561-4de30.firebasestorage.app",
-            messagingSenderId: "451366030738",
-            appId: "1:451366030738:web:e638db51fbe24f6a48054b"
-        };
-
-        const firebaseApp = initializeApp(firebaseConfig);
-        const db = getFirestore(firebaseApp);
-
-        // --- 2. ESTADO GLOBAL ---
         const state = {
             payments: [],
             movements: [],
             paymentReferences: [],
             budget: 500000,
-            filters: {
-                product: '',
-                pharmacy: '',
-                status: '',
-                date: ''
-            },
+            filters: { product: '', pharmacy: '', status: '', date: '' },
             loading: true
         };
 
-        // --- 3. UTILIDADES ---
         const utils = {
             fmtMoney: (amount) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount),
             normalizeText: (value) => (value || '').trim().toLowerCase(),
             fmtDate: (timestamp) => {
                 if (!timestamp) return '';
-                // Handle various date formats (Timestamp, Date, String)
                 let date;
-                if (timestamp.toDate) {
-                    date = timestamp.toDate();
-                } else if (timestamp instanceof Date) {
-                    date = timestamp;
-                } else if (typeof timestamp === 'string') {
-                    // Try parsing "YYYY-MM-DD" manually to avoid timezone issues
+                if (timestamp.toDate) date = timestamp.toDate();
+                else if (timestamp instanceof Date) date = timestamp;
+                else if (typeof timestamp === 'string') {
                     const parts = timestamp.split('-');
-                    if(parts.length === 3) {
-                        date = new Date(parts[0], parts[1]-1, parts[2]);
-                    } else {
-                        date = new Date(timestamp);
-                    }
-                } else {
-                    return '';
-                }
-                
+                    date = parts.length === 3 ? new Date(parts[0], parts[1] - 1, parts[2]) : new Date(timestamp);
+                } else return '';
                 return date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
             },
-            getProductConfig: (prod) => {
-                const map = {
-                    'descongel': { label: 'Descongel', badge: 'badge-descongel', icon: 'fa-snowflake' },
-                    'multidol400': { label: 'Multidol 400', badge: 'badge-multidol400', icon: 'fa-pills' },
-                    'multidol800': { label: 'Multidol 800', badge: 'badge-multidol800', icon: 'fa-capsules' }
-                };
-                return map[prod] || { label: prod, badge: 'bg-secondary text-white', icon: 'fa-box' };
-            },
+            getProductConfig,
             showToast: (msg, type = 'success') => {
                 const toastEl = document.getElementById('liveToast');
                 const toastIcon = document.getElementById('toast-icon');
-                const toastBody = toastEl.querySelector('.toast-body');
-                
                 document.getElementById('toast-message').textContent = msg;
                 toastEl.className = `toast align-items-center border-0 shadow-lg text-white bg-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'success'}`;
                 toastIcon.className = type === 'error' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-check-circle';
-                
-                const toast = new bootstrap.Toast(toastEl);
-                toast.show();
+                new bootstrap.Toast(toastEl).show();
             },
             toggleLoader: (show) => {
                 const el = document.getElementById('loader');
-                if(show) el.classList.remove('hidden');
+                if (show) el.classList.remove('hidden');
                 else el.classList.add('hidden');
             }
         };
 
-        // --- 4. LÓGICA CORE ---
         const app = {
             init: () => {
-                // Initial Load
                 app.subscribeToData();
-                
-                // Listeners UI
                 app.setupEventListeners();
-                
-                // Set default dates
                 document.getElementById('pay-date').valueAsDate = new Date();
                 document.getElementById('reint-date').valueAsDate = new Date();
             },
 
-            // --- DATA LOGIC ---
             subscribeToData: () => {
-                // utils.toggleLoader(true); // Don't block UI if already loaded or async
-                // Load Payments - COLECCIÓN CAMBIADA A pagos_productos
-                const qPagosProductos = query(collection(db, "pagos_productos"));
-                
-                onSnapshot(qPagosProductos, (snapshot) => {
-                    // --- LOG DE DOCUMENTOS ---
-                    console.group("--- Documentos de pagos_productos ---");
-                    if (snapshot.empty) {
-                        console.log("La colección está vacía.");
-                    } else {
-                        snapshot.docs.forEach(doc => {
-                            console.log(`ID: ${doc.id}`, doc.data());
-                        });
-                    }
-                    console.groupEnd();
-                    // ---------------------------------------------
-
-                    const rawData = snapshot.docs.map(doc => {
-                        const data = doc.data();
-                        
-                        // --- NORMALIZACIÓN DE DATOS (Campo -> App) ---
-                        // Función auxiliar para fecha
-                        const parseDate = (d) => {
-                            if (!d) return Timestamp.now();
-                            if (d.toDate) return d; // Es timestamp
-                            if (typeof d === 'string') return d; // String "YYYY-MM-DD"
-                            return d; // Es date obj?
-                        };
-
-                        // Función auxiliar para producto
-                        const normalizeProd = (p) => {
-                            if(!p) return 'descongel';
-                            const lower = p.toLowerCase();
-                            if(lower.includes('400')) return 'multidol400';
-                            if(lower.includes('800')) return 'multidol800';
-                            if(lower.includes('descongel')) return 'descongel';
-                            return 'multidol400'; // Default
-                        };
-
-                        return { 
-                            id: doc.id, 
-                            ...data,
-                            // Mapeo: Campo Firestore || Campo Legacy || Default
-                            pharmacy: data.cliente || data.pharmacy || 'Farmacia General',
-                            totalAmount: Number(data.totalPago) || Number(data.totalAmount) || 0,
-                            date: parseDate(data.fecha || data.date),
-                            product: normalizeProd(data.producto || data.product),
-                            quantity: Number(data.cajasPagadas) || Number(data.quantity) || 1,
-                            unitPrice: Number(data.valorUnitario) || Number(data.unitPrice) || 0,
-                            status: data.status || 'procesado' // Asumimos procesado por defecto si viene de pagos_productos
-                        };
-                    });
-
-                    // Ordenar en cliente
-                    state.payments = rawData.sort((a, b) => {
-                        // Helper para obtener milisegundos de cualquier formato de fecha
-                        const getTime = (d) => {
-                            if (d && d.toMillis) return d.toMillis();
-                            if (d instanceof Date) return d.getTime();
-                            if (typeof d === 'string') return new Date(d).getTime();
-                            return 0;
-                        };
-                        return getTime(b.date) - getTime(a.date);
-                    });
-
+                loadPayments(db, (payments) => {
+                    state.payments = payments;
                     app.updateUI();
                 }, (error) => {
-                    console.error("Error leyendo pagos_productos:", error);
-                    utils.showToast("Error de conexión: " + error.message, 'error');
+                    console.error('Error leyendo pagos_productos:', error);
+                    utils.showToast('Error de conexión: ' + error.message, 'error');
                     utils.toggleLoader(false);
                 });
 
-                // Load Movements
-                const qMovements = query(collection(db, "cash_movements"));
-                onSnapshot(qMovements, (snapshot) => {
-                    state.movements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    app.updateDashboard(); 
+                getCashMovements(db, (movements) => {
+                    state.movements = movements;
+                    app.updateDashboard();
                 });
 
-                const qPaymentReferences = query(collection(db, "payment_references"));
-                onSnapshot(qPaymentReferences, (snapshot) => {
-                    state.paymentReferences = snapshot.docs.map((paymentReferenceDoc) => ({
-                        id: paymentReferenceDoc.id,
-                        ...paymentReferenceDoc.data()
-                    }));
-
+                subscribePaymentReferences(db, (references) => {
+                    state.paymentReferences = references;
                     app.renderPaymentReferencesSelector(document.getElementById('pay-pharmacy').value);
                 });
             },
 
-            getAvailablePaymentReferencesByPharmacy: (pharmacy) => {
-                const normalizedPharmacy = utils.normalizeText(pharmacy);
-                if (!normalizedPharmacy) return [];
+            getFilteredData: () => state.payments.filter((p) => {
+                const matchProd = !state.filters.product || p.product === state.filters.product;
+                const matchPharm = !state.filters.pharmacy || p.pharmacy === state.filters.pharmacy;
+                const matchStatus = !state.filters.status || p.status === state.filters.status;
 
-                return state.paymentReferences
-                    .filter((ref) => ref.active !== false && utils.normalizeText(ref.pharmacy) === normalizedPharmacy)
-                    .map((ref) => ({
-                        id: ref.id,
-                        reference: ref.reference
-                    }))
-                    .sort((a, b) => a.reference.localeCompare(b.reference, 'es'));
-            },
+                let matchDate = true;
+                if (state.filters.date) {
+                    let pDate;
+                    if (p.date && p.date.toDate) pDate = p.date.toDate();
+                    else if (typeof p.date === 'string') pDate = new Date(p.date);
+                    else pDate = p.date;
 
-            renderPaymentReferencesSelector: (pharmacy) => {
-                const selector = document.getElementById('pay-refs');
-                const selectedValues = Array.from(selector.selectedOptions || []).map(option => option.value);
-                const availableReferences = app.getAvailablePaymentReferencesByPharmacy(pharmacy);
-
-                selector.innerHTML = '';
-                availableReferences.forEach((item) => {
-                    const option = document.createElement('option');
-                    option.value = item.reference;
-                    option.textContent = item.reference;
-                    option.selected = selectedValues.includes(item.reference);
-                    selector.appendChild(option);
-                });
-            },
-
-            getFilteredData: () => {
-                return state.payments.filter(p => {
-                    const matchProd = !state.filters.product || p.product === state.filters.product;
-                    const matchPharm = !state.filters.pharmacy || p.pharmacy === state.filters.pharmacy;
-                    const matchStatus = !state.filters.status || p.status === state.filters.status;
-                    
-                    let matchDate = true;
-                    if (state.filters.date) {
-                        let pDate;
-                        if(p.date && p.date.toDate) pDate = p.date.toDate();
-                        else if(typeof p.date === 'string') pDate = new Date(p.date);
-                        else pDate = p.date;
-
-                        if (pDate) {
-                            const filterDate = new Date(state.filters.date + '-01'); // YYYY-MM
-                            // Ajustar zona horaria local para comparación de mes/año
-                            matchDate = pDate.getMonth() === filterDate.getMonth() && pDate.getFullYear() === filterDate.getFullYear();
-                        }
+                    if (pDate) {
+                        const filterDate = new Date(state.filters.date + '-01');
+                        matchDate = pDate.getMonth() === filterDate.getMonth() && pDate.getFullYear() === filterDate.getFullYear();
                     }
+                }
 
-                    return matchProd && matchPharm && matchStatus && matchDate;
-                });
-            },
+                return matchProd && matchPharm && matchStatus && matchDate;
+            }),
 
             updateUI: () => {
-                const filtered = app.getFilteredData();
-                app.renderTable(filtered);
+                app.renderTable(app.getFilteredData());
                 app.updateDashboard();
-                app.updateFilterOptions();
+                app.updateFiltersUI();
                 utils.toggleLoader(false);
             },
 
-            renderTable: (data) => {
-                const tbody = document.getElementById('payments-table-body');
-                const emptyState = document.getElementById('empty-state');
-                tbody.innerHTML = '';
-
-                if (data.length === 0) {
-                    emptyState.classList.remove('d-none');
-                    return;
-                }
-                emptyState.classList.add('d-none');
-
-                data.forEach((item, index) => {
-                    const prodConfig = utils.getProductConfig(item.product);
-                    const isProcessed = item.status === 'procesado';
-                    const delay = Math.min(index * 50, 500);
-
-                    const row = document.createElement('tr');
-                    row.className = 'animate-row';
-                    row.style.animationDelay = `${delay}ms`;
-                    
-                    row.innerHTML = `
-                        <td class="fw-medium text-muted" data-label="Fecha">${utils.fmtDate(item.date)}</td>
-                        <td class="fw-bold text-dark" data-label="Farmacia">${item.pharmacy}</td>
-                        <td data-label="Producto">
-                            <span class="badge-product ${prodConfig.badge}">
-                                <i class="fa-solid ${prodConfig.icon}"></i> ${prodConfig.label}
-                            </span>
-                        </td>
-                        <td class="text-center fw-medium" data-label="Cant.">${item.quantity}</td>
-                        <td class="text-end text-muted font-monospace" data-label="Unitario">${utils.fmtMoney(item.unitPrice)}</td>
-                        <td class="text-end fw-bold text-primary font-monospace" data-label="Total">${utils.fmtMoney(item.totalAmount)}</td>
-                        <td class="text-center" data-label="Estado">
-                            <button onclick="app.toggleStatus('${item.id}', '${item.status}')" 
-                                class="btn btn-sm border-0 badge-status-${item.status} fw-bold text-uppercase px-3 py-1 rounded-pill" style="font-size: 0.7rem; letter-spacing: 0.5px;">
-                                ${isProcessed ? '<i class="fa-solid fa-check me-1"></i>Procesado' : '<i class="fa-regular fa-clock me-1"></i>Pendiente'}
-                            </button>
-                        </td>
-                        <td class="text-end pe-md-4" data-label="Acciones">
-                            <div class="d-flex justify-content-end gap-2">
-                                <button onclick="app.openDetails('${item.id}')" class="btn btn-sm btn-light text-primary hover-shadow">
-                                    <i class="fa-regular fa-eye"></i>
-                                </button>
-                                <button onclick="app.deleteItem('${item.id}')" class="btn btn-sm btn-light text-danger hover-shadow">
-                                    <i class="fa-regular fa-trash-can"></i>
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            },
-
-            updateDashboard: () => {
-                const stats = {
-                    descongel: 0,
-                    multi400: 0,
-                    multi800: 0,
-                    pending: 0,
-                    egresos: 0
-                };
-
-                state.payments.forEach(p => {
-                    if (p.product === 'descongel') stats.descongel += p.quantity;
-                    if (p.product === 'multidol400') stats.multi400 += p.quantity;
-                    if (p.product === 'multidol800') stats.multi800 += p.quantity;
-                    if (p.status === 'pendiente') stats.pending++;
-                    stats.egresos += p.totalAmount || 0;
-                });
-
-                const movementEgresos = state.movements
-                    .filter(m => m.type === 'egreso')
-                    .reduce((acc, m) => acc + (m.amount || 0), 0);
-                
-                stats.egresos += movementEgresos;
-
-                const reintegros = state.movements
-                    .filter(m => m.type === 'reintegro')
-                    .reduce((acc, m) => acc + (m.amount || 0), 0);
-                
-                const legacyReintegros = state.payments.reduce((acc, p) => acc + (p.reimbursedAmount || 0), 0);
-                const totalReintegros = reintegros + legacyReintegros;
-                const available = state.budget + totalReintegros - stats.egresos;
-                const usagePercent = (stats.egresos / state.budget) * 100;
-
-                document.getElementById('stat-descongel').textContent = stats.descongel;
-                document.getElementById('stat-multi400').textContent = stats.multi400;
-                document.getElementById('stat-multi800').textContent = stats.multi800;
-                document.getElementById('stat-pending').textContent = stats.pending;
-
-                document.getElementById('kpi-available').textContent = utils.fmtMoney(available);
-                document.getElementById('kpi-egresos').textContent = `Egresos: ${utils.fmtMoney(stats.egresos)}`;
-                
-                const percentText = document.getElementById('kpi-percentage');
-                const progressBar = document.getElementById('budget-progress');
-                
-                percentText.textContent = `${usagePercent.toFixed(1)}% Usado`;
-                progressBar.style.width = `${Math.min(usagePercent, 100)}%`;
-                
-                if (usagePercent > 100) {
-                    progressBar.style.background = 'var(--danger)';
-                    percentText.classList.add('text-warning');
-                } else if (usagePercent > 70) {
-                    progressBar.style.background = 'var(--warning)';
-                } else {
-                    progressBar.style.background = 'rgba(255, 255, 255, 0.9)';
-                }
-            },
-
-            updateFilterOptions: () => {
-                const pharmacySelect = document.getElementById('filter-pharmacy');
-                const currentVal = pharmacySelect.value;
-                const pharmacies = [...new Set(state.payments.map(p => p.pharmacy))].sort();
-                
-                pharmacySelect.innerHTML = '<option value="">Todas las farmacias</option>';
-                pharmacies.forEach(ph => {
-                    const opt = document.createElement('option');
-                    opt.value = ph;
-                    opt.textContent = ph;
-                    pharmacySelect.appendChild(opt);
-                });
-                pharmacySelect.value = currentVal;
-
-                const dataList = document.getElementById('pharmacy-list');
-                dataList.innerHTML = '';
-                pharmacies.forEach(ph => {
-                    const opt = document.createElement('option');
-                    opt.value = ph;
-                    dataList.appendChild(opt);
-                });
-            },
+            renderTable: (data) => renderTable(data, { utils, getProductConfig }),
+            updateDashboard: () => updateDashboard(state, utils),
+            updateFiltersUI: () => updateFiltersUI(state.payments),
+            renderPaymentReferencesSelector: (pharmacy) => renderPaymentReferencesSelector(pharmacy, state, utils),
 
             setupEventListeners: () => {
-                ['filter-product', 'filter-pharmacy', 'filter-status', 'filter-date'].forEach(id => {
+                ['filter-product', 'filter-pharmacy', 'filter-status', 'filter-date'].forEach((id) => {
                     document.getElementById(id).addEventListener('change', (e) => {
-                        const key = id.replace('filter-', '');
-                        state.filters[key] = e.target.value;
+                        state.filters[id.replace('filter-', '')] = e.target.value;
                         app.updateUI();
                     });
                 });
@@ -1013,255 +744,19 @@
                     if (total > 0) previewEl.classList.remove('d-none');
                     else previewEl.classList.add('d-none');
                 };
+
                 document.getElementById('pay-qty').addEventListener('input', calcTotal);
                 document.getElementById('pay-price').addEventListener('input', calcTotal);
-
-                document.getElementById('pay-pharmacy').addEventListener('input', (e) => {
-                    app.renderPaymentReferencesSelector(e.target.value);
-                });
-
+                document.getElementById('pay-pharmacy').addEventListener('input', (e) => app.renderPaymentReferencesSelector(e.target.value));
                 document.getElementById('btn-new-reference').addEventListener('click', app.handleCreatePaymentReference);
             },
 
-            handleCreatePaymentReference: async () => {
-                const pharmacyValue = document.getElementById('pay-pharmacy').value;
-                const normalizedPharmacy = utils.normalizeText(pharmacyValue);
-
-                if (!normalizedPharmacy) {
-                    utils.showToast('Primero ingresa la farmacia para asociar la referencia.', 'warning');
-                    return;
-                }
-
-                const newReferenceValue = prompt('Nueva referencia de pago');
-                if (newReferenceValue === null) return;
-
-                const visibleReference = newReferenceValue.trim();
-                const normalizedReference = utils.normalizeText(newReferenceValue);
-
-                if (!normalizedReference) {
-                    utils.showToast('La referencia no puede estar vacía.', 'warning');
-                    return;
-                }
-
-                const duplicatedInCache = state.paymentReferences.some((item) => {
-                    return utils.normalizeText(item.pharmacy) === normalizedPharmacy
-                        && utils.normalizeText(item.reference) === normalizedReference;
-                });
-
-                if (duplicatedInCache) {
-                    utils.showToast('Esa referencia ya existe para esta farmacia.', 'warning');
-                    return;
-                }
-
-                try {
-                    utils.toggleLoader(true);
-
-                    const duplicateQuery = query(
-                        collection(db, 'payment_references'),
-                        where('pharmacy', '==', normalizedPharmacy)
-                    );
-                    const duplicateSnapshot = await getDocs(duplicateQuery);
-                    const duplicatedInDb = duplicateSnapshot.docs.some((paymentReferenceDoc) => {
-                        const data = paymentReferenceDoc.data();
-                        return utils.normalizeText(data.reference) === normalizedReference;
-                    });
-
-                    if (duplicatedInDb) {
-                        utils.showToast('Esa referencia ya existe para esta farmacia.', 'warning');
-                        return;
-                    }
-
-                    await addDoc(collection(db, 'payment_references'), {
-                        pharmacy: normalizedPharmacy,
-                        reference: visibleReference,
-                        active: true,
-                        createdAt: serverTimestamp()
-                    });
-
-                    app.renderPaymentReferencesSelector(pharmacyValue);
-                    utils.showToast('Referencia creada exitosamente.');
-                } catch (error) {
-                    utils.showToast('No fue posible crear la referencia: ' + error.message, 'error');
-                } finally {
-                    utils.toggleLoader(false);
-                }
-            },
-
-            handleSavePayment: async () => {
-                const pharmacy = document.getElementById('pay-pharmacy').value;
-                const product = document.getElementById('pay-product').value;
-                const dateVal = document.getElementById('pay-date').value;
-                const qty = parseInt(document.getElementById('pay-qty').value);
-                const price = parseFloat(document.getElementById('pay-price').value);
-                const status = document.getElementById('pay-status').value;
-                const notes = document.getElementById('pay-notes').value;
-                const refs = Array.from(document.getElementById('pay-refs').selectedOptions).map(option => option.value);
-
-                if (!pharmacy || !product || !dateVal || qty <= 0 || price < 0) {
-                    utils.showToast("Por favor completa todos los campos correctamente.", 'warning');
-                    return;
-                }
-
-                const refArray = refs;
-
-                // --- ESCRITURA NORMALIZADA: Guardamos en campos nuevos y viejos por compatibilidad? ---
-                // O mejor guardamos en el formato que ya usa la DB (cliente, totalPago, etc)
-                // Para mantener consistencia con lo que existe en DB, usaremos los campos de la imagen:
-                
-                const newPayment = {
-                    cliente: pharmacy, // Map to DB field
-                    producto: product === 'multidol400' ? 'MULTIDOL X400' : product === 'multidol800' ? 'MULTIDOL X800' : 'DESCONGEL', // Reverse map
-                    cajasPagadas: qty, // Map to DB field
-                    valorUnitario: price, // Map to DB field
-                    totalPago: qty * price, // Map to DB field
-                    fecha: dateVal, // Store as string "YYYY-MM-DD" like existing data
-                    status, // New field, assuming allowed
-                    observaciones: notes, // Map to DB field
-                    fechaRegistro: new Date().toISOString(), // DB field
-                    paymentReferences: refArray
-                };
-
-                try {
-                    utils.toggleLoader(true);
-                    // ESCRITURA: CAMBIADO A pagos_productos
-                    await addDoc(collection(db, "pagos_productos"), newPayment);
-                    
-                    const modalEl = document.getElementById('modalNewPayment');
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    modal.hide();
-                    document.getElementById('form-payment').reset();
-                    app.renderPaymentReferencesSelector('');
-                    document.getElementById('pay-date').valueAsDate = new Date();
-                    document.getElementById('pay-preview-alert').classList.add('d-none');
-
-                    utils.showToast("Pago registrado exitosamente");
-                } catch (error) {
-                    console.error(error);
-                    utils.showToast("Error al guardar: " + error.message, 'error');
-                } finally {
-                    utils.toggleLoader(false);
-                }
-            },
-
-            handleSaveReintegro: async () => {
-                const amount = parseFloat(document.getElementById('reint-amount').value);
-                const dateVal = document.getElementById('reint-date').value;
-                const idsTxt = document.getElementById('reint-ids').value;
-                const notes = document.getElementById('reint-notes').value;
-
-                if (!amount || amount <= 0 || !dateVal) {
-                    utils.showToast("Ingresa un monto y fecha válidos.", 'warning');
-                    return;
-                }
-
-                const refIds = idsTxt.split(',').map(s => s.trim()).filter(s => s);
-
-                const movement = {
-                    type: 'reintegro',
-                    amount,
-                    date: Timestamp.fromDate(new Date(dateVal + 'T12:00:00')),
-                    referencePaymentIds: refIds,
-                    notes,
-                    createdAt: serverTimestamp()
-                };
-
-                try {
-                    utils.toggleLoader(true);
-                    await addDoc(collection(db, "cash_movements"), movement);
-                    
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalReintegro'));
-                    modal.hide();
-                    document.getElementById('form-reintegro').reset();
-                    document.getElementById('reint-date').valueAsDate = new Date();
-
-                    utils.showToast("Reintegro registrado. Disponible actualizado.");
-                } catch (error) {
-                    utils.showToast("Error: " + error.message, 'error');
-                } finally {
-                    utils.toggleLoader(false);
-                }
-            },
-
-            toggleStatus: async (id, currentStatus) => {
-                const newStatus = currentStatus === 'pendiente' ? 'procesado' : 'pendiente';
-                try {
-                    // ACTUALIZACIÓN: CAMBIADO A pagos_productos
-                    await updateDoc(doc(db, "pagos_productos", id), { status: newStatus });
-                    utils.showToast(`Estado actualizado a ${newStatus}`);
-                } catch (error) {
-                    utils.showToast("Error actualizando estado", 'error');
-                }
-            },
-
-            deleteItem: async (id) => {
-                if (confirm("¿Estás seguro de eliminar este registro permanentemente?")) {
-                    try {
-                        // ELIMINACIÓN: CAMBIADO A pagos_productos
-                        await deleteDoc(doc(db, "pagos_productos", id));
-                        utils.showToast("Registro eliminado");
-                    } catch (error) {
-                        utils.showToast("Error eliminando", 'error');
-                    }
-                }
-            },
-
-            openDetails: (id) => {
-                const item = state.payments.find(p => p.id === id);
-                if (!item) return;
-
-                const prodConfig = utils.getProductConfig(item.product);
-                const content = document.getElementById('detail-content');
-                
-                content.innerHTML = `
-                    <div class="p-4 bg-light d-flex align-items-center justify-content-between">
-                        <div>
-                            <span class="badge ${prodConfig.badge} mb-2 fs-6">
-                                <i class="fa-solid ${prodConfig.icon} me-1"></i> ${prodConfig.label}
-                            </span>
-                            <h4 class="mb-0 fw-bold">${item.pharmacy}</h4>
-                        </div>
-                        <div class="text-end">
-                            <h3 class="fw-bold text-primary mb-0">${utils.fmtMoney(item.totalAmount)}</h3>
-                            <small class="text-muted">${item.quantity} und. a ${utils.fmtMoney(item.unitPrice)}</small>
-                        </div>
-                    </div>
-                    <div class="p-4">
-                        <div class="row g-4">
-                            <div class="col-6">
-                                <label class="small text-muted fw-bold text-uppercase">Fecha</label>
-                                <p class="mb-0 fw-medium">${utils.fmtDate(item.date)}</p>
-                            </div>
-                            <div class="col-6">
-                                <label class="small text-muted fw-bold text-uppercase">Estado</label>
-                                <div>
-                                    <span class="badge rounded-pill bg-${item.status === 'procesado' ? 'success' : 'warning'} text-dark bg-opacity-25">
-                                        ${item.status.toUpperCase()}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <label class="small text-muted fw-bold text-uppercase">Referencias de Pago</label>
-                                <div class="bg-white border rounded p-2 mt-1">
-                                    ${item.paymentReferences && item.paymentReferences.length > 0 
-                                        ? item.paymentReferences.map(r => `<span class="badge bg-secondary me-1">${r}</span>`).join('') 
-                                        : '<span class="text-muted fst-italic small">Sin referencias</span>'}
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <label class="small text-muted fw-bold text-uppercase">Notas</label>
-                                <p class="mb-0 text-secondary">${item.notes || item.observaciones || 'Sin notas adicionales.'}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-3 bg-light border-top text-end">
-                        <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    </div>
-                `;
-
-                const modal = new bootstrap.Modal(document.getElementById('modalDetails'));
-                modal.show();
-            },
-            
+            handleCreatePaymentReference: () => handleCreatePaymentReference({ db, state, utils }),
+            handleSavePayment: () => handleSavePayment({ db, state, utils }),
+            handleSaveReintegro: () => handleSaveReintegro({ db, utils }),
+            toggleStatus: (id, currentStatus) => toggleStatus({ db, id, currentStatus, utils }),
+            deleteItem: (id) => deleteItem({ db, id, utils }),
+            openDetails: (id) => openDetails({ id, state, utils }),
             refreshData: () => {
                 utils.toggleLoader(true);
                 setTimeout(() => utils.toggleLoader(false), 500);
@@ -1270,7 +765,6 @@
 
         window.app = app;
         document.addEventListener('DOMContentLoaded', app.init);
-
     </script>
 </body>
 </html>
