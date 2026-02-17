@@ -513,8 +513,14 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-uppercase text-muted">Referencias de Pago</label>
-                            <textarea class="form-control" id="pay-refs" rows="2" placeholder="Ej: Recibo #1234, Transferencia #987"></textarea>
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <label class="form-label small fw-bold text-uppercase text-muted mb-0">Referencias de Pago</label>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-new-reference">
+                                    <i class="fa-solid fa-plus me-1"></i>Nueva referencia
+                                </button>
+                            </div>
+                            <select class="form-select" id="pay-refs" multiple size="4"></select>
+                            <small class="text-muted">Puedes seleccionar varias referencias de pago.</small>
                         </div>
                         
                         <div class="mb-0">
@@ -608,7 +614,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { 
             getFirestore, collection, addDoc, onSnapshot, 
-            doc, updateDoc, deleteDoc, query, orderBy, Timestamp, serverTimestamp 
+            doc, updateDoc, deleteDoc, query, where, getDocs, Timestamp, serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // --- 1. CONFIGURACIÓN FIREBASE (Actualizada) ---
@@ -628,6 +634,7 @@
         const state = {
             payments: [],
             movements: [],
+            paymentReferences: [],
             budget: 500000,
             filters: {
                 product: '',
@@ -641,6 +648,7 @@
         // --- 3. UTILIDADES ---
         const utils = {
             fmtMoney: (amount) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount),
+            normalizeText: (value) => (value || '').trim().toLowerCase(),
             fmtDate: (timestamp) => {
                 if (!timestamp) return '';
                 // Handle various date formats (Timestamp, Date, String)
@@ -783,6 +791,44 @@
                 onSnapshot(qMovements, (snapshot) => {
                     state.movements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     app.updateDashboard(); 
+                });
+
+                const qPaymentReferences = query(collection(db, "payment_references"));
+                onSnapshot(qPaymentReferences, (snapshot) => {
+                    state.paymentReferences = snapshot.docs.map((paymentReferenceDoc) => ({
+                        id: paymentReferenceDoc.id,
+                        ...paymentReferenceDoc.data()
+                    }));
+
+                    app.renderPaymentReferencesSelector(document.getElementById('pay-pharmacy').value);
+                });
+            },
+
+            getAvailablePaymentReferencesByPharmacy: (pharmacy) => {
+                const normalizedPharmacy = utils.normalizeText(pharmacy);
+                if (!normalizedPharmacy) return [];
+
+                return state.paymentReferences
+                    .filter((ref) => ref.active !== false && utils.normalizeText(ref.pharmacy) === normalizedPharmacy)
+                    .map((ref) => ({
+                        id: ref.id,
+                        reference: ref.reference
+                    }))
+                    .sort((a, b) => a.reference.localeCompare(b.reference, 'es'));
+            },
+
+            renderPaymentReferencesSelector: (pharmacy) => {
+                const selector = document.getElementById('pay-refs');
+                const selectedValues = Array.from(selector.selectedOptions || []).map(option => option.value);
+                const availableReferences = app.getAvailablePaymentReferencesByPharmacy(pharmacy);
+
+                selector.innerHTML = '';
+                availableReferences.forEach((item) => {
+                    const option = document.createElement('option');
+                    option.value = item.reference;
+                    option.textContent = item.reference;
+                    option.selected = selectedValues.includes(item.reference);
+                    selector.appendChild(option);
                 });
             },
 
@@ -969,6 +1015,76 @@
                 };
                 document.getElementById('pay-qty').addEventListener('input', calcTotal);
                 document.getElementById('pay-price').addEventListener('input', calcTotal);
+
+                document.getElementById('pay-pharmacy').addEventListener('input', (e) => {
+                    app.renderPaymentReferencesSelector(e.target.value);
+                });
+
+                document.getElementById('btn-new-reference').addEventListener('click', app.handleCreatePaymentReference);
+            },
+
+            handleCreatePaymentReference: async () => {
+                const pharmacyValue = document.getElementById('pay-pharmacy').value;
+                const normalizedPharmacy = utils.normalizeText(pharmacyValue);
+
+                if (!normalizedPharmacy) {
+                    utils.showToast('Primero ingresa la farmacia para asociar la referencia.', 'warning');
+                    return;
+                }
+
+                const newReferenceValue = prompt('Nueva referencia de pago');
+                if (newReferenceValue === null) return;
+
+                const visibleReference = newReferenceValue.trim();
+                const normalizedReference = utils.normalizeText(newReferenceValue);
+
+                if (!normalizedReference) {
+                    utils.showToast('La referencia no puede estar vacía.', 'warning');
+                    return;
+                }
+
+                const duplicatedInCache = state.paymentReferences.some((item) => {
+                    return utils.normalizeText(item.pharmacy) === normalizedPharmacy
+                        && utils.normalizeText(item.reference) === normalizedReference;
+                });
+
+                if (duplicatedInCache) {
+                    utils.showToast('Esa referencia ya existe para esta farmacia.', 'warning');
+                    return;
+                }
+
+                try {
+                    utils.toggleLoader(true);
+
+                    const duplicateQuery = query(
+                        collection(db, 'payment_references'),
+                        where('pharmacy', '==', normalizedPharmacy)
+                    );
+                    const duplicateSnapshot = await getDocs(duplicateQuery);
+                    const duplicatedInDb = duplicateSnapshot.docs.some((paymentReferenceDoc) => {
+                        const data = paymentReferenceDoc.data();
+                        return utils.normalizeText(data.reference) === normalizedReference;
+                    });
+
+                    if (duplicatedInDb) {
+                        utils.showToast('Esa referencia ya existe para esta farmacia.', 'warning');
+                        return;
+                    }
+
+                    await addDoc(collection(db, 'payment_references'), {
+                        pharmacy: normalizedPharmacy,
+                        reference: visibleReference,
+                        active: true,
+                        createdAt: serverTimestamp()
+                    });
+
+                    app.renderPaymentReferencesSelector(pharmacyValue);
+                    utils.showToast('Referencia creada exitosamente.');
+                } catch (error) {
+                    utils.showToast('No fue posible crear la referencia: ' + error.message, 'error');
+                } finally {
+                    utils.toggleLoader(false);
+                }
             },
 
             handleSavePayment: async () => {
@@ -979,14 +1095,14 @@
                 const price = parseFloat(document.getElementById('pay-price').value);
                 const status = document.getElementById('pay-status').value;
                 const notes = document.getElementById('pay-notes').value;
-                const refs = document.getElementById('pay-refs').value;
+                const refs = Array.from(document.getElementById('pay-refs').selectedOptions).map(option => option.value);
 
                 if (!pharmacy || !product || !dateVal || qty <= 0 || price < 0) {
                     utils.showToast("Por favor completa todos los campos correctamente.", 'warning');
                     return;
                 }
 
-                const refArray = refs.split(/[\n,]/).map(s => s.trim()).filter(s => s);
+                const refArray = refs;
 
                 // --- ESCRITURA NORMALIZADA: Guardamos en campos nuevos y viejos por compatibilidad? ---
                 // O mejor guardamos en el formato que ya usa la DB (cliente, totalPago, etc)
@@ -1014,6 +1130,7 @@
                     const modal = bootstrap.Modal.getInstance(modalEl);
                     modal.hide();
                     document.getElementById('form-payment').reset();
+                    app.renderPaymentReferencesSelector('');
                     document.getElementById('pay-date').valueAsDate = new Date();
                     document.getElementById('pay-preview-alert').classList.add('d-none');
 
