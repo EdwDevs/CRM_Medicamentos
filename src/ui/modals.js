@@ -8,6 +8,37 @@ import {
 } from "../services/payments.js";
 import { getProductConfig, getAvailablePaymentReferencesByPharmacy } from "../services/references.js";
 
+const normalizeWhitespace = (value) => (value || "").trim().replace(/\s+/g, " ");
+
+const clearFieldErrors = (fieldIds = []) => {
+  fieldIds.forEach((fieldId) => {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+
+    field.classList.remove("is-invalid");
+
+    const errorEl = document.getElementById(`${fieldId}-error`);
+    if (errorEl) errorEl.remove();
+  });
+};
+
+const setFieldError = (fieldId, message) => {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+
+  field.classList.add("is-invalid");
+
+  let errorEl = document.getElementById(`${fieldId}-error`);
+  if (!errorEl) {
+    errorEl = document.createElement("div");
+    errorEl.id = `${fieldId}-error`;
+    errorEl.className = "invalid-feedback d-block";
+    field.insertAdjacentElement("afterend", errorEl);
+  }
+
+  errorEl.textContent = message;
+};
+
 export const renderPaymentReferencesSelector = (pharmacy, state, utils) => {
   const selector = document.getElementById("pay-refs");
   const selectedValues = Array.from(selector.selectedOptions || []).map((option) => option.value);
@@ -70,6 +101,8 @@ export const handleCreatePaymentReference = async ({ db, state, utils }) => {
 };
 
 export const handleSavePayment = async ({ db, state, utils }) => {
+  clearFieldErrors(["pay-pharmacy", "pay-product", "pay-date", "pay-qty", "pay-price", "pay-status", "pay-refs"]);
+
   const pharmacy = document.getElementById("pay-pharmacy").value;
   const product = document.getElementById("pay-product").value;
   const dateVal = document.getElementById("pay-date").value;
@@ -79,13 +112,49 @@ export const handleSavePayment = async ({ db, state, utils }) => {
   const notes = document.getElementById("pay-notes").value;
   const refs = Array.from(document.getElementById("pay-refs").selectedOptions).map((option) => option.value);
 
-  if (!pharmacy || !product || !dateVal || qty <= 0 || price < 0) {
-    utils.showToast("Por favor completa todos los campos correctamente.", "warning");
+  const normalizedPharmacy = normalizeWhitespace(pharmacy);
+  const normalizedRefs = [...new Set(refs.map((ref) => ref.trim()).filter((ref) => ref))];
+
+  let hasValidationError = false;
+
+  if (!normalizedPharmacy) {
+    setFieldError("pay-pharmacy", "La farmacia es obligatoria.");
+    hasValidationError = true;
+  }
+
+  if (!product) {
+    setFieldError("pay-product", "Selecciona un producto.");
+    hasValidationError = true;
+  }
+
+  if (!dateVal) {
+    setFieldError("pay-date", "La fecha es obligatoria.");
+    hasValidationError = true;
+  }
+
+  if (!Number.isInteger(qty) || qty <= 0) {
+    setFieldError("pay-qty", "La cantidad debe ser mayor a 0.");
+    hasValidationError = true;
+  }
+
+  if (Number.isNaN(price) || price < 0) {
+    setFieldError("pay-price", "El valor unitario debe ser 0 o mayor.");
+    hasValidationError = true;
+  }
+
+  if (status === "procesado" && normalizedRefs.length === 0) {
+    setFieldError("pay-refs", "Para estado procesado debes seleccionar al menos una referencia.");
+    hasValidationError = true;
+  }
+
+  if (hasValidationError) {
     return;
   }
 
+  document.getElementById("pay-pharmacy").value = normalizedPharmacy;
+
   const newPayment = {
-    cliente: pharmacy,
+    cliente: normalizedPharmacy,
     producto: product === "multidol400" ? "MULTIDOL X400" : product === "multidol800" ? "MULTIDOL X800" : "DESCONGEL",
     cajasPagadas: qty,
     valorUnitario: price,
@@ -94,7 +163,7 @@ export const handleSavePayment = async ({ db, state, utils }) => {
     status,
     observaciones: notes,
     fechaRegistro: new Date().toISOString(),
-    paymentReferences: refs
+    paymentReferences: normalizedRefs
   };
 
   try {
@@ -119,20 +188,42 @@ export const handleSavePayment = async ({ db, state, utils }) => {
 };
 
 export const handleSaveReintegro = async ({ db, utils }) => {
+  clearFieldErrors(["reint-amount", "reint-date", "reint-ids"]);
+
   const amount = parseFloat(document.getElementById("reint-amount").value);
   const dateVal = document.getElementById("reint-date").value;
   const idsTxt = document.getElementById("reint-ids").value;
   const notes = document.getElementById("reint-notes").value;
 
-  if (!amount || amount <= 0 || !dateVal) {
-    utils.showToast("Ingresa un monto y fecha válidos.", "warning");
-    return;
+  let hasValidationError = false;
+
+  if (!amount || amount <= 0) {
+    setFieldError("reint-amount", "Ingresa un monto válido mayor a 0.");
+    hasValidationError = true;
   }
 
-  const refIds = idsTxt
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s);
+  if (!dateVal) {
+    setFieldError("reint-date", "La fecha es obligatoria.");
+    hasValidationError = true;
+  }
+
+  const rawIds = idsTxt.split(",").map((s) => s.trim());
+  const hasEmptyIds = idsTxt.trim().length > 0 && rawIds.some((id) => !id);
+
+  if (hasEmptyIds) {
+    setFieldError("reint-ids", "No se permiten IDs vacíos. Revisa comas duplicadas o al final.");
+    hasValidationError = true;
+  }
+
+  const refIds = rawIds.filter((id) => id);
+  if (new Set(refIds).size !== refIds.length) {
+    setFieldError("reint-ids", "No se permiten IDs duplicados en las referencias del reintegro.");
+    hasValidationError = true;
+  }
+
+  if (hasValidationError) {
+    return;
+  }
 
   try {
     utils.toggleLoader(true);
