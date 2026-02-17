@@ -411,12 +411,22 @@
 
     // --- FUNCIONALIDAD UI ---
     function showToast(msg, type="success") {
+      const toastConfig = {
+        success: { color: 'var(--success)', icon: 'check-circle' },
+        error: { color: 'var(--danger)', icon: 'exclamation-circle' },
+        warning: { color: 'var(--warning)', icon: 'triangle-exclamation' }
+      };
+      const { color, icon } = toastConfig[type] || toastConfig.success;
       const el = document.createElement("div");
       el.className = "toast-custom";
-      el.style.borderLeftColor = type === "error" ? "var(--danger)" : "var(--success)";
-      el.innerHTML = `<i class="fas fa-${type === "error" ? "exclamation-circle" : "check-circle"}" style="color:${type === "error" ? "var(--danger)" : "var(--success)"}"></i> <strong>${msg}</strong>`;
+      el.style.borderLeftColor = color;
+      el.innerHTML = `<i class="fas fa-${icon}" style="color:${color}"></i> <strong>${msg}</strong>`;
       document.body.appendChild(el);
       setTimeout(() => { el.style.opacity="0"; el.style.transform="translateY(-10px)"; setTimeout(()=>el.remove(), 300) }, 3000);
+    }
+
+    function showCashMovementsWarning(show) {
+      $('#cash-movements-warning')?.classList.toggle('d-none', !show);
     }
 
     function toggleLoading(isLoading) {
@@ -484,6 +494,7 @@
 
     async function loadPayments() {
       toggleLoading(true);
+      showCashMovementsWarning(false);
       
       // Filtros
       const filters = {
@@ -498,12 +509,17 @@
       // Aquí usamos filtrado en cliente para robustez si fallan los índices.
       
       try {
-        // Intentamos traer lo más reciente (limite de seguridad)
+        // payments es crítico para renderizar; cash_movements se degrada si falla
         const paymentsSnapshot = await getDocs(query(collection(db, "payments"), orderBy("date", "desc")));
-        const cashMovements = await getCashMovements().catch((movementError) => {
-          console.warn("No se pudieron cargar cash_movements; se continúa solo con payments", movementError);
-          return [];
-        });
+
+        let cashMovements = [];
+        try {
+          cashMovements = await getCashMovements();
+        } catch (cashError) {
+          console.warn("No se pudo cargar cash_movements. Se continúa en modo degradado:", cashError);
+          showCashMovementsWarning(true);
+          showToast("No se pudieron cargar los reintegros. Mostrando datos parciales.", "warning");
+        }
 
         let payments = paymentsSnapshot.docs.map(doc => ({id: doc.id, ...normalizeData(doc.data())}));
         allPaymentsCache = payments;
@@ -527,6 +543,7 @@
 
       } catch (error) {
         console.error("Error cargando datos:", error);
+        showCashMovementsWarning(false);
         $('#payments-table').innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4"><i class="fas fa-wifi me-2"></i>Error de conexión. Intente recargar.</td></tr>`;
       }
     }
@@ -754,9 +771,13 @@
 
         const totalAmount = totalValueInput ? Number(totalValueInput) : quantity * unitPrice;
         const referencesSelect = $('#payment-references-select');
-        const selectedPaymentReferences = referencesSelect
+        const paymentReferences = referencesSelect
           ? Array.from(referencesSelect.selectedOptions).map(option => option.value).filter(Boolean)
           : [];
+        const paymentReferences = $('#payment-references').value
+          .split(/[,\n]/)
+          .map(ref => ref.trim())
+          .filter(Boolean);
 
         const data = {
           pharmacy: $('#pharmacy').value.trim(),
@@ -767,7 +788,7 @@
           date: new Date($('#date').value + "T00:00:00"),
           status: $('#status').value,
           notes: $('#notes').value,
-          paymentReferences: selectedPaymentReferences
+          paymentReferences
         };
 
         const paymentRef = await addDoc(collection(db, "payments"), data);
@@ -776,8 +797,8 @@
           amount: totalAmount,
           date: data.date,
           referencePaymentIds: [paymentRef.id],
-          notes: selectedPaymentReferences.length > 0
-            ? `Egreso por pago en farmacia ${data.pharmacy} (refs: ${selectedPaymentReferences.join(', ')})`
+          notes: paymentReferences.length > 0
+            ? `Egreso por pago en farmacia ${data.pharmacy} (refs: ${paymentReferences.join(', ')})`
             : `Egreso por pago en farmacia ${data.pharmacy}`
         });
         showToast("Pago registrado correctamente");
@@ -1035,6 +1056,10 @@
       </div>
     </div>
 
+    <div id="cash-movements-warning" class="small text-warning fw-semibold mb-2 d-none">
+      <i class="fas fa-triangle-exclamation me-1"></i>No se pudieron cargar los reintegros. KPIs mostrados en modo degradado.
+    </div>
+
     <!-- Tabla de Datos -->
     <div class="card mb-5">
       <div class="table-responsive table-wrap">
@@ -1129,6 +1154,9 @@
                 <option value="" selected disabled>Primero escribe la farmacia para cargar referencias</option>
               </select>
               <small class="text-muted">Mantén presionada la tecla Ctrl (o Cmd) para elegir varias referencias.</small>
+              <label class="form-label small fw-bold text-uppercase text-secondary">Referencias de pago (opcional)</label>
+              <textarea id="payment-references" class="form-control" rows="2" placeholder="REF-001, REF-002 o una por línea"></textarea>
+              <small class="text-muted">Puedes agregar varias referencias separadas por coma o salto de línea.</small>
             </div>
 
             <div class="col-12">
