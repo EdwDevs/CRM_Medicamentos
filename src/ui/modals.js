@@ -40,18 +40,103 @@ const setFieldError = (fieldId, message) => {
 };
 
 export const renderPaymentReferencesSelector = (pharmacy, state, utils) => {
-  const selector = document.getElementById("pay-refs");
-  const selectedValues = Array.from(selector.selectedOptions || []).map((option) => option.value);
-  const availableReferences = getAvailablePaymentReferencesByPharmacy(state.paymentReferences, pharmacy, utils.normalizeText);
+  const listContainer = document.getElementById("pay-refs");
+  if (!listContainer) return;
 
-  selector.innerHTML = "";
+  const selectedValues = Array.from(document.querySelectorAll(".pay-ref-checkbox:checked")).map((checkbox) => checkbox.value);
+  const availableReferences = getAvailablePaymentReferencesByPharmacy(state.paymentReferences, pharmacy, utils.normalizeText);
+  const currentFilter = (document.getElementById("pay-refs-search")?.value || "").toLowerCase().trim();
+
+  listContainer.innerHTML = "";
+
+  if (availableReferences.length === 0) {
+    listContainer.innerHTML = '<small class="text-muted fst-italic">No hay referencias disponibles para esta farmacia.</small>';
+    updateSelectedReferencesChips();
+    return;
+  }
+
   availableReferences.forEach((item) => {
-    const option = document.createElement("option");
-    option.value = item.reference;
-    option.textContent = item.reference;
-    option.selected = selectedValues.includes(item.reference);
-    selector.appendChild(option);
+    const wrapper = document.createElement("div");
+    wrapper.className = "form-check pay-ref-item rounded px-2 py-1";
+    wrapper.dataset.reference = item.reference.toLowerCase();
+
+    if (currentFilter && !wrapper.dataset.reference.includes(currentFilter)) {
+      wrapper.classList.add("d-none");
+    }
+
+    const input = document.createElement("input");
+    input.className = "form-check-input pay-ref-checkbox";
+    input.type = "checkbox";
+    input.id = `pay-ref-${item.reference.replace(/[^a-z0-9]/gi, "-").toLowerCase()}`;
+    input.value = item.reference;
+    input.checked = selectedValues.includes(item.reference);
+
+    const label = document.createElement("label");
+    label.className = "form-check-label w-100 py-1";
+    label.htmlFor = input.id;
+    label.textContent = item.reference;
+
+    wrapper.appendChild(input);
+    wrapper.appendChild(label);
+    listContainer.appendChild(wrapper);
   });
+
+  bindPaymentReferenceCheckboxes();
+  updateSelectedReferencesChips();
+};
+
+const getSelectedPaymentReferences = () =>
+  Array.from(document.querySelectorAll(".pay-ref-checkbox:checked")).map((checkbox) => checkbox.value);
+
+const updateSelectedReferencesChips = () => {
+  const chipsContainer = document.getElementById("pay-selected-refs");
+  if (!chipsContainer) return;
+
+  const selectedReferences = getSelectedPaymentReferences();
+  if (selectedReferences.length === 0) {
+    chipsContainer.innerHTML = '<span class="text-muted small fst-italic">Sin referencias seleccionadas.</span>';
+    return;
+  }
+
+  chipsContainer.innerHTML = selectedReferences
+    .map((reference) => `<span class="badge rounded-pill text-bg-primary">${reference}</span>`)
+    .join("");
+};
+
+const bindPaymentReferenceCheckboxes = () => {
+  document.querySelectorAll(".pay-ref-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", updateSelectedReferencesChips);
+  });
+};
+
+export const setupPaymentReferencesControls = ({ state, utils }) => {
+  const searchInput = document.getElementById("pay-refs-search");
+  const selectAllButton = document.getElementById("btn-select-all-refs");
+  const clearButton = document.getElementById("btn-clear-refs");
+
+  searchInput?.addEventListener("input", () => {
+    const filterValue = searchInput.value.toLowerCase().trim();
+    document.querySelectorAll(".pay-ref-item").forEach((item) => {
+      const matches = item.dataset.reference.includes(filterValue);
+      item.classList.toggle("d-none", !matches);
+    });
+  });
+
+  selectAllButton?.addEventListener("click", () => {
+    document.querySelectorAll(".pay-ref-item:not(.d-none) .pay-ref-checkbox").forEach((checkbox) => {
+      checkbox.checked = true;
+    });
+    updateSelectedReferencesChips();
+  });
+
+  clearButton?.addEventListener("click", () => {
+    document.querySelectorAll(".pay-ref-checkbox").forEach((checkbox) => {
+      checkbox.checked = false;
+    });
+    updateSelectedReferencesChips();
+  });
+
+  renderPaymentReferencesSelector(document.getElementById("pay-pharmacy")?.value || "", state, utils);
 };
 
 export const handleCreatePaymentReference = async ({ db, state, utils }) => {
@@ -110,7 +195,7 @@ export const handleSavePayment = async ({ db, state, utils }) => {
   const price = parseFloat(document.getElementById("pay-price").value);
   const status = document.getElementById("pay-status").value;
   const notes = document.getElementById("pay-notes").value;
-  const refs = Array.from(document.getElementById("pay-refs").selectedOptions).map((option) => option.value);
+  const refs = getSelectedPaymentReferences();
 
   const normalizedPharmacy = normalizeWhitespace(pharmacy);
   const normalizedRefs = [...new Set(refs.map((ref) => ref.trim()).filter((ref) => ref))];
@@ -176,6 +261,7 @@ export const handleSavePayment = async ({ db, state, utils }) => {
     document.getElementById("form-payment").reset();
     document.getElementById("pay-date").valueAsDate = new Date();
     document.getElementById("pay-preview-alert").classList.add("d-none");
+    document.getElementById("pay-refs-search").value = "";
     renderPaymentReferencesSelector("", state, utils);
 
     utils.showToast("Pago registrado exitosamente");

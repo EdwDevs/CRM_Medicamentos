@@ -158,6 +158,42 @@
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
+
+        .pay-refs-panel {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            background: #fff;
+        }
+
+        .pay-refs-list {
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            background: #f8fafc;
+        }
+
+        .pay-ref-item {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pay-ref-item .form-check-input {
+            width: 1.1rem;
+            height: 1.1rem;
+        }
+
+        #pay-selected-refs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            min-height: 30px;
+        }
+
         /* --- TABLA --- */
         .table-container {
             background: white;
@@ -516,16 +552,28 @@
                         </div>
 
                         <div class="mb-3">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center justify-content-between mb-2 gap-2 flex-wrap">
                                 <label class="form-label small fw-bold text-uppercase text-muted mb-0">Referencias de Pago</label>
                                 <button type="button" class="btn btn-sm btn-outline-primary" id="btn-new-reference">
                                     <i class="fa-solid fa-plus me-1"></i>Nueva referencia
                                 </button>
                             </div>
-                            <select class="form-select" id="pay-refs" multiple size="4"></select>
-                            <small class="text-muted">Puedes seleccionar varias referencias de pago.</small>
+                            <div class="pay-refs-panel">
+                                <input type="search" class="form-control form-control-sm mb-2" id="pay-refs-search" placeholder="Buscar referencia..." aria-label="Buscar referencia de pago">
+                                <div class="d-flex gap-2 mb-2 flex-wrap">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-select-all-refs">Seleccionar todas</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-clear-refs">Limpiar selección</button>
+                                </div>
+                                <div class="pay-refs-list" id="pay-refs"></div>
+                            </div>
+                            <small class="text-muted d-block mt-1">Selección táctil compatible en móvil, sin teclas Ctrl/Cmd.</small>
                         </div>
-                        
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Seleccionadas</label>
+                            <div id="pay-selected-refs" class="border rounded p-2 bg-light"></div>
+                        </div>
+
                         <div class="mb-0">
                             <label class="form-label small fw-bold text-uppercase text-muted">Notas Adicionales</label>
                             <textarea class="form-control" id="pay-notes" rows="2" placeholder="Detalles opcionales..."></textarea>
@@ -621,6 +669,7 @@
         import { updateDashboard } from "./src/ui/dashboard.js";
         import {
             renderPaymentReferencesSelector,
+            setupPaymentReferencesControls,
             handleCreatePaymentReference,
             handleSavePayment,
             handleSaveReintegro,
@@ -730,6 +779,7 @@
             updateDashboard: () => updateDashboard(state, utils),
             updateFiltersUI: () => updateFiltersUI(state.payments),
             renderPaymentReferencesSelector: (pharmacy) => renderPaymentReferencesSelector(pharmacy, state, utils),
+            setupPaymentReferencesControls: () => setupPaymentReferencesControls({ state, utils }),
 
             setupEventListeners: () => {
                 ['filter-product', 'filter-pharmacy', 'filter-status', 'filter-date'].forEach((id) => {
@@ -753,6 +803,7 @@
                 document.getElementById('pay-price').addEventListener('input', calcTotal);
                 document.getElementById('pay-pharmacy').addEventListener('input', (e) => app.renderPaymentReferencesSelector(e.target.value));
                 document.getElementById('btn-new-reference').addEventListener('click', app.handleCreatePaymentReference);
+                app.setupPaymentReferencesControls();
             },
 
             handleCreatePaymentReference: () => handleCreatePaymentReference({ db, state, utils }),
