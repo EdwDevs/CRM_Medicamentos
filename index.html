@@ -387,6 +387,8 @@
       multidol800: {name:"Multidol 800mg", cls:"multidol800", icon:"💊"}
     };
 
+    let allPaymentsCache = [];
+
     // Helpers de Formato
     const fmtMoney = (v) => new Intl.NumberFormat("es-CO", {style:"currency", currency:"COP", maximumFractionDigits:0}).format(v);
     const fmtDate = (d) => {
@@ -433,13 +435,18 @@
 
     // Corrección de datos antiguos
     function normalizeData(data) {
+      const paymentReferences = Array.isArray(data.paymentReferences)
+        ? data.paymentReferences.map(ref => String(ref).trim()).filter(Boolean)
+        : [];
+
       return {
         ...data,
         unitPrice: Number(data.unitPrice ?? data.amount ?? 0),
         totalAmount: Number(data.totalAmount ?? data.amount ?? (Number(data.quantity||1)*(data.unitPrice||0))),
         status: data.status || "pendiente",
         reimbursedAmount: Number(data.reimbursedAmount ?? 0),
-        reimbursedDate: data.reimbursedDate ?? null
+        reimbursedDate: data.reimbursedDate ?? null,
+        paymentReferences
       };
     }
 
@@ -485,12 +492,15 @@
       
       try {
         // Intentamos traer lo más reciente (limite de seguridad)
-        const [paymentsSnapshot, cashMovements] = await Promise.all([
-          getDocs(query(collection(db, "payments"), orderBy("date", "desc"))),
-          getCashMovements()
-        ]);
+        const paymentsSnapshot = await getDocs(query(collection(db, "payments"), orderBy("date", "desc")));
+        const cashMovements = await getCashMovements().catch((movementError) => {
+          console.warn("No se pudieron cargar cash_movements; se continúa solo con payments", movementError);
+          return [];
+        });
 
         let payments = paymentsSnapshot.docs.map(doc => ({id: doc.id, ...normalizeData(doc.data())}));
+        allPaymentsCache = payments;
+        updatePaymentReferencesOptions();
 
         // Filtrado en Cliente (Client-side filtering) para máxima flexibilidad UX
         if (filters.prod) payments = payments.filter(p => p.product === filters.prod);
@@ -658,6 +668,61 @@
       select.value = pharmacies.includes(current) ? current : '';
     }
 
+    function getAvailablePaymentReferencesByPharmacy(pharmacy) {
+      const pharmacyName = (pharmacy || '').trim().toLowerCase();
+      if (!pharmacyName) return [];
+
+      return [...new Set(
+        allPaymentsCache
+          .filter(p => String(p.pharmacy || '').trim().toLowerCase() === pharmacyName)
+          .flatMap(p => Array.isArray(p.paymentReferences) ? p.paymentReferences : [])
+          .map(ref => String(ref).trim())
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+    }
+
+    function updatePaymentReferencesOptions() {
+      const select = $('#payment-references-select');
+      if (!select) return;
+
+      const pharmacyValue = $('#pharmacy')?.value || '';
+      const references = getAvailablePaymentReferencesByPharmacy(pharmacyValue);
+      const selectedValues = new Set(Array.from(select.selectedOptions).map(opt => opt.value));
+
+      select.textContent = '';
+
+      if (!pharmacyValue.trim()) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Primero escribe la farmacia para cargar referencias';
+        opt.disabled = true;
+        opt.selected = true;
+        select.appendChild(opt);
+        select.disabled = true;
+        return;
+      }
+
+      if (references.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Sin referencias disponibles para esta farmacia';
+        opt.disabled = true;
+        opt.selected = true;
+        select.appendChild(opt);
+        select.disabled = true;
+        return;
+      }
+
+      select.disabled = false;
+      references.forEach(reference => {
+        const opt = document.createElement('option');
+        opt.value = reference;
+        opt.textContent = reference;
+        if (selectedValues.has(reference)) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
     // --- ACCIONES CRUD ---
     window.addItem = async (e) => {
       e.preventDefault();
@@ -681,6 +746,11 @@
         }
 
         const totalAmount = totalValueInput ? Number(totalValueInput) : quantity * unitPrice;
+        const referencesSelect = $('#payment-references-select');
+        const selectedPaymentReferences = referencesSelect
+          ? Array.from(referencesSelect.selectedOptions).map(option => option.value).filter(Boolean)
+          : [];
+
         const data = {
           pharmacy: $('#pharmacy').value.trim(),
           product: $('#product').value,
@@ -689,7 +759,8 @@
           totalAmount,
           date: new Date($('#date').value + "T00:00:00"),
           status: $('#status').value,
-          notes: $('#notes').value
+          notes: $('#notes').value,
+          paymentReferences: selectedPaymentReferences
         };
 
         const paymentRef = await addDoc(collection(db, "payments"), data);
@@ -698,7 +769,9 @@
           amount: totalAmount,
           date: data.date,
           referencePaymentIds: [paymentRef.id],
-          notes: `Egreso por pago en farmacia ${data.pharmacy}`
+          notes: selectedPaymentReferences.length > 0
+            ? `Egreso por pago en farmacia ${data.pharmacy} (refs: ${selectedPaymentReferences.join(', ')})`
+            : `Egreso por pago en farmacia ${data.pharmacy}`
         });
         showToast("Pago registrado correctamente");
         bootstrap.Modal.getInstance($('#formModal')).hide();
@@ -792,6 +865,11 @@
       const status = data.status || "pendiente";
       const totalAmount = Number(data.totalAmount ?? 0);
       const prod = PRODUCTS[data.product] || {name: data.product};
+      const paymentReferences = Array.isArray(data.paymentReferences) ? data.paymentReferences : [];
+      const referencesHtml = paymentReferences.length > 0
+        ? `<div class="mt-3"><small class="text-muted d-block">Referencias de pago:</small><p class="mb-0 small">${paymentReferences.join(', ')}</p></div>`
+        : '<div class="mt-3"><small class="text-muted d-block">Referencias de pago:</small><p class="mb-0 small">Sin referencias</p></div>';
+
       $('#modal-detail-content').innerHTML = `
         <div class="text-center mb-4">
            <div class="display-1 text-secondary">${prod.icon || '📦'}</div>
@@ -802,6 +880,7 @@
            <div class="d-flex justify-content-between mb-2 border-bottom pb-2"><span>Farmacia:</span> <strong>${data.pharmacy}</strong></div>
            <div class="d-flex justify-content-between mb-2 border-bottom pb-2"><span>Total:</span> <strong class="text-primary fs-5">${fmtMoney(totalAmount)}</strong></div>
            <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <span>${fmtDate(data.date)}</span></div>
+           ${referencesHtml}
            <div class="mt-3"><small class="text-muted d-block">Notas:</small> <p class="mb-0 small">${data.notes || "Sin notas"}</p></div>
         </div>
       `;
@@ -818,6 +897,8 @@
       $('#reintegro-form').addEventListener('submit', window.addReintegro);
       $('#quantity').addEventListener('input', calculateTotal);
       $('#unitPrice').addEventListener('input', calculateTotal);
+      $('#pharmacy').addEventListener('input', updatePaymentReferencesOptions);
+      $('#formModal').addEventListener('shown.bs.modal', updatePaymentReferencesOptions);
       $('#reintegro-date').value = new Date().toISOString().split('T')[0];
       
       // Listeners Filtros
@@ -1033,6 +1114,14 @@
                  <option value="pendiente">⏳ Pendiente</option>
                  <option value="procesado">✅ Procesado</option>
                </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Seleccionar referencias (opcional)</label>
+              <select id="payment-references-select" class="form-select" multiple size="4" aria-label="Seleccionar varias referencias de pago">
+                <option value="" selected disabled>Primero escribe la farmacia para cargar referencias</option>
+              </select>
+              <small class="text-muted">Mantén presionada la tecla Ctrl (o Cmd) para elegir varias referencias.</small>
             </div>
 
             <div class="col-12">
