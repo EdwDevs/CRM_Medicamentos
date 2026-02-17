@@ -392,7 +392,14 @@
     // Helpers de Formato
     const fmtMoney = (v) => new Intl.NumberFormat("es-CO", {style:"currency", currency:"COP", maximumFractionDigits:0}).format(v);
     const fmtDate = (d) => {
-      const dt = d?.toDate ? d.toDate() : new Date(d + "T00:00:00");
+      const dt = d?.toDate
+        ? d.toDate()
+        : (typeof d === 'string' ? new Date(`${d}T00:00:00`) : new Date(d));
+
+      if (!(dt instanceof Date) || Number.isNaN(dt.getTime())) {
+        return 'Sin fecha';
+      }
+
       return dt.toLocaleDateString("es-CO", { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
