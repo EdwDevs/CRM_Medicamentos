@@ -28,6 +28,11 @@
             --radius-xl: 1.5rem;
             --font-main: 'Inter', sans-serif;
             --bg-body: #f1f5f9;
+            --tap-target-min: 48px;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
@@ -203,6 +208,9 @@
             /* IMPORTANTE: reemplaza tarjetas móviles por scroll horizontal fluido. */
             overflow-x: auto;
             overflow-y: visible;
+            scroll-behavior: smooth;
+            overscroll-behavior-x: contain;
+            /* IMPORTANTE: mantiene inercia en iOS para scroll horizontal de tabla. */
             -webkit-overflow-scrolling: touch;
         }
 
@@ -221,7 +229,7 @@
             letter-spacing: 0.05em;
             padding: 1rem 1.5rem;
             border-bottom: 1px solid #e2e8f0;
-            /* IMPORTANTE: encabezado fijo para mejorar la lectura en scroll vertical. */
+            /* IMPORTANTE: sticky evita perder el contexto de columnas en listados largos. */
             position: sticky;
             top: 0;
             z-index: 3;
@@ -239,9 +247,36 @@
             background-color: #f8fafc;
         }
 
-        /* Importante: clases de prioridad para ocultar/mostrar columnas sin romper semántica de <table>. */
+        /* IMPORTANTE: prioridades de columnas preservan datos críticos visibles en pantallas angostas. */
         .col-priority-essential { display: table-cell; }
         .col-priority-secondary { display: table-cell; }
+
+        /* IMPORTANTE: 48px cumple guía táctil (44–48px) para reducir taps fallidos en móvil. */
+        .tap-target,
+        .table-action-btn,
+        .table-status-btn {
+            min-width: var(--tap-target-min);
+            min-height: var(--tap-target-min);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, background-color 0.12s ease-out, color 0.12s ease-out;
+            touch-action: manipulation;
+        }
+
+        .table-action-btn:focus-visible,
+        .table-status-btn:focus-visible,
+        .fab-button:focus-visible {
+            outline: 3px solid rgba(79, 70, 229, 0.3);
+            outline-offset: 2px;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        }
+
+        .table-action-btn:active,
+        .table-status-btn:active {
+            transform: scale(0.96);
+            background-color: #eef2ff;
+        }
 
         .row-expand-details {
             position: relative;
@@ -309,8 +344,8 @@
             position: fixed;
             bottom: 2rem;
             right: 2rem;
-            width: 60px;
-            height: 60px;
+            width: var(--tap-target-min);
+            height: var(--tap-target-min);
             background: var(--primary);
             color: white;
             border-radius: 50%;
@@ -320,13 +355,13 @@
             font-size: 1.5rem;
             box-shadow: var(--shadow-glow), 0 10px 15px -3px rgba(0,0,0,0.3);
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.12s ease-out, background-color 0.12s ease-out, box-shadow 0.12s ease-out;
             z-index: 1050;
             border: none;
         }
 
-        .fab-button:hover {
-            transform: rotate(90deg) scale(1.1);
+        .fab-button:active {
+            transform: scale(0.94);
             background: var(--secondary);
         }
 
@@ -343,7 +378,7 @@
             .table tbody td:nth-child(5),
             .table tbody td:nth-child(6),
             .table tbody td:nth-child(8) { text-align: right; }
-            .fab-button { bottom: 1.5rem; right: 1.5rem; width: 50px; height: 50px; font-size: 1.25rem; }
+            .fab-button { bottom: 1.5rem; right: 1.5rem; width: var(--tap-target-min); height: var(--tap-target-min); font-size: 1.25rem; }
         }
 
         /* Animaciones */
