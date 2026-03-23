@@ -200,7 +200,16 @@
             border-radius: var(--radius-lg);
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
             border: 1px solid #e2e8f0;
-            overflow: hidden;
+            /* IMPORTANTE: reemplaza tarjetas móviles por scroll horizontal fluido. */
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table {
+            /* IMPORTANTE: conserva columnas estables y evita colapsos en Android. */
+            table-layout: fixed;
+            min-width: 940px;
         }
 
         .table thead th {
@@ -212,6 +221,10 @@
             letter-spacing: 0.05em;
             padding: 1rem 1.5rem;
             border-bottom: 1px solid #e2e8f0;
+            /* IMPORTANTE: encabezado fijo para mejorar la lectura en scroll vertical. */
+            position: sticky;
+            top: 0;
+            z-index: 3;
         }
 
         .table tbody td {
@@ -317,29 +330,19 @@
             background: var(--secondary);
         }
 
-        /* --- RESPONSIVE TABLE (prioridad por columnas) --- */
+        /* --- RESPONSIVE TABLE (Mobile Scroll) --- */
         @media (max-width: 768px) {
-            /* Importante: sólo se ocultan columnas secundarias en móvil. */
-            .table th.col-priority-secondary,
-            .table td.col-priority-secondary {
-                display: none;
-            }
-            .table th.col-priority-essential,
-            .table td.col-priority-essential {
-                display: table-cell;
-            }
-            .table thead th,
-            .table tbody td {
-                padding: 0.75rem 0.6rem;
-                font-size: 0.82rem;
-                white-space: nowrap;
-            }
-            .row-expand-panel {
-                right: 0;
-                left: auto;
-                min-width: 210px;
-                max-width: 82vw;
-            }
+            /* IMPORTANTE: se conserva <thead>; data-label queda opcional para fallback. */
+            .table td[data-label]::before { content: none; }
+            /* IMPORTANTE: refuerza la alineación semántica por tipo de dato. */
+            .table tbody td:nth-child(1),
+            .table tbody td:nth-child(2),
+            .table tbody td:nth-child(3) { text-align: left; }
+            .table tbody td:nth-child(4),
+            .table tbody td:nth-child(7) { text-align: center; }
+            .table tbody td:nth-child(5),
+            .table tbody td:nth-child(6),
+            .table tbody td:nth-child(8) { text-align: right; }
             .fab-button { bottom: 1.5rem; right: 1.5rem; width: 50px; height: 50px; font-size: 1.25rem; }
         }
 
