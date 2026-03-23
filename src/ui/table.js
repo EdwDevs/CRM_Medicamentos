@@ -20,30 +20,45 @@ export const renderTable = (data, { utils, getProductConfig }) => {
     row.style.animationDelay = `${delay}ms`;
 
     row.innerHTML = `
-      <td class="fw-medium text-muted" data-label="Fecha">${utils.fmtDate(item.date)}</td>
-      <td class="fw-bold text-dark" data-label="Farmacia">${item.pharmacy}</td>
-      <td data-label="Producto">
-          <span class="badge-product ${prodConfig.badge}">
-              <i class="fa-solid ${prodConfig.icon}"></i> ${prodConfig.label}
-          </span>
-      </td>
-      <td class="text-center fw-medium" data-label="Cant.">${item.quantity}</td>
-      <td class="text-end text-muted font-monospace" data-label="Unitario">${utils.fmtMoney(item.unitPrice)}</td>
-      <td class="text-end fw-bold text-primary font-monospace" data-label="Total">${utils.fmtMoney(item.totalAmount)}</td>
-      <td class="text-center" data-label="Estado">
+      <td class="fw-medium text-muted col-priority-essential" data-label="Fecha">${utils.fmtDate(item.date)}</td>
+      <td class="fw-bold text-dark col-priority-essential" data-label="Farmacia">${item.pharmacy}</td>
+      <td class="text-end fw-bold text-primary font-monospace col-priority-essential" data-label="Total">${utils.fmtMoney(item.totalAmount)}</td>
+      <td class="text-center col-priority-essential" data-label="Estado">
           <button onclick="app.toggleStatus('${item.id}', '${item.status}')"
               class="btn btn-sm border-0 badge-status-${item.status} fw-bold text-uppercase px-3 py-1 rounded-pill" style="font-size: 0.7rem; letter-spacing: 0.5px;">
               ${isProcessed ? '<i class="fa-solid fa-check me-1"></i>Procesado' : '<i class="fa-regular fa-clock me-1"></i>Pendiente'}
           </button>
       </td>
-      <td class="text-end pe-md-4" data-label="Acciones">
-          <div class="d-flex justify-content-end gap-2">
+      <td class="text-end pe-md-4 col-priority-essential" data-label="Acciones">
+          <div class="d-flex justify-content-end gap-2 align-items-center">
+              <!-- Importante: el botón de detalles siempre queda disponible para trazabilidad en móvil. -->
               <button onclick="app.openDetails('${item.id}')" class="btn btn-sm btn-light text-primary hover-shadow">
                   <i class="fa-regular fa-eye"></i>
               </button>
-              <button onclick="app.deleteItem('${item.id}')" class="btn btn-sm btn-light text-danger hover-shadow">
-                  <i class="fa-regular fa-trash-can"></i>
-              </button>
+              <!-- Importante: datos/acciones secundarios se mueven al patrón de expansión por fila. -->
+              <details class="row-expand-details">
+                  <summary class="btn btn-sm btn-light text-secondary hover-shadow" aria-label="Ver más opciones y datos de la fila">
+                      <i class="fa-solid fa-ellipsis"></i>
+                  </summary>
+                  <div class="row-expand-panel text-start">
+                      <div class="row-expand-line col-priority-secondary" data-label="Producto">
+                          <span class="badge-product ${prodConfig.badge}">
+                              <i class="fa-solid ${prodConfig.icon}"></i> ${prodConfig.label}
+                          </span>
+                      </div>
+                      <div class="row-expand-line col-priority-secondary" data-label="Cantidad">
+                          <span class="fw-medium">${item.quantity}</span>
+                      </div>
+                      <div class="row-expand-line col-priority-secondary" data-label="Unitario">
+                          <span class="text-muted font-monospace">${utils.fmtMoney(item.unitPrice)}</span>
+                      </div>
+                      <div class="pt-2 border-top mt-2 col-priority-secondary">
+                          <button onclick="app.deleteItem('${item.id}')" class="btn btn-sm btn-light text-danger hover-shadow w-100">
+                              <i class="fa-regular fa-trash-can me-1"></i> Eliminar
+                          </button>
+                      </div>
+                  </div>
+              </details>
           </div>
       </td>
     `;
