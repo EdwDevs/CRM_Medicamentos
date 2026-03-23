@@ -239,6 +239,54 @@
             background-color: #f8fafc;
         }
 
+        /* Importante: clases de prioridad para ocultar/mostrar columnas sin romper semántica de <table>. */
+        .col-priority-essential { display: table-cell; }
+        .col-priority-secondary { display: table-cell; }
+
+        .row-expand-details {
+            position: relative;
+            display: inline-block;
+        }
+
+        .row-expand-details summary {
+            list-style: none;
+            cursor: pointer;
+        }
+
+        .row-expand-details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .row-expand-panel {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.35rem);
+            min-width: 240px;
+            z-index: 10;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            padding: 0.75rem;
+        }
+
+        .row-expand-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.85rem;
+            padding: 0.2rem 0;
+        }
+
+        .row-expand-line::before {
+            content: attr(data-label);
+            color: #64748b;
+            font-weight: 600;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+        }
+
         /* Badges de Productos */
         .badge-product {
             padding: 0.35em 0.8em;
@@ -463,14 +511,11 @@
             <table class="table mb-0">
                 <thead>
                     <tr>
-                        <th class="ps-4">Fecha</th>
-                        <th>Farmacia</th>
-                        <th>Producto</th>
-                        <th class="text-center">Cant.</th>
-                        <th class="text-end">Unitario</th>
-                        <th class="text-end">Total</th>
-                        <th class="text-center">Estado</th>
-                        <th class="text-end pe-4">Acciones</th>
+                        <th class="ps-4 col-priority-essential">Fecha</th>
+                        <th class="col-priority-essential">Farmacia</th>
+                        <th class="text-end col-priority-essential">Total</th>
+                        <th class="text-center col-priority-essential">Estado</th>
+                        <th class="text-end pe-4 col-priority-essential">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="payments-table-body">
