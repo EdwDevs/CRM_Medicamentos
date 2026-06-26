@@ -30,7 +30,7 @@ export const updateDashboard = (state, utils) => {
     if (p.product === "descongel") stats.descongel += p.quantity;
     if (p.product === "multidol400") stats.multi400 += p.quantity;
     if (p.product === "multidol800") stats.multi800 += p.quantity;
-    if (p.status === "pendiente") stats.pending += 1;
+    if (p.status === "pendiente") stats.pending += (p.totalAmount || 0);
   });
 
   const movementEgresos = filteredMovements
@@ -60,7 +60,7 @@ export const updateDashboard = (state, utils) => {
   document.getElementById("stat-descongel").textContent = stats.descongel;
   document.getElementById("stat-multi400").textContent = stats.multi400;
   document.getElementById("stat-multi800").textContent = stats.multi800;
-  document.getElementById("stat-pending").textContent = stats.pending;
+  document.getElementById("stat-pending").textContent = utils.fmtMoney(stats.pending);
 
   document.getElementById("kpi-available").textContent = utils.fmtMoney(available);
   document.getElementById("kpi-egresos").textContent = `Egresos: ${utils.fmtMoney(stats.egresos)}`;
