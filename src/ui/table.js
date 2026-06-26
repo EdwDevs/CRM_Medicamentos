@@ -19,6 +19,12 @@ export const renderTable = (data, { utils, getProductConfig }) => {
     row.className = "animate-row";
     row.style.animationDelay = `${delay}ms`;
 
+    // Remover clase de animación cuando termine para evitar z-index/stacking bugs
+    row.addEventListener("animationend", () => {
+      row.classList.remove("animate-row");
+      row.style.animationDelay = "";
+    });
+
     row.innerHTML = `
       <td class="fw-medium text-muted col-priority-essential" data-label="Fecha">${utils.fmtDate(item.date)}</td>
       <td class="fw-bold text-dark col-priority-essential" data-label="Farmacia">${item.pharmacy}</td>
