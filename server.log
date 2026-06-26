@@ -12,3 +12,10 @@
 127.0.0.1 - - [26/Jun/2026 15:38:06] "GET /src/ui/dashboard.js HTTP/1.1" 200 -
 127.0.0.1 - - [26/Jun/2026 15:38:06] "GET /src/ui/table.js HTTP/1.1" 200 -
 127.0.0.1 - - [26/Jun/2026 15:38:06] "GET /src/services/references.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 16:11:42] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 16:11:42] "GET /src/ui/table.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 16:11:42] "GET /src/ui/modals.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 16:11:42] "GET /src/services/references.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 16:11:42] "GET /src/services/payments.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 16:11:42] "GET /src/ui/dashboard.js HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 16:11:42] "GET /src/services/firebase.js HTTP/1.1" 200 -
