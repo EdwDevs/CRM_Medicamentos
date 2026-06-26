@@ -23,7 +23,19 @@ const isInSelectedMonth = (dateValue, selectedMonth) => {
 export const updateDashboard = (state, utils) => {
   const stats = { descongel: 0, multi400: 0, multi800: 0, pending: 0, egresos: 0 };
   const selectedMonth = state.filters?.date || "";
+  const isPendingFilter = state.filters?.status === "pendiente";
+
+  const matchesFilters = (payment) => {
+    let match = isInSelectedMonth(payment.date, selectedMonth);
+    if (state.filters?.status) match = match && payment.status === state.filters.status;
+    if (state.filters?.product) match = match && payment.product === state.filters.product;
+    if (state.filters?.pharmacy) match = match && payment.pharmacy === state.filters.pharmacy;
+    return match;
+  };
+
   const filteredPayments = state.payments.filter((payment) => isInSelectedMonth(payment.date, selectedMonth));
+  const fullyFilteredPayments = state.payments.filter(matchesFilters);
+
   const filteredMovements = state.movements.filter((movement) => isInSelectedMonth(movement.date, selectedMonth));
 
   filteredPayments.forEach((p) => {
@@ -57,12 +69,27 @@ export const updateDashboard = (state, utils) => {
   const available = state.budget + totalReintegros - stats.egresos;
   const usagePercent = state.budget > 0 ? (stats.egresos / state.budget) * 100 : 0;
 
+  let currentPendingAmount = 0;
+  if (isPendingFilter) {
+    currentPendingAmount = fullyFilteredPayments.reduce((acc, p) => acc + (p.totalAmount || 0), 0);
+  }
+
   document.getElementById("stat-descongel").textContent = stats.descongel;
   document.getElementById("stat-multi400").textContent = stats.multi400;
   document.getElementById("stat-multi800").textContent = stats.multi800;
   document.getElementById("stat-pending").textContent = utils.fmtMoney(stats.pending);
 
-  document.getElementById("kpi-available").textContent = utils.fmtMoney(available);
+  const kpiAvailableEl = document.getElementById("kpi-available");
+  const kpiAvailableTitleEl = document.getElementById("kpi-available-title");
+
+  if (isPendingFilter) {
+    kpiAvailableEl.textContent = utils.fmtMoney(currentPendingAmount);
+    if (kpiAvailableTitleEl) kpiAvailableTitleEl.textContent = "TOTAL PENDIENTE";
+  } else {
+    kpiAvailableEl.textContent = utils.fmtMoney(available);
+    if (kpiAvailableTitleEl) kpiAvailableTitleEl.textContent = "Fondo Disponible";
+  }
+
   document.getElementById("kpi-egresos").textContent = `Egresos: ${utils.fmtMoney(stats.egresos)}`;
 
   const migrationBadge = document.getElementById("kpi-data-source");
