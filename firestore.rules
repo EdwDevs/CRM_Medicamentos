@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permitir lectura/escritura a cualquier usuario autenticado (incluido anónimo)
+    // Permitir lectura y escritura a CUALQUIER usuario autenticado (incluido anónimo)
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
