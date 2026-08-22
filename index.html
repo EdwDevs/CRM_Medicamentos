@@ -1004,7 +1004,13 @@
     };
 
     // --- INICIALIZACIÓN ---
-    document.addEventListener("DOMContentLoaded", () => {
+    // Exponer funciones necesarias para debugging y uso externo
+    window.loadPayments = loadPayments;
+    window.calculateTotal = calculateTotal;
+    window.showToast = showToast;
+    window.toggleLoading = toggleLoading;
+
+    function initApp() {
       // Set fecha hoy
       $('#date').value = new Date().toISOString().split('T')[0];
       
@@ -1021,7 +1027,14 @@
       });
 
       loadPayments();
-    });
+    }
+
+    // Inicializar cuando el DOM esté listo (o inmediatamente si ya lo está)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
   </script>
 </head>
 <body>
