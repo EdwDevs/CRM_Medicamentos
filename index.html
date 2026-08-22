@@ -1088,8 +1088,8 @@
         // CONFIGURACIÓN Y CONSTANTES
         // ============================================
         const CONFIG = {
-            BUDGET_INITIAL: 50000.00,
-            CURRENCY_LOCALE: 'es-MX',
+            BUDGET_INITIAL: 50000000.00,
+            CURRENCY_LOCALE: 'es-CO',
             DATE_OPTIONS: { year: 'numeric', month: 'short', day: 'numeric' },
             DATETIME_OPTIONS: { 
                 year: 'numeric', 
@@ -1153,8 +1153,9 @@
         const formatCurrency = (amount) => {
             return new Intl.NumberFormat(CONFIG.CURRENCY_LOCALE, {
                 style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2
+                currency: 'COP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
             }).format(amount);
         };
 
