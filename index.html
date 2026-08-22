@@ -1071,6 +1071,39 @@
         </div>
     </div>
 
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="loginModalLabel">
+                        <i class="fas fa-lock me-2"></i>
+                        Acceso al Sistema
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="loginEmail" placeholder="tu@correo.com" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="loginPassword" placeholder="••••••••" required>
+                        </div>
+                        <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" form="loginForm" class="btn btn-primary w-100">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Iniciar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
@@ -1447,10 +1480,45 @@
                 this.modals = {};
                 this.initModals();
                 this.bindEvents();
-                this.loadPayments();
+                this.checkAuth();
+            }
+
+            checkAuth() {
+                const loginModalEl = document.getElementById('loginModal');
+                const loginModal = new bootstrap.Modal(loginModalEl, { backdrop: 'static', keyboard: false });
+                
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        console.log('✅ Usuario autenticado:', user.email);
+                        this.loadPayments();
+                    } else {
+                        console.log('⚠️ Usuario no autenticado, mostrando login');
+                        loginModal.show();
+                    }
+                });
+
+                // Manejar submit del formulario de login
+                document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('loginEmail').value;
+                    const password = document.getElementById('loginPassword').value;
+                    const errorDiv = document.getElementById('loginError');
+                    
+                    try {
+                        await auth.signInWithEmailAndPassword(email, password);
+                        console.log('Login exitoso');
+                        loginModal.hide();
+                        errorDiv.classList.add('d-none');
+                    } catch (error) {
+                        console.error('Error en login:', error);
+                        errorDiv.textContent = 'Correo o contraseña incorrectos';
+                        errorDiv.classList.remove('d-none');
+                    }
+                });
             }
 
             initModals() {
+                this.modals.login = new bootstrap.Modal(document.getElementById('loginModal'), { backdrop: 'static', keyboard: false });
                 this.modals.add = new bootstrap.Modal(document.getElementById('addPaymentModal'));
                 this.modals.edit = new bootstrap.Modal(document.getElementById('editPaymentModal'));
                 this.modals.reintegro = new bootstrap.Modal(document.getElementById('reintegroModal'));
