@@ -1483,21 +1483,30 @@
                 this.checkAuth();
             }
 
-            checkAuth() {
+            async checkAuth() {
                 const loginModalEl = document.getElementById('loginModal');
                 const loginModal = new bootstrap.Modal(loginModalEl, { backdrop: 'static', keyboard: false });
                 
-                auth.onAuthStateChanged((user) => {
-                    if (user) {
-                        console.log('✅ Usuario autenticado:', user.email);
-                        this.loadPayments();
-                    } else {
-                        console.log('⚠️ Usuario no autenticado, mostrando login');
-                        loginModal.show();
-                    }
-                });
+                // Intentar inicio de sesión anónimo primero para acceso sin credenciales
+                try {
+                    const userCredential = await auth.signInAnonymously();
+                    console.log('✅ Usuario anónimo autenticado:', userCredential.user.uid);
+                    this.loadPayments();
+                } catch (error) {
+                    console.error('Error en auth anónima:', error);
+                    // Si falla el anónimo, usar el método tradicional con email/password
+                    auth.onAuthStateChanged((user) => {
+                        if (user) {
+                            console.log('✅ Usuario autenticado:', user.email || 'anónimo');
+                            this.loadPayments();
+                        } else {
+                            console.log('⚠️ Usuario no autenticado, mostrando login');
+                            loginModal.show();
+                        }
+                    });
+                }
 
-                // Manejar submit del formulario de login
+                // Manejar submit del formulario de login (para usuarios registrados)
                 document.getElementById('loginForm').addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const email = document.getElementById('loginEmail').value;
