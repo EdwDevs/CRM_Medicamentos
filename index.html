@@ -1484,46 +1484,31 @@
             }
 
             async checkAuth() {
-                const loginModalEl = document.getElementById('loginModal');
-                const loginModal = new bootstrap.Modal(loginModalEl, { backdrop: 'static', keyboard: false });
-                
                 // Intentar inicio de sesión anónimo primero para acceso sin credenciales
                 try {
                     const userCredential = await auth.signInAnonymously();
                     console.log('✅ Usuario anónimo autenticado:', userCredential.user.uid);
                     this.loadPayments();
-                } catch (error) {
-                    console.error('Error en auth anónima:', error);
-                    // Si falla el anónimo, usar el método tradicional con email/password
+                    
+                    // Escuchar cambios de auth para mantener la sesión
                     auth.onAuthStateChanged((user) => {
                         if (user) {
-                            console.log('✅ Usuario autenticado:', user.email || 'anónimo');
-                            this.loadPayments();
+                            console.log('✅ Usuario activo:', user.uid);
+                            if (!this.state.isAuthenticated) {
+                                this.state.isAuthenticated = true;
+                                this.loadPayments();
+                            }
                         } else {
-                            console.log('⚠️ Usuario no autenticado, mostrando login');
-                            loginModal.show();
+                            console.warn('⚠️ Usuario desconectado');
+                            UI.showError('Sesión cerrada. Recarga la página.');
                         }
                     });
+                } catch (error) {
+                    console.error('❌ Error en auth anónima:', error.code, error.message);
+                    // Si falla el anónimo, MOSTRAR ERROR EN UI en lugar de modal
+                    const errorMsg = `Error de autenticación: ${error.message}. <br><strong>Importante:</strong> Ve a Firebase Console > Authentication > Sign-in method y habilita "Anonymous".`;
+                    UI.showError(errorMsg);
                 }
-
-                // Manejar submit del formulario de login (para usuarios registrados)
-                document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const email = document.getElementById('loginEmail').value;
-                    const password = document.getElementById('loginPassword').value;
-                    const errorDiv = document.getElementById('loginError');
-                    
-                    try {
-                        await auth.signInWithEmailAndPassword(email, password);
-                        console.log('Login exitoso');
-                        loginModal.hide();
-                        errorDiv.classList.add('d-none');
-                    } catch (error) {
-                        console.error('Error en login:', error);
-                        errorDiv.textContent = 'Correo o contraseña incorrectos';
-                        errorDiv.classList.remove('d-none');
-                    }
-                });
             }
 
             initModals() {
