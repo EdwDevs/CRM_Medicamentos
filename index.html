@@ -357,24 +357,32 @@
     // Firebase Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import {
       getFirestore, collection, addDoc, getDocs, getDoc, deleteDoc, doc, query, orderBy, updateDoc
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // --- CONFIGURACIÓN FIREBASE ---
     const firebaseConfig = {
-      apiKey: "AIzaSyDK2Aoz1kxq1dDXKkemRIYCFAFtxgw4dZs",
-      authDomain: "crm-medicamentos.firebaseapp.com",
-      projectId: "crm-medicamentos",
-      storageBucket: "crm-medicamentos.appspot.com",
-      messagingSenderId: "638953546971",
-      appId: "1:638953546971:web:4f811cdd7dd72dc7cfd8fe",
-      measurementId: "G-RPZNJSCX12"
+      apiKey: "AIzaSyAaVSb70OFIoX48T9GbLmTcdXOSvKv2pRk",
+      authDomain: "zona1561-4de30.firebaseapp.com",
+      projectId: "zona1561-4de30",
+      storageBucket: "zona1561-4de30.firebasestorage.app",
+      messagingSenderId: "451366030738",
+      appId: "1:451366030738:web:e638db51fbe24f6a48054b"
     };
 
     const app = initializeApp(firebaseConfig);
     try { getAnalytics(app); } catch(e){ console.warn("Analytics no soportado en este entorno"); }
     const db = getFirestore(app);
+
+    // Autenticación anónima (requerida por las reglas de Firestore)
+    const auth = getAuth(app);
+    try {
+      await signInAnonymously(auth);
+    } catch(e) {
+      console.error("Error de autenticación en Firebase:", e);
+    }
 
     // --- CONSTANTES & UTILIDADES ---
     const BUDGET_TOTAL = 500000;
