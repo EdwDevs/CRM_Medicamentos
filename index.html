@@ -2,997 +2,1739 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM Pagos - Gestión Financiera</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PharmaBudget CRM - Gestión de Pagos</title>
     
-    <!-- Fuentes y Estilos Externos -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5.3.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-
+    
+    <!-- Font Awesome 6.5.2 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
     <style>
         :root {
-            /* Tokens globales: una sola escala evita inconsistencias entre HTML y render dinámico en JS. */
-            --primary: #4f46e5;
-            --secondary: #8b5cf6;
-            --accent: #06b6d4;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #1e293b;
-            --light: #f8fafc;
-            --bg-body: #f1f5f9;
-            --font-main: 'Inter', sans-serif;
-
-            /* Escala de spacing (4px base). */
-            --space-1: 0.25rem;
-            --space-2: 0.5rem;
-            --space-3: 0.75rem;
-            --space-4: 1rem;
-            --space-6: 1.5rem;
-            --space-8: 2rem;
-
-            /* Escala de radios consistente para chips, tarjetas y modales. */
-            --radius-sm: 0.5rem;
-            --radius-md: 0.75rem;
-            --radius-lg: 1rem;
-            --radius-xl: 1.5rem;
-            --radius-pill: 999px;
-
-            /* Escala de sombras: separa elevación de superficie vs foco. */
-            --shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.04);
-            --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
-            --shadow-lg: 0 10px 25px -5px rgba(79, 70, 229, 0.35);
-            --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.25);
-
-            /* Tipografía utilitaria para labels densos sin perder legibilidad. */
-            --font-size-xs: 0.7rem;
-            --font-size-2xs: 0.65rem;
-            --tracking-wide: 0.03em;
-            --tracking-wider: 0.05em;
-
-            --tap-target-min: 48px;
+            /* Colores principales */
+            --primary: #4F46E5;
+            --primary-dark: #4338CA;
+            --secondary: #64748B;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --info: #3B82F6;
+            
+            /* Fondos y superficies */
+            --bg-body: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --bg-subtle: #F1F5F9;
+            
+            /* Texto */
+            --text-primary: #1E293B;
+            --text-secondary: #64748B;
+            --text-muted: #94A3B8;
+            
+            /* Bordes */
+            --border-color: #E2E8F0;
+            --border-radius-sm: 8px;
+            --border-radius-md: 12px;
+            --border-radius-lg: 16px;
+            --border-radius-xl: 24px;
+            
+            /* Sombras */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            
+            /* Espaciado */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            
+            /* Transiciones */
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+            --transition-slow: 350ms ease;
         }
 
-        html {
-            scroll-behavior: smooth;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: var(--font-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg-body);
-            color: var(--dark);
-            overflow-x: hidden;
-            padding-bottom: 80px; /* Espacio para el FAB */
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding-bottom: 80px; /* Espacio para FAB en móvil */
         }
 
-        /* --- UTILIDADES VISUALES --- */
-        .brand-gradient {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 800;
-        }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        }
-
-        .shadow-glow {
-            box-shadow: var(--shadow-glow);
-        }
-
-        /* --- HEADER --- */
-        .navbar {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+        /* Header */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: var(--spacing-lg) var(--spacing-md);
             position: sticky;
             top: 0;
-            z-index: 1000;
-            padding: 1rem 0;
+            z-index: 100;
+            box-shadow: var(--shadow-md);
         }
 
-        /* --- DASHBOARD CARDS --- */
-        .budget-card {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .brand h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.025em;
+        }
+
+        .brand p {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
             color: white;
-            border-radius: var(--radius-xl);
-            padding: 2rem;
+            transition: all var(--transition-fast);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        /* Container principal */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-md);
+        }
+
+        /* Hero Card - Presupuesto */
+        .budget-hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            color: white;
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
             position: relative;
             overflow: hidden;
-            box-shadow: var(--shadow-lg);
         }
 
-        .budget-card::before {
+        .budget-hero::before {
             content: '';
             position: absolute;
             top: -50%;
             right: -20%;
-            width: 300px;
-            height: 300px;
-            background: rgba(255,255,255,0.1);
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 50%;
         }
 
-        .progress-glass {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 999px;
-            height: 8px;
-            margin-top: 1.5rem;
-            overflow: hidden;
+        .budget-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
         }
 
-        .progress-bar-glass {
-            height: 100%;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 0 10px rgba(255,255,255,0.5);
-            transition: width 1s ease-in-out;
-        }
-
-        .stats-card {
-            background: white;
-            border-radius: var(--radius-lg);
-            border: 1px solid #e2e8f0;
-            padding: var(--space-6);
-            height: 100%;
-            transition: transform 0.2s, box-shadow 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-
-        .stats-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-        }
-
-        .stats-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            margin-bottom: 0.75rem;
-        }
-
-        /* --- FILTROS --- */
-        .filter-bar {
-            background: white;
-            padding: var(--space-4);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid #e2e8f0;
-            margin-bottom: 2rem;
-        }
-
-        .form-select, .form-control {
-            border-radius: 0.5rem;
-            border-color: #e2e8f0;
-            font-size: 0.9rem;
-            padding: 0.6rem 1rem;
-        }
-
-        .form-select:focus, .form-control:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
-
-        .pay-refs-panel {
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 0.75rem;
-            background: #fff;
-        }
-
-        .pay-refs-list {
-            max-height: 180px;
-            overflow-y: auto;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            padding: 0.5rem;
-            background: #f8fafc;
-        }
-
-        .pay-ref-item {
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .pay-ref-item .form-check-input {
-            width: 1.1rem;
-            height: 1.1rem;
-        }
-
-        #pay-selected-refs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.35rem;
-            min-height: 30px;
-        }
-
-        /* --- TABLA --- */
-        .table-container {
-            background: white;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            border: 1px solid #e2e8f0;
-            /* IMPORTANTE: reemplaza tarjetas móviles por scroll horizontal fluido. */
-            overflow-x: auto;
-            overflow-y: visible;
-            scroll-behavior: smooth;
-            overscroll-behavior-x: contain;
-            /* IMPORTANTE: mantiene inercia en iOS para scroll horizontal de tabla. */
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: 60px; /* Asegura espacio para los menús desplegables de las últimas filas */
-        }
-
-        .table {
-            /* IMPORTANTE: conserva columnas estables y evita colapsos en Android. */
-            table-layout: fixed;
-            min-width: 940px;
-        }
-
-        .table thead th {
-            background-color: #f8fafc;
-            color: #64748b;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.05em;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #e2e8f0;
-            /* IMPORTANTE: sticky evita perder el contexto de columnas en listados largos. */
-            position: sticky;
-            top: 0;
-            z-index: 3;
-        }
-
-        .table tbody td {
-            padding: 1rem 1.5rem;
-            vertical-align: middle;
-            color: #334155;
-            font-size: 0.9rem;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .table tbody tr:hover {
-            background-color: #f8fafc;
-        }
-
-        /* IMPORTANTE: prioridades de columnas preservan datos críticos visibles en pantallas angostas. */
-        .col-priority-essential { display: table-cell; }
-        .col-priority-secondary { display: table-cell; }
-
-        /* IMPORTANTE: 48px cumple guía táctil (44–48px) para reducir taps fallidos en móvil. */
-        .tap-target,
-        .table-action-btn,
-        .table-status-btn {
-            min-width: var(--tap-target-min);
-            min-height: var(--tap-target-min);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, background-color 0.12s ease-out, color 0.12s ease-out;
-            touch-action: manipulation;
-        }
-
-        .table-action-btn:focus-visible,
-        .table-status-btn:focus-visible,
-        .fab-button:focus-visible {
-            outline: 3px solid rgba(79, 70, 229, 0.3);
-            outline-offset: 2px;
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
-        }
-
-        /* IMPORTANTE: variante única para acciones de tabla evita mezclar estilos Bootstrap ad-hoc. */
-        .btn-table-action {
-            border: 1px solid #e2e8f0;
-            background: #f8fafc;
-            color: #334155;
-            border-radius: var(--radius-md);
-            padding: 0 var(--space-3);
-        }
-
-        .btn-table-action:hover {
-            background: #eef2ff;
-            color: var(--primary);
-            border-color: #c7d2fe;
-        }
-
-        /* IMPORTANTE: estados con contraste alto + iconografía para lectura rápida y no depender solo del color. */
-        .badge-status {
-            border: 1px solid transparent;
-            border-radius: var(--radius-pill);
-            font-size: var(--font-size-xs);
-            letter-spacing: var(--tracking-wide);
-            line-height: 1;
-            padding: var(--space-2) var(--space-3);
-            font-weight: 700;
-        }
-
-        .badge-status.is-pendiente {
-            background-color: #fff7ed;
-            border-color: #fdba74;
-            color: #9a3412;
-        }
-
-        .badge-status.is-procesado {
-            background-color: #ecfdf5;
-            border-color: #86efac;
-            color: #166534;
-        }
-
-        .table-cell-money {
-            font-weight: 700;
-            color: var(--primary);
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            text-align: right;
-        }
-
-        .table-action-btn:active,
-        .table-status-btn:active {
-            transform: scale(0.96);
-            background-color: #eef2ff;
-        }
-
-        .row-expand-details {
+        .budget-content {
             position: relative;
-            display: inline-block;
+            z-index: 1;
         }
 
-        .row-expand-details summary {
-            list-style: none;
-            cursor: pointer;
+        .budget-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            opacity: 0.9;
+            margin-bottom: var(--spacing-xs);
         }
 
-        .row-expand-details summary::-webkit-details-marker {
+        .budget-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.025em;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .budget-meta {
+            display: flex;
+            gap: var(--spacing-md);
+            font-size: 0.75rem;
+            opacity: 0.8;
+            flex-wrap: wrap;
+        }
+
+        .budget-meta-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-normal);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--border-radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--spacing-sm);
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.primary { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
+        .stat-icon.success { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .stat-icon.warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .stat-icon.danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Filters */
+        .filters-section {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .filters-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .filters-scroll {
+            display: flex;
+            gap: var(--spacing-sm);
+            overflow-x: auto;
+            padding-bottom: var(--spacing-sm);
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .filters-scroll::-webkit-scrollbar {
             display: none;
         }
 
-        .row-expand-panel {
-            position: absolute;
-            right: 0;
-            top: calc(100% + 0.35rem);
-            min-width: 240px;
-            z-index: 50;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-            padding: 0.75rem;
+        .filter-chip {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: 20px;
+            background: var(--bg-subtle);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
         }
 
-        .row-expand-line {
+        .filter-chip:hover {
+            background: var(--border-color);
+        }
+
+        .filter-chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .search-input-group {
+            position: relative;
+            margin-top: var(--spacing-md);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) 48px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            font-size: 0.875rem;
+            background: var(--bg-subtle);
+            transition: all var(--transition-fast);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--bg-card);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        /* Payments List */
+        .payments-section {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 0.75rem;
-            font-size: 0.85rem;
-            padding: 0.2rem 0;
+            margin-bottom: var(--spacing-md);
         }
 
-        .row-expand-line::before {
-            content: attr(data-label);
-            color: #64748b;
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .payment-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-fast);
+            cursor: pointer;
+        }
+
+        .payment-card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary);
+        }
+
+        .payment-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .payment-pharmacy {
             font-weight: 600;
-            font-size: 0.72rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .payment-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .payment-amount {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .payment-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: var(--spacing-sm);
+            border-top: 1px solid var(--border-color);
+            margin-top: var(--spacing-sm);
+        }
+
+        .payment-status {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
             text-transform: uppercase;
         }
 
-        /* Badges de Productos */
-        .badge-product {
-            padding: 0.35em 0.8em;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.75rem;
-            display: inline-flex;
+        .status-pending { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .status-completed { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .status-cancelled { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+        .payment-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
             align-items: center;
-            gap: 0.4rem;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
         }
 
-        .badge-descongel { background-color: #e0f2fe; color: #0284c7; }
-        .badge-multidol400 { background-color: #dcfce7; color: #16a34a; }
-        .badge-multidol800 { background-color: #dbeafe; color: #2563eb; }
-        .badge-status-pendiente { background-color: #fff7ed; color: #9a3412; }
-        .badge-status-procesado { background-color: #ecfdf5; color: #166534; }
-
-        .stats-label {
-            font-size: var(--font-size-2xs);
-            letter-spacing: var(--tracking-wider);
-        }
-
-        .stats-card-pending {
-            border-color: #fdba74;
-            background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
-        }
-
-        .spinner-size-lg {
-            width: 3rem;
-            height: 3rem;
-        }
-
-        .filter-status-wrapper {
-            min-width: 180px;
-        }
-
-        /* --- FAB --- */
-        .fab-button {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: var(--tap-target-min);
-            height: var(--tap-target-min);
+        .btn-action:hover {
             background: var(--primary);
             color: white;
+            border-color: var(--primary);
+        }
+
+        .btn-action.delete:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+        /* Desktop Table View */
+        .payments-table {
+            display: none;
+            background: var(--bg-card);
+            border-radius: var(--border-radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .payments-table thead {
+            background: var(--bg-subtle);
+        }
+
+        .payments-table th {
+            padding: var(--spacing-md);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .payments-table td {
+            padding: var(--spacing-md);
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .payments-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .payments-table tr:hover {
+            background: var(--bg-subtle);
+        }
+
+        @media (min-width: 768px) {
+            .payments-list {
+                display: none;
+            }
+            
+            .payments-table {
+                display: table;
+                width: 100%;
+            }
+            
+            body {
+                padding-bottom: var(--spacing-md);
+            }
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: var(--spacing-lg);
+            right: var(--spacing-lg);
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            box-shadow: var(--shadow-lg);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-            box-shadow: var(--shadow-glow), 0 10px 15px -3px rgba(0,0,0,0.3);
             cursor: pointer;
-            transition: transform 0.12s ease-out, background-color 0.12s ease-out, box-shadow 0.12s ease-out;
-            z-index: 1050;
+            transition: all var(--transition-normal);
+            z-index: 1000;
+        }
+
+        .fab:hover {
+            background: var(--primary-dark);
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Modal */
+        .modal-content {
             border: none;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-xl);
         }
 
-        .fab-button:active {
-            transform: scale(0.94);
-            background: var(--secondary);
+        .modal-header {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-subtle);
+            border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
         }
 
-        /* --- RESPONSIVE TABLE (Mobile Scroll) --- */
-        @media (max-width: 768px) {
-            /* IMPORTANTE: se conserva <thead>; data-label queda opcional para fallback. */
-            .table td[data-label]::before { content: none; }
-            /* IMPORTANTE: refuerza la alineación semántica por tipo de dato. */
-            .table tbody td:nth-child(1),
-            .table tbody td:nth-child(2),
-            .table tbody td:nth-child(3) { text-align: left; }
-            .table tbody td:nth-child(4),
-            .table tbody td:nth-child(7) { text-align: center; }
-            .table tbody td:nth-child(5),
-            .table tbody td:nth-child(6),
-            .table tbody td:nth-child(8) { text-align: right; }
-            .fab-button { bottom: 1.5rem; right: 1.5rem; width: var(--tap-target-min); height: var(--tap-target-min); font-size: 1.25rem; }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
         }
 
-        /* Animaciones */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translate3d(0, 20px, 0); }
-            to { opacity: 1; transform: translate3d(0, 0, 0); }
+        .modal-body {
+            padding: var(--spacing-lg);
         }
 
-        .animate-row {
-            animation: fadeInUp 0.4s ease-out forwards;
+        .modal-footer {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-subtle);
+            border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
         }
 
-        /* Loader */
-        .loader-overlay {
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .form-control {
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            font-size: 1rem;
+            transition: all var(--transition-fast);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            padding: var(--spacing-md) var(--spacing-lg);
+            font-weight: 600;
+            border-radius: var(--border-radius-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            border-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+            padding: var(--spacing-md) var(--spacing-lg);
+            font-weight: 600;
+            border-radius: var(--border-radius-sm);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-subtle);
+            color: var(--text-primary);
+        }
+
+        /* Toast Notifications */
+        .toast-container {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9);
-            backdrop-filter: blur(5px);
-            z-index: 2000;
+            top: var(--spacing-lg);
+            right: var(--spacing-lg);
+            z-index: 1100;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.3s;
+            flex-direction: column;
+            gap: var(--spacing-sm);
         }
-        .hidden { opacity: 0; pointer-events: none; }
+
+        .toast {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-md) var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
+            border-left: 4px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            min-width: 300px;
+            animation: slideIn var(--transition-normal) ease-out;
+        }
+
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--warning); }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.error .toast-icon { color: var(--danger); }
+        .toast.warning .toast-icon { color: var(--warning); }
+
+        .toast-message {
+            flex: 1;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-xl);
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .empty-state-text {
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 576px) {
+            .budget-amount {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                gap: var(--spacing-sm);
+            }
+            
+            .stat-card {
+                padding: var(--spacing-sm);
+            }
+            
+            .fab {
+                bottom: var(--spacing-md);
+                right: var(--spacing-md);
+                width: 48px;
+                height: 48px;
+                font-size: 1.25rem;
+            }
+            
+            .toast-container {
+                left: var(--spacing-md);
+                right: var(--spacing-md);
+            }
+            
+            .toast {
+                min-width: auto;
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
     </style>
 </head>
 <body>
-
-    <!-- Loader -->
-    <div id="loader" class="loader-overlay">
-        <div class="d-flex flex-column align-items-center">
-            <div class="spinner-border text-primary mb-3 spinner-size-lg" role="status"></div>
-            <p class="text-muted fw-medium animate-pulse">Cargando sistema...</p>
-        </div>
-    </div>
-
     <!-- Header -->
-    <nav class="navbar">
-        <div class="container-xl d-flex justify-content-between align-items-center">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
-                <i class="fa-solid fa-file-invoice-dollar text-primary fs-4"></i>
-                <span class="brand-gradient fs-4">CRM Pagos</span>
-            </a>
-            <div class="d-flex gap-2">
-                <button class="btn btn-outline-primary rounded-pill px-4 fw-medium d-none d-md-block" data-bs-toggle="modal" data-bs-target="#modalReintegro">
-                    <i class="fa-solid fa-hand-holding-dollar me-2"></i>Reintegro
+    <header class="app-header">
+        <div class="header-content">
+            <div class="brand">
+                <h1>PharmaBudget</h1>
+                <p>Gestión de Pagos</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon" id="btnRefresh" aria-label="Actualizar datos">
+                    <i class="fas fa-sync-alt"></i>
                 </button>
-                <!-- Mobile Reintegro Icon -->
-                <button class="btn btn-outline-primary rounded-circle d-md-none" data-bs-toggle="modal" data-bs-target="#modalReintegro">
-                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                <button class="btn-icon" id="btnSettings" aria-label="Configuración">
+                    <i class="fas fa-cog"></i>
                 </button>
             </div>
         </div>
-    </nav>
+    </header>
 
     <!-- Main Content -->
-    <main class="container-xl py-4">
-        
-        <!-- Dashboard Hero -->
-        <div class="row g-4 mb-4">
-            <!-- Budget Card -->
-            <div class="col-lg-5">
-                <div class="budget-card h-100">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
-                        <div>
-                            <p class="mb-1 text-white-50 fw-medium small text-uppercase ls-1" id="kpi-available-title">Fondo Disponible</p>
-                            <h2 class="display-5 fw-bold mb-0" id="kpi-available">$0</h2>
-                        </div>
-                        <div class="bg-white bg-opacity-25 p-2 rounded-3">
-                            <i class="fa-solid fa-wallet text-white fs-4"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between align-items-end text-sm">
-                        <span class="badge bg-white bg-opacity-20 fw-normal">Base: $500,000</span>
-                        <span class="fw-bold" id="kpi-percentage">0% Usado</span>
-                    </div>
-
-                    <div class="progress-glass">
-                        <div id="budget-progress" class="progress-bar-glass" style="width: 0%"></div>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between mt-2">
-                        <span id="kpi-data-source" class="badge fw-normal bg-warning text-dark">Datos mixtos</span>
-                        <p class="text-white-50 mb-0 small text-end" id="kpi-egresos">Egresos: $0</p>
-                    </div>
+    <main class="main-container">
+        <!-- Budget Hero -->
+        <section class="budget-hero" aria-label="Presupuesto disponible">
+            <div class="budget-content">
+                <p class="budget-label">Presupuesto Disponible</p>
+                <h2 class="budget-amount" id="budgetAmount">$0.00</h2>
+                <div class="budget-meta">
+                    <span class="budget-meta-item">
+                        <i class="fas fa-calendar"></i>
+                        <span id="budgetPeriod">Este mes</span>
+                    </span>
+                    <span class="budget-meta-item">
+                        <i class="fas fa-history"></i>
+                        <span id="lastUpdate">Actualizado: --</span>
+                    </span>
                 </div>
             </div>
+        </section>
 
-            <!-- Stats Grid -->
-            <div class="col-lg-7">
-                <div class="row g-3 h-100">
-                    <div class="col-6 col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-icon bg-info bg-opacity-10 text-info">
-                                <i class="fa-regular fa-snowflake"></i>
-                            </div>
-                            <h3 class="fw-bold mb-0 fs-4" id="stat-descongel">0</h3>
-                            <small class="text-muted text-uppercase fw-bold stats-label">Descongel</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-icon bg-success bg-opacity-10 text-success">
-                                <i class="fa-solid fa-pills"></i>
-                            </div>
-                            <h3 class="fw-bold mb-0 fs-4" id="stat-multi400">0</h3>
-                            <small class="text-muted text-uppercase fw-bold stats-label">Multi 400</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-icon bg-primary bg-opacity-10 text-primary">
-                                <i class="fa-solid fa-capsules"></i>
-                            </div>
-                            <h3 class="fw-bold mb-0 fs-4" id="stat-multi800">0</h3>
-                            <small class="text-muted text-uppercase fw-bold stats-label">Multi 800</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="stats-card stats-card-pending">
-                            <div class="stats-icon bg-warning bg-opacity-10 text-warning">
-                                <i class="fa-regular fa-clock"></i>
-                            </div>
-                            <h3 class="fw-bold mb-0 fs-4 text-warning" id="stat-pending">0</h3>
-                            <small class="text-muted text-uppercase fw-bold stats-label">Pendientes</small>
-                        </div>
-                    </div>
+        <!-- Stats Grid -->
+        <section class="stats-grid" aria-label="Estadísticas">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="fas fa-file-invoice-dollar"></i>
                 </div>
+                <div class="stat-value" id="totalPayments">0</div>
+                <div class="stat-label">Total Pagos</div>
             </div>
-        </div>
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-value" id="completedPayments">0</div>
+                <div class="stat-label">Completados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-value" id="pendingPayments">0</div>
+                <div class="stat-label">Pendientes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon danger">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-value" id="cancelledPayments">0</div>
+                <div class="stat-label">Cancelados</div>
+            </div>
+        </section>
 
         <!-- Filters -->
-        <div class="filter-bar d-flex flex-column flex-md-row gap-3 align-items-center justify-content-between">
-            <div class="d-flex gap-3 w-100 flex-column flex-md-row">
-                <div class="flex-grow-1 position-relative">
-                    <i class="fa-solid fa-filter position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <select class="form-select ps-5" id="filter-product">
-                        <option value="">Todos los productos</option>
-                        <option value="descongel">Descongel</option>
-                        <option value="multidol400">Multidol 400</option>
-                        <option value="multidol800">Multidol 800</option>
-                    </select>
-                </div>
-                <div class="flex-grow-1 position-relative">
-                    <i class="fa-solid fa-store position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <select class="form-select ps-5" id="filter-pharmacy">
-                        <option value="">Todas las farmacias</option>
-                        <!-- Options filled dynamically -->
-                    </select>
-                </div>
-                <div class="flex-grow-0 position-relative filter-status-wrapper">
-                    <i class="fa-solid fa-list-check position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <select class="form-select ps-5" id="filter-status">
-                        <option value="">Estado: Todos</option>
-                        <option value="pendiente">Pendientes</option>
-                        <option value="procesado">Procesados</option>
-                    </select>
-                </div>
-                <div class="flex-grow-0">
-                    <input type="month" class="form-control" id="filter-date">
+        <section class="filters-section" aria-label="Filtros">
+            <h3 class="filters-title">
+                <i class="fas fa-filter"></i>
+                Filtros
+            </h3>
+            <div class="filters-scroll" id="statusFilters">
+                <button class="filter-chip active" data-filter="all">Todos</button>
+                <button class="filter-chip" data-filter="pending">Pendientes</button>
+                <button class="filter-chip" data-filter="completed">Completados</button>
+                <button class="filter-chip" data-filter="cancelled">Cancelados</button>
+            </div>
+            <div class="search-input-group">
+                <i class="fas fa-search search-icon"></i>
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="searchInput" 
+                    placeholder="Buscar por farmacia o medicamento..."
+                    aria-label="Buscar pagos"
+                >
+            </div>
+        </section>
+
+        <!-- Payments Section -->
+        <section class="payments-section" aria-label="Lista de pagos">
+            <div class="section-header">
+                <h3 class="section-title">Pagos Recientes</h3>
+                <span class="text-muted" id="paymentsCount">0 registros</span>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div class="payments-list" id="paymentsList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span class="ms-2">Cargando pagos...</span>
                 </div>
             </div>
-        </div>
 
-        <!-- Table -->
-        <div class="table-container">
-            <table class="table mb-0">
+            <!-- Desktop Table View -->
+            <table class="payments-table" id="paymentsTable">
                 <thead>
                     <tr>
-                        <th class="ps-4 col-priority-essential">Fecha</th>
-                        <th class="col-priority-essential">Farmacia</th>
-                        <th class="text-end col-priority-essential">Total</th>
-                        <th class="text-center col-priority-essential">Estado</th>
-                        <th class="text-end pe-4 col-priority-essential">Acciones</th>
+                        <th>Fecha</th>
+                        <th>Farmacia</th>
+                        <th>Medicamento</th>
+                        <th>Monto</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="payments-table-body">
-                    <!-- Rows rendered via JS -->
+                <tbody id="paymentsTableBody">
+                    <tr>
+                        <td colspan="6" class="loading">
+                            <div class="spinner"></div>
+                            <span class="ms-2">Cargando pagos...</span>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
-            <!-- Empty State -->
-            <div id="empty-state" class="text-center py-5 d-none">
-                <i class="fa-regular fa-folder-open fs-1 text-muted mb-3 opacity-50"></i>
-                <p class="text-muted fw-medium">No se encontraron pagos con estos filtros.</p>
-            </div>
-        </div>
-
+        </section>
     </main>
 
-    <!-- FAB Button -->
-    <button class="fab-button" data-bs-toggle="modal" data-bs-target="#modalNewPayment" title="Nuevo Pago">
-        <i class="fa-solid fa-plus"></i>
+    <!-- Floating Action Button -->
+    <button class="fab" id="btnAddPayment" aria-label="Agregar nuevo pago">
+        <i class="fas fa-plus"></i>
     </button>
 
-    <!-- MODAL 1: Nuevo Pago -->
-    <div class="modal fade" id="modalNewPayment" tabindex="-1">
+    <!-- Add Payment Modal -->
+    <div class="modal fade" id="addPaymentModal" tabindex="-1" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="modal-header bg-light border-0 py-3">
-                    <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-circle-plus me-2"></i>Nuevo Pago</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPaymentModalLabel">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Nuevo Pago
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <form id="form-payment">
-                        <div class="mb-3 position-relative">
-                            <label class="form-label small fw-bold text-uppercase text-muted">Farmacia</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-store text-muted"></i></span>
-                                <input type="text" class="form-control border-start-0 ps-0" id="pay-pharmacy" required placeholder="Nombre de la farmacia" list="pharmacy-list">
-                                <datalist id="pharmacy-list"></datalist>
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold text-uppercase text-muted">Producto</label>
-                                <select class="form-select" id="pay-product" required>
-                                    <option value="" selected disabled>Seleccionar...</option>
-                                    <option value="descongel">Descongel</option>
-                                    <option value="multidol400">Multidol 400</option>
-                                    <option value="multidol800">Multidol 800</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold text-uppercase text-muted">Fecha</label>
-                                <input type="date" class="form-control" id="pay-date" required>
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mb-3">
-                            <div class="col-6">
-                                <label class="form-label small fw-bold text-uppercase text-muted">Cantidad</label>
-                                <input type="number" class="form-control" id="pay-qty" min="1" value="1" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small fw-bold text-uppercase text-muted">Unitario ($)</label>
-                                <input type="number" class="form-control" id="pay-price" min="0" step="100" required>
-                            </div>
-                        </div>
-
-                        <!-- Live Preview Alert -->
-                        <div id="pay-preview-alert" class="alert alert-primary d-flex align-items-center justify-content-between py-2 px-3 mb-3 d-none">
-                            <small class="mb-0"><i class="fa-solid fa-calculator me-2"></i>Total estimado:</small>
-                            <span class="fw-bold fs-5" id="pay-total-preview">$0</span>
-                        </div>
-
+                <div class="modal-body">
+                    <form id="addPaymentForm">
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-uppercase text-muted">Estado Inicial</label>
-                            <select class="form-select" id="pay-status">
-                                <option value="pendiente">Pendiente (Por cobrar)</option>
-                                <option value="procesado">Procesado (Pagado)</option>
+                            <label for="pharmacyName" class="form-label">Nombre de Farmacia</label>
+                            <input type="text" class="form-control" id="pharmacyName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="medicineName" class="form-label">Medicamento</label>
+                            <input type="text" class="form-control" id="medicineName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="paymentAmount" class="form-label">Monto ($)</label>
+                            <input type="number" class="form-control" id="paymentAmount" step="0.01" min="0" required>
+                            <div class="form-text">Presupuesto disponible: <strong id="modalBudgetAvailable">$0.00</strong></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="paymentStatus" class="form-label">Estado</label>
+                            <select class="form-select" id="paymentStatus" required>
+                                <option value="pending">Pendiente</option>
+                                <option value="completed">Completado</option>
+                                <option value="cancelled">Cancelado</option>
                             </select>
                         </div>
-
                         <div class="mb-3">
-                            <div class="d-flex align-items-center justify-content-between mb-2 gap-2 flex-wrap">
-                                <label class="form-label small fw-bold text-uppercase text-muted mb-0">Referencias de Pago</label>
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-new-reference">
-                                    <i class="fa-solid fa-plus me-1"></i>Nueva referencia
-                                </button>
-                            </div>
-                            <div class="pay-refs-panel">
-                                <input type="search" class="form-control form-control-sm mb-2" id="pay-refs-search" placeholder="Buscar referencia..." aria-label="Buscar referencia de pago">
-                                <div class="d-flex gap-2 mb-2 flex-wrap">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-select-all-refs">Seleccionar todas</button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-clear-refs">Limpiar selección</button>
-                                </div>
-                                <div class="pay-refs-list" id="pay-refs"></div>
-                            </div>
-                            <small class="text-muted d-block mt-1">Selección táctil compatible en móvil, sin teclas Ctrl/Cmd.</small>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-uppercase text-muted">Seleccionadas</label>
-                            <div id="pay-selected-refs" class="border rounded p-2 bg-light"></div>
-                        </div>
-
-                        <div class="mb-0">
-                            <label class="form-label small fw-bold text-uppercase text-muted">Notas Adicionales</label>
-                            <textarea class="form-control" id="pay-notes" rows="2" placeholder="Detalles opcionales..."></textarea>
+                            <label for="paymentNotes" class="form-label">Notas (opcional)</label>
+                            <textarea class="form-control" id="paymentNotes" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer border-0 pt-0 px-4 pb-4">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary px-4 fw-bold" onclick="app.handleSavePayment()">
-                        <i class="fa-regular fa-floppy-disk me-2"></i>Guardar Registro
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnSavePayment">
+                        <i class="fas fa-save me-2"></i>
+                        Guardar Pago
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL 2: Registrar Reintegro -->
-    <div class="modal fade" id="modalReintegro" tabindex="-1">
+    <!-- Edit Payment Modal -->
+    <div class="modal fade" id="editPaymentModal" tabindex="-1" aria-labelledby="editPaymentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-header bg-success bg-opacity-10 border-0 py-3">
-                    <h5 class="modal-title fw-bold text-success"><i class="fa-solid fa-arrow-rotate-left me-2"></i>Registrar Reintegro</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPaymentModalLabel">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Pago
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <form id="form-reintegro">
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold text-uppercase text-muted">Monto Reintegrado</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control fw-bold text-success" id="reint-amount" min="1" step="100" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold text-uppercase text-muted">Fecha</label>
-                                <input type="date" class="form-control" id="reint-date" required>
-                            </div>
+                <div class="modal-body">
+                    <form id="editPaymentForm">
+                        <input type="hidden" id="editPaymentId">
+                        <div class="mb-3">
+                            <label for="editPharmacyName" class="form-label">Nombre de Farmacia</label>
+                            <input type="text" class="form-control" id="editPharmacyName" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-uppercase text-muted">IDs de Pagos (Opcional)</label>
-                            <input type="text" class="form-control font-monospace small" id="reint-ids" placeholder="id1, id2, id3...">
-                            <div class="form-text small">Separar IDs con comas.</div>
+                            <label for="editMedicineName" class="form-label">Medicamento</label>
+                            <input type="text" class="form-control" id="editMedicineName" required>
                         </div>
-                        <div class="mb-0">
-                            <label class="form-label small fw-bold text-uppercase text-muted">Notas</label>
-                            <textarea class="form-control" id="reint-notes" rows="3"></textarea>
+                        <div class="mb-3">
+                            <label for="editPaymentAmount" class="form-label">Monto ($)</label>
+                            <input type="number" class="form-control" id="editPaymentAmount" step="0.01" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPaymentStatus" class="form-label">Estado</label>
+                            <select class="form-select" id="editPaymentStatus" required>
+                                <option value="pending">Pendiente</option>
+                                <option value="completed">Completado</option>
+                                <option value="cancelled">Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPaymentNotes" class="form-label">Notas</label>
+                            <textarea class="form-control" id="editPaymentNotes" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer border-0 pt-0 px-4 pb-4">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-success px-4 fw-bold" onclick="app.handleSaveReintegro()">
-                        Guardar Reintegro
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnUpdatePayment">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        Actualizar
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL 3: Detalles -->
-    <div class="modal fade" id="modalDetails" tabindex="-1">
+    <!-- Reintegro Modal -->
+    <div class="modal fade" id="reintegroModal" tabindex="-1" aria-labelledby="reintegroModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-body p-0" id="detail-content">
-                    <!-- Dynamic Content -->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reintegroModalLabel">
+                        <i class="fas fa-undo-alt me-2"></i>
+                        Registrar Reintegro
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="reintegroForm">
+                        <input type="hidden" id="reintegroPaymentId">
+                        <div class="mb-3">
+                            <label class="form-label">Pago Original</label>
+                            <div class="p-3 bg-subtle rounded" id="reintegroPaymentInfo">
+                                <!-- Info del pago se llenará dinámicamente -->
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reintegroAmount" class="form-label">Monto a Reintegrar ($)</label>
+                            <input type="number" class="form-control" id="reintegroAmount" step="0.01" min="0" required>
+                            <div class="form-text">Máximo: <strong id="reintegroMaxAmount">$0.00</strong></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reintegroReason" class="form-label">Motivo</label>
+                            <textarea class="form-control" id="reintegroReason" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" id="btnSaveReintegro">
+                        <i class="fas fa-undo-alt me-2"></i>
+                        Procesar Reintegro
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div class="toast-container position-fixed top-0 end-0 p-3">
-        <div id="liveToast" class="toast align-items-center border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body d-flex align-items-center gap-2 fw-medium">
-                    <i id="toast-icon" class="fa-solid fa-check-circle"></i>
-                    <span id="toast-message">Notificación</span>
-                </div>
-                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    </div>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
-    <!-- Scripts -->
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
+    <!-- App Logic -->
     <script type="module">
-        import { db } from "./src/services/firebase.js";
-        import { loadPayments, getCashMovements, subscribePaymentReferences } from "./src/services/payments.js";
-        import { getProductConfig } from "./src/services/references.js";
-        import { renderTable, updateFiltersUI } from "./src/ui/table.js";
-        import { updateDashboard } from "./src/ui/dashboard.js";
-        import {
-            renderPaymentReferencesSelector,
-            setupPaymentReferencesControls,
-            handleCreatePaymentReference,
-            handleSavePayment,
-            handleSaveReintegro,
-            toggleStatus,
-            deleteItem,
-            openDetails
-        } from "./src/ui/modals.js";
-
-        const state = {
-            payments: [],
-            movements: [],
-            paymentReferences: [],
-            budget: 500000,
-            filters: { product: '', pharmacy: '', status: '', date: '' },
-            featureFlags: { allowLegacyCashFallback: true },
-            loading: true
-        };
-
-        const utils = {
-            fmtMoney: (amount) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount),
-            normalizeText: (value) => (value || '').trim().toLowerCase(),
-            fmtDate: (timestamp) => {
-                if (!timestamp) return '';
-                let date;
-                if (timestamp.toDate) date = timestamp.toDate();
-                else if (timestamp instanceof Date) date = timestamp;
-                else if (typeof timestamp === 'string') {
-                    const parts = timestamp.split('-');
-                    date = parts.length === 3 ? new Date(parts[0], parts[1] - 1, parts[2]) : new Date(timestamp);
-                } else return '';
-                return date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
-            },
-            getProductConfig,
-            showToast: (msg, type = 'success') => {
-                const toastEl = document.getElementById('liveToast');
-                const toastIcon = document.getElementById('toast-icon');
-                document.getElementById('toast-message').textContent = msg;
-                toastEl.className = `toast align-items-center border-0 shadow-lg text-white bg-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'success'}`;
-                toastIcon.className = type === 'error' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-check-circle';
-                new bootstrap.Toast(toastEl).show();
-            },
-            toggleLoader: (show) => {
-                const el = document.getElementById('loader');
-                if (show) el.classList.remove('hidden');
-                else el.classList.add('hidden');
+        // ============================================
+        // CONFIGURACIÓN Y CONSTANTES
+        // ============================================
+        const CONFIG = {
+            BUDGET_INITIAL: 50000.00,
+            CURRENCY_LOCALE: 'es-MX',
+            DATE_OPTIONS: { year: 'numeric', month: 'short', day: 'numeric' },
+            DATETIME_OPTIONS: { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             }
         };
 
-        const app = {
-            init: () => {
-                app.subscribeToData();
-                app.setupEventListeners();
-                document.getElementById('pay-date').valueAsDate = new Date();
-                document.getElementById('reint-date').valueAsDate = new Date();
+        // ============================================
+        // FIREBASE CONFIGURATION
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_PROJECT_ID.firebaseapp.com",
+            projectId: "TU_PROJECT_ID",
+            storageBucket: "TU_PROJECT_ID.appspot.com",
+            messagingSenderId: "TU_MESSAGING_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // ============================================
+        // STATE MANAGEMENT
+        // ============================================
+        class AppState extends EventTarget {
+            constructor() {
+                super();
+                this.state = {
+                    payments: [],
+                    budget: CONFIG.BUDGET_INITIAL,
+                    filters: {
+                        status: 'all',
+                        search: ''
+                    },
+                    isLoading: true,
+                    error: null
+                };
+            }
+
+            setState(updates) {
+                this.state = { ...this.state, ...updates };
+                this.dispatchEvent(new CustomEvent('statechange', { detail: this.state }));
+            }
+
+            getState() {
+                return this.state;
+            }
+        }
+
+        const appState = new AppState();
+
+        // ============================================
+        // UTILITIES
+        // ============================================
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat(CONFIG.CURRENCY_LOCALE, {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2
+            }).format(amount);
+        };
+
+        const formatDate = (timestamp) => {
+            if (!timestamp) return '--';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return new Intl.DateTimeFormat(CONFIG.CURRENCY_LOCALE, CONFIG.DATE_OPTIONS).format(date);
+        };
+
+        const formatDateTime = (timestamp) => {
+            if (!timestamp) return '--';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return new Intl.DateTimeFormat(CONFIG.CURRENCY_LOCALE, CONFIG.DATETIME_OPTIONS).format(date);
+        };
+
+        const generateId = () => {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        };
+
+        // ============================================
+        // UI COMPONENTS
+        // ============================================
+        const UI = {
+            elements: {
+                budgetAmount: document.getElementById('budgetAmount'),
+                totalPayments: document.getElementById('totalPayments'),
+                completedPayments: document.getElementById('completedPayments'),
+                pendingPayments: document.getElementById('pendingPayments'),
+                cancelledPayments: document.getElementById('cancelledPayments'),
+                paymentsList: document.getElementById('paymentsList'),
+                paymentsTableBody: document.getElementById('paymentsTableBody'),
+                paymentsCount: document.getElementById('paymentsCount'),
+                lastUpdate: document.getElementById('lastUpdate'),
+                modalBudgetAvailable: document.getElementById('modalBudgetAvailable'),
+                toastContainer: document.getElementById('toastContainer'),
+                searchInput: document.getElementById('searchInput'),
+                statusFilters: document.getElementById('statusFilters')
             },
 
-            subscribeToData: () => {
-                loadPayments(db, (payments) => {
-                    state.payments = payments;
-                    app.updateUI();
-                }, (error) => {
-                    console.error('Error leyendo pagos_productos:', error);
-                    utils.showToast('Error de conexión: ' + error.message, 'error');
-                    utils.toggleLoader(false);
-                });
-
-                getCashMovements(db, (movements) => {
-                    state.movements = movements;
-                    app.updateDashboard();
-                });
-
-                subscribePaymentReferences(db, (references) => {
-                    state.paymentReferences = references;
-                    app.renderPaymentReferencesSelector(document.getElementById('pay-pharmacy').value);
-                });
+            updateBudget(amount) {
+                this.elements.budgetAmount.textContent = formatCurrency(amount);
+                this.elements.modalBudgetAvailable.textContent = formatCurrency(amount);
             },
 
-            getFilteredData: () => state.payments.filter((p) => {
-                const matchProd = !state.filters.product || p.product === state.filters.product;
-                const matchPharm = !state.filters.pharmacy || p.pharmacy === state.filters.pharmacy;
-                const matchStatus = !state.filters.status || p.status === state.filters.status;
+            updateStats(stats) {
+                this.elements.totalPayments.textContent = stats.total;
+                this.elements.completedPayments.textContent = stats.completed;
+                this.elements.pendingPayments.textContent = stats.pending;
+                this.elements.cancelledPayments.textContent = stats.cancelled;
+            },
 
-                let matchDate = true;
-                if (state.filters.date) {
-                    let pDate;
-                    if (p.date && p.date.toDate) pDate = p.date.toDate();
-                    else if (typeof p.date === 'string') pDate = new Date(p.date);
-                    else pDate = p.date;
+            updateLastUpdate() {
+                const now = new Date();
+                this.elements.lastUpdate.textContent = `Actualizado: ${now.toLocaleTimeString()}`;
+            },
 
-                    if (pDate) {
-                        const filterDate = new Date(state.filters.date + '-01');
-                        matchDate = pDate.getMonth() === filterDate.getMonth() && pDate.getFullYear() === filterDate.getFullYear();
-                    }
+            updatePaymentsCount(count) {
+                this.elements.paymentsCount.textContent = `${count} registro${count !== 1 ? 's' : ''}`;
+            },
+
+            renderPaymentCard(payment) {
+                const statusClass = `status-${payment.status}`;
+                const statusText = payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
+                
+                return `
+                    <div class="payment-card" data-id="${payment.id}">
+                        <div class="payment-card-header">
+                            <div>
+                                <div class="payment-pharmacy">${this.escapeHtml(payment.pharmacy)}</div>
+                                <div class="payment-date">${formatDate(payment.createdAt)}</div>
+                            </div>
+                            <div class="payment-amount">${formatCurrency(payment.amount)}</div>
+                        </div>
+                        <div class="payment-details">
+                            <span class="payment-status ${statusClass}">
+                                <i class="fas fa-circle small"></i>
+                                ${statusText}
+                            </span>
+                            <div class="payment-actions">
+                                <button class="btn-action" onclick="window.editPayment('${payment.id}')" aria-label="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${payment.status === 'completed' ? `
+                                <button class="btn-action" onclick="window.openReintegro('${payment.id}')" aria-label="Reintegro">
+                                    <i class="fas fa-undo-alt"></i>
+                                </button>
+                                ` : ''}
+                                <button class="btn-action delete" onclick="window.deletePayment('${payment.id}')" aria-label="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderPaymentRow(payment) {
+                const statusClass = `status-${payment.status}`;
+                const statusText = payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
+                
+                return `
+                    <tr data-id="${payment.id}">
+                        <td>${formatDate(payment.createdAt)}</td>
+                        <td><strong>${this.escapeHtml(payment.pharmacy)}</strong></td>
+                        <td>${this.escapeHtml(payment.medicine)}</td>
+                        <td><strong>${formatCurrency(payment.amount)}</strong></td>
+                        <td><span class="payment-status ${statusClass}">${statusText}</span></td>
+                        <td>
+                            <div class="payment-actions">
+                                <button class="btn-action" onclick="window.editPayment('${payment.id}')" aria-label="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${payment.status === 'completed' ? `
+                                <button class="btn-action" onclick="window.openReintegro('${payment.id}')" aria-label="Reintegro">
+                                    <i class="fas fa-undo-alt"></i>
+                                </button>
+                                ` : ''}
+                                <button class="btn-action delete" onclick="window.deletePayment('${payment.id}')" aria-label="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            },
+
+            renderPayments(payments) {
+                if (payments.length === 0) {
+                    this.elements.paymentsList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="fas fa-receipt"></i>
+                            </div>
+                            <h4 class="empty-state-title">Sin pagos registrados</h4>
+                            <p class="empty-state-text">
+                                Comienza agregando tu primer pago usando el botón flotante.
+                            </p>
+                        </div>
+                    `;
+                    this.elements.paymentsTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="fas fa-receipt"></i>
+                                </div>
+                                <h4 class="empty-state-title">Sin pagos registrados</h4>
+                                <p class="empty-state-text">
+                                    Comienza agregando tu primer pago usando el botón flotante.
+                                </p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
                 }
 
-                return matchProd && matchPharm && matchStatus && matchDate;
-            }),
+                this.elements.paymentsList.innerHTML = payments
+                    .map(payment => this.renderPaymentCard(payment))
+                    .join('');
 
-            updateUI: () => {
-                app.renderTable(app.getFilteredData());
-                app.updateDashboard();
-                app.updateFiltersUI();
-                utils.toggleLoader(false);
+                this.elements.paymentsTableBody.innerHTML = payments
+                    .map(payment => this.renderPaymentRow(payment))
+                    .join('');
             },
 
-            renderTable: (data) => renderTable(data, { utils, getProductConfig }),
-            updateDashboard: () => updateDashboard(state, utils),
-            updateFiltersUI: () => updateFiltersUI(state.payments),
-            renderPaymentReferencesSelector: (pharmacy) => renderPaymentReferencesSelector(pharmacy, state, utils),
-            setupPaymentReferencesControls: () => setupPaymentReferencesControls({ state, utils }),
+            showLoading() {
+                this.elements.paymentsList.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span class="ms-2">Cargando pagos...</span>
+                    </div>
+                `;
+            },
 
-            setupEventListeners: () => {
-                ['filter-product', 'filter-pharmacy', 'filter-status', 'filter-date'].forEach((id) => {
-                    document.getElementById(id).addEventListener('change', (e) => {
-                        state.filters[id.replace('filter-', '')] = e.target.value;
-                        app.updateUI();
-                    });
-                });
+            showError(message) {
+                this.elements.paymentsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h4 class="empty-state-title">Error al cargar</h4>
+                        <p class="empty-state-text">${this.escapeHtml(message)}</p>
+                    </div>
+                `;
+            },
 
-                const calcTotal = () => {
-                    const qty = document.getElementById('pay-qty').value || 0;
-                    const price = document.getElementById('pay-price').value || 0;
-                    const total = qty * price;
-                    const previewEl = document.getElementById('pay-preview-alert');
-                    document.getElementById('pay-total-preview').textContent = utils.fmtMoney(total);
-                    if (total > 0) previewEl.classList.remove('d-none');
-                    else previewEl.classList.add('d-none');
+            showToast(message, type = 'info') {
+                const icons = {
+                    success: 'fa-check-circle',
+                    error: 'fa-exclamation-circle',
+                    warning: 'fa-exclamation-triangle',
+                    info: 'fa-info-circle'
                 };
 
-                document.getElementById('pay-qty').addEventListener('input', calcTotal);
-                document.getElementById('pay-price').addEventListener('input', calcTotal);
-                document.getElementById('pay-pharmacy').addEventListener('input', (e) => app.renderPaymentReferencesSelector(e.target.value));
-                document.getElementById('btn-new-reference').addEventListener('click', app.handleCreatePaymentReference);
-                app.setupPaymentReferencesControls();
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerHTML = `
+                    <i class="fas ${icons[type]} toast-icon"></i>
+                    <span class="toast-message">${this.escapeHtml(message)}</span>
+                `;
+
+                this.elements.toastContainer.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.animation = 'slideIn 0.25s ease-out reverse';
+                    setTimeout(() => toast.remove(), 250);
+                }, 3000);
             },
 
-            handleCreatePaymentReference: () => handleCreatePaymentReference({ db, state, utils }),
-            handleSavePayment: () => handleSavePayment({ db, state, utils }),
-            handleSaveReintegro: () => handleSaveReintegro({ db, utils }),
-            toggleStatus: (id, currentStatus) => toggleStatus({ db, id, currentStatus, utils }),
-            deleteItem: (id) => deleteItem({ db, id, utils }),
-            openDetails: (id) => openDetails({ id, state, utils }),
-            refreshData: () => {
-                utils.toggleLoader(true);
-                setTimeout(() => utils.toggleLoader(false), 500);
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
             }
         };
 
-        window.app = app;
-        document.addEventListener('DOMContentLoaded', app.init);
+        // ============================================
+        // DATA SERVICES
+        // ============================================
+        const DataService = {
+            async getPayments() {
+                try {
+                    const snapshot = await db.collection('payments')
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                    
+                    return snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                } catch (error) {
+                    console.error('Error fetching payments:', error);
+                    throw error;
+                }
+            },
+
+            async addPayment(paymentData) {
+                try {
+                    const docRef = await db.collection('payments').add({
+                        ...paymentData,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    return docRef.id;
+                } catch (error) {
+                    console.error('Error adding payment:', error);
+                    throw error;
+                }
+            },
+
+            async updatePayment(id, updates) {
+                try {
+                    await db.collection('payments').doc(id).update({
+                        ...updates,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } catch (error) {
+                    console.error('Error updating payment:', error);
+                    throw error;
+                }
+            },
+
+            async deletePayment(id) {
+                try {
+                    await db.collection('payments').doc(id).delete();
+                } catch (error) {
+                    console.error('Error deleting payment:', error);
+                    throw error;
+                }
+            },
+
+            async addCashMovement(movementData) {
+                try {
+                    await db.collection('cash_movements').add({
+                        ...movementData,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } catch (error) {
+                    console.error('Error adding cash movement:', error);
+                    throw error;
+                }
+            }
+        };
+
+        // ============================================
+        // APP LOGIC
+        // ============================================
+        class App {
+            constructor() {
+                this.modals = {};
+                this.initModals();
+                this.bindEvents();
+                this.loadPayments();
+            }
+
+            initModals() {
+                this.modals.add = new bootstrap.Modal(document.getElementById('addPaymentModal'));
+                this.modals.edit = new bootstrap.Modal(document.getElementById('editPaymentModal'));
+                this.modals.reintegro = new bootstrap.Modal(document.getElementById('reintegroModal'));
+            }
+
+            bindEvents() {
+                // Refresh button
+                document.getElementById('btnRefresh').addEventListener('click', () => {
+                    this.loadPayments();
+                    UI.showToast('Datos actualizados', 'success');
+                });
+
+                // Settings button (placeholder)
+                document.getElementById('btnSettings').addEventListener('click', () => {
+                    UI.showToast('Configuración próximamente', 'info');
+                });
+
+                // Add payment FAB
+                document.getElementById('btnAddPayment').addEventListener('click', () => {
+                    this.openAddPayment();
+                });
+
+                // Save payment
+                document.getElementById('btnSavePayment').addEventListener('click', () => {
+                    this.savePayment();
+                });
+
+                // Update payment
+                document.getElementById('btnUpdatePayment').addEventListener('click', () => {
+                    this.updatePayment();
+                });
+
+                // Save reintegro
+                document.getElementById('btnSaveReintegro').addEventListener('click', () => {
+                    this.saveReintegro();
+                });
+
+                // Search input
+                UI.elements.searchInput.addEventListener('input', (e) => {
+                    appState.setState({
+                        filters: { ...appState.getState().filters, search: e.target.value }
+                    });
+                    this.applyFilters();
+                });
+
+                // Status filters
+                UI.elements.statusFilters.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('filter-chip')) {
+                        document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
+                        e.target.classList.add('active');
+                        appState.setState({
+                            filters: { ...appState.getState().filters, status: e.target.dataset.filter }
+                        });
+                        this.applyFilters();
+                    }
+                });
+
+                // Form validation visual feedback
+                ['pharmacyName', 'medicineName', 'paymentAmount'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', function() {
+                        this.classList.toggle('is-invalid', !this.validity.valid);
+                        this.classList.toggle('is-valid', this.validity.valid && this.value !== '');
+                    });
+                });
+            }
+
+            async loadPayments() {
+                UI.showLoading();
+                try {
+                    const payments = await DataService.getPayments();
+                    appState.setState({ payments, isLoading: false });
+                    this.applyFilters();
+                    this.updateBudgetUI();
+                    UI.updateLastUpdate();
+                } catch (error) {
+                    console.error('Error loading payments:', error);
+                    UI.showError('Error al cargar los pagos. Verifica tu conexión.');
+                    appState.setState({ isLoading: false, error: error.message });
+                }
+            }
+
+            applyFilters() {
+                const state = appState.getState();
+                let filtered = [...state.payments];
+
+                // Filter by status
+                if (state.filters.status !== 'all') {
+                    filtered = filtered.filter(p => p.status === state.filters.status);
+                }
+
+                // Filter by search
+                if (state.filters.search) {
+                    const search = state.filters.search.toLowerCase();
+                    filtered = filtered.filter(p => 
+                        p.pharmacy.toLowerCase().includes(search) ||
+                        p.medicine.toLowerCase().includes(search)
+                    );
+                }
+
+                UI.renderPayments(filtered);
+                UI.updatePaymentsCount(filtered.length);
+            }
+
+            updateBudgetUI() {
+                const state = appState.getState();
+                const spent = state.payments
+                    .filter(p => p.status === 'completed')
+                    .reduce((sum, p) => sum + p.amount, 0);
+                
+                const remaining = state.budget - spent;
+                UI.updateBudget(Math.max(0, remaining));
+                
+                const stats = {
+                    total: state.payments.length,
+                    completed: state.payments.filter(p => p.status === 'completed').length,
+                    pending: state.payments.filter(p => p.status === 'pending').length,
+                    cancelled: state.payments.filter(p => p.status === 'cancelled').length
+                };
+                UI.updateStats(stats);
+            }
+
+            openAddPayment() {
+                document.getElementById('addPaymentForm').reset();
+                this.updateBudgetUI();
+                this.modals.add.show();
+            }
+
+            async savePayment() {
+                const form = document.getElementById('addPaymentForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                const amount = parseFloat(document.getElementById('paymentAmount').value);
+                const state = appState.getState();
+                const spent = state.payments
+                    .filter(p => p.status === 'completed')
+                    .reduce((sum, p) => sum + p.amount, 0);
+                
+                if (amount > state.budget - spent) {
+                    UI.showToast('Monto excede el presupuesto disponible', 'error');
+                    return;
+                }
+
+                const paymentData = {
+                    pharmacy: document.getElementById('pharmacyName').value.trim(),
+                    medicine: document.getElementById('medicineName').value.trim(),
+                    amount: amount,
+                    status: document.getElementById('paymentStatus').value,
+                    notes: document.getElementById('paymentNotes').value.trim()
+                };
+
+                try {
+                    await DataService.addPayment(paymentData);
+                    this.modals.add.hide();
+                    UI.showToast('Pago registrado exitosamente', 'success');
+                    this.loadPayments();
+                } catch (error) {
+                    console.error('Error saving payment:', error);
+                    UI.showToast('Error al guardar el pago', 'error');
+                }
+            }
+
+            editPayment(id) {
+                const payment = appState.getState().payments.find(p => p.id === id);
+                if (!payment) return;
+
+                document.getElementById('editPaymentId').value = id;
+                document.getElementById('editPharmacyName').value = payment.pharmacy;
+                document.getElementById('editMedicineName').value = payment.medicine;
+                document.getElementById('editPaymentAmount').value = payment.amount;
+                document.getElementById('editPaymentStatus').value = payment.status;
+                document.getElementById('editPaymentNotes').value = payment.notes || '';
+
+                this.modals.edit.show();
+            }
+
+            async updatePayment() {
+                const form = document.getElementById('editPaymentForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                const id = document.getElementById('editPaymentId').value;
+                const updates = {
+                    pharmacy: document.getElementById('editPharmacyName').value.trim(),
+                    medicine: document.getElementById('editMedicineName').value.trim(),
+                    amount: parseFloat(document.getElementById('editPaymentAmount').value),
+                    status: document.getElementById('editPaymentStatus').value,
+                    notes: document.getElementById('editPaymentNotes').value.trim()
+                };
+
+                try {
+                    await DataService.updatePayment(id, updates);
+                    this.modals.edit.hide();
+                    UI.showToast('Pago actualizado exitosamente', 'success');
+                    this.loadPayments();
+                } catch (error) {
+                    console.error('Error updating payment:', error);
+                    UI.showToast('Error al actualizar el pago', 'error');
+                }
+            }
+
+            async deletePayment(id) {
+                if (!confirm('¿Estás seguro de eliminar este pago? Esta acción no se puede deshacer.')) {
+                    return;
+                }
+
+                try {
+                    await DataService.deletePayment(id);
+                    UI.showToast('Pago eliminado exitosamente', 'success');
+                    this.loadPayments();
+                } catch (error) {
+                    console.error('Error deleting payment:', error);
+                    UI.showToast('Error al eliminar el pago', 'error');
+                }
+            }
+
+            openReintegro(id) {
+                const payment = appState.getState().payments.find(p => p.id === id);
+                if (!payment) return;
+
+                document.getElementById('reintegroPaymentId').value = id;
+                document.getElementById('reintegroPaymentInfo').innerHTML = `
+                    <div><strong>Farmacia:</strong> ${UI.escapeHtml(payment.pharmacy)}</div>
+                    <div><strong>Medicamento:</strong> ${UI.escapeHtml(payment.medicine)}</div>
+                    <div><strong>Monto Original:</strong> ${formatCurrency(payment.amount)}</div>
+                `;
+                document.getElementById('reintegroMaxAmount').textContent = formatCurrency(payment.amount);
+                document.getElementById('reintegroAmount').max = payment.amount;
+
+                this.modals.reintegro.show();
+            }
+
+            async saveReintegro() {
+                const form = document.getElementById('reintegroForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                const paymentId = document.getElementById('reintegroPaymentId').value;
+                const payment = appState.getState().payments.find(p => p.id === paymentId);
+                const amount = parseFloat(document.getElementById('reintegroAmount').value);
+
+                if (amount > payment.amount) {
+                    UI.showToast('El monto de reintegro no puede ser mayor al pago original', 'error');
+                    return;
+                }
+
+                try {
+                    // Register cash movement
+                    await DataService.addCashMovement({
+                        type: 'refund',
+                        amount: amount,
+                        reason: document.getElementById('reintegroReason').value.trim(),
+                        relatedPaymentId: paymentId,
+                        pharmacy: payment.pharmacy
+                    });
+
+                    // Optionally mark payment as cancelled or create adjustment
+                    UI.showToast('Reintegro registrado exitosamente', 'success');
+                    this.modals.reintegro.hide();
+                    this.loadPayments();
+                } catch (error) {
+                    console.error('Error saving reintegro:', error);
+                    UI.showToast('Error al registrar el reintegro', 'error');
+                }
+            }
+        }
+
+        // Expose functions to window for inline event handlers
+        window.editPayment = (id) => app.editPayment(id);
+        window.deletePayment = (id) => app.deletePayment(id);
+        window.openReintegro = (id) => app.openReintegro(id);
+
+        // Initialize app
+        const app = new App();
+
+        // State change listener
+        appState.addEventListener('statechange', () => {
+            app.updateBudgetUI();
+        });
     </script>
 </body>
 </html>
