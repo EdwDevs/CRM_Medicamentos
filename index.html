@@ -1,1316 +1,794 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <meta name="description" content="Sistema profesional de gestión de pagos para medicamentos">
-  <meta name="theme-color" content="#4f46e5">
-  <title>CRM Control de Pagos - Medicamentos</title>
-
-  <!-- Google Fonts: Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <!-- Bootstrap & Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
-
-  <style>
-    /* ============================================
-       SISTEMA DE DISEÑO - Variables CSS
-       ============================================ */
-    :root {
-      /* Brand Colors */
-      --primary: #4f46e5;
-      --primary-dark: #4338ca;
-      --secondary: #8b5cf6;
-      --accent: #06b6d4;
-      
-      /* Semantic Colors */
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      
-      /* Neutral Colors & Surfaces */
-      --bg-body: #f3f4f6;
-      --surface: #ffffff;
-      --text-main: #111827;
-      --text-secondary: #6b7280;
-      --border: #e5e7eb;
-      
-      /* Shadows & Radius */
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-      --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-      --shadow-glow: 0 0 15px rgba(79, 70, 229, 0.3);
-      
-      --radius-lg: 1rem;
-      --radius-xl: 1.5rem;
-      
-      /* Typography */
-      --font-sans: 'Inter', sans-serif;
-    }
-    
-    /* ============================================
-       RESET Y BASE
-       ============================================ */
-    body {
-      background-color: var(--bg-body);
-      font-family: var(--font-sans);
-      color: var(--text-main);
-      -webkit-font-smoothing: antialiased;
-      padding-bottom: 80px; /* Espacio para el FAB en móvil */
-    }
-    
-    h1, h2, h3, h4, h5, h6 {
-      font-weight: 700;
-      letter-spacing: -0.025em;
-    }
-
-    /* ============================================
-       HEADER - Mejorado con gradiente sutil
-       ============================================ */
-    .app-header {
-      background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 1020;
-      padding: 1rem 0;
-      box-shadow: var(--shadow-sm);
-    }
-    
-    .brand-gradient {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    /* ============================================
-       CARDS & CONTENEDORES - Elevación mejorada
-       ============================================ */
-    .card {
-      border: 1px solid rgba(255,255,255,0.5);
-      background: var(--surface);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-card);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    .card:hover {
-      box-shadow: var(--shadow-hover);
-    }
-    
-    .card-header {
-      background: transparent;
-      border-bottom: 1px solid var(--border);
-      font-weight: 600;
-      padding: 1rem 1.5rem;
-      color: var(--text-main);
-    }
-
-    /* ============================================
-       WIDGET DE PRESUPUESTO (HERO) - Rediseñado
-       ============================================ */
-    .budget-card {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-      color: white;
-      border: none;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .budget-card.over-budget {
-      background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
-    }
-    
-    .budget-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 36v-4H0v4H0v2h4v4h2v-4h4v-2H6zM6 6V0H0v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      opacity: 0.5;
-    }
-    
-    .budget-card::after {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -20%;
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
-      border-radius: 50%;
-    }
-
-    .budget-val {
-      font-size: 2.5rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-    }
-    
-    .budget-label {
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      opacity: 0.9;
-      margin-bottom: 0.25rem;
-    }
-    
-    .glass-panel {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 12px;
-      padding: 1rem;
-    }
-
-    /* ============================================
-       STATS CARDS - Con acentos de color
-       ============================================ */
-    .stats-card {
-      padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      height: 100%;
-      border: 1px solid var(--border);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .stats-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: var(--accent-color, var(--primary));
-    }
-    
-    .stats-card .icon-wrapper {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: var(--icon-bg, var(--bg-body));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      margin-bottom: 0.75rem;
-      color: var(--icon-color, var(--primary));
-      transition: transform 0.2s ease;
-    }
-    
-    .stats-card:hover .icon-wrapper {
-      transform: scale(1.1);
-    }
-    
-    .stats-card .stat-val {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--text-main);
-    }
-    
-    .stats-card .label {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-secondary);
-      font-weight: 600;
-    }
-
-    /* ============================================
-       TABLA Y LISTA - Mejorada
-       ============================================ */
-    .table-wrap {
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: var(--surface);
-    }
-    
-    .table thead th {
-      background: var(--bg-body);
-      color: var(--text-secondary);
-      font-weight: 600;
-      text-transform: uppercase;
-      font-size: 0.7rem;
-      letter-spacing: 0.05em;
-      border-bottom: 1px solid var(--border);
-      padding: 1rem;
-    }
-    
-    .table td {
-      padding: 1rem;
-      vertical-align: middle;
-      color: var(--text-main);
-      font-size: 0.9rem;
-      border-bottom: 1px solid var(--border);
-    }
-    
-    .table tbody tr:last-child td {
-      border-bottom: none;
-    }
-    
-    .table tbody tr {
-      transition: background-color 0.15s ease;
-    }
-    
-    .table tbody tr:hover {
-      background-color: rgba(79, 70, 229, 0.02);
-    }
-
-    /* Animación de entrada para filas */
-    .animate-row {
-      animation: fadeInUp 0.4s ease forwards;
-      opacity: 0;
-      transform: translateY(10px);
-    }
-
-    @keyframes fadeInUp {
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ============================================
-       BADGES & ESTADOS - Modernizados
-       ============================================ */
-    .badge-pill {
-      padding: 0.4em 0.9em;
-      border-radius: 50rem;
-      font-weight: 600;
-      font-size: 0.75rem;
-      letter-spacing: 0.02em;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35em;
-    }
-    
-    .bg-soft-primary { background: #e0e7ff; color: #4338ca; }
-    .bg-soft-success { background: #d1fae5; color: #065f46; }
-    .bg-soft-warning { background: #fef3c7; color: #92400e; }
-    .bg-soft-danger  { background: #fee2e2; color: #b91c1c; }
-
-    .badge-descongel { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-    .badge-multidol400 { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-    .badge-multidol800 { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
-
-    /* ============================================
-       FAB BUTTON & FORMULARIOS
-       ============================================ */
-    .fab-button {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      color: white;
-      border: none;
-      box-shadow: var(--shadow-glow), var(--shadow-hover);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      z-index: 1050;
-      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    
-    .fab-button:hover {
-      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-      transform: scale(1.1) rotate(90deg);
-      box-shadow: 0 0 25px rgba(79, 70, 229, 0.4), var(--shadow-hover);
-    }
-    
-    .fab-button:active {
-      transform: scale(0.95) rotate(90deg);
-    }
-
-    .form-control, .form-select {
-      border-radius: 0.75rem;
-      border: 1px solid var(--border);
-      padding: 0.75rem 1rem;
-      font-size: 0.95rem;
-      transition: all 0.2s ease;
-    }
-    
-    .form-control:focus, .form-select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-    }
-    
-    .input-group-text {
-      background: var(--surface);
-      border-color: var(--border);
-    }
-    
-    .input-group .form-control {
-      border-left: none;
-    }
-    
-    .input-group-text:first-child {
-      border-right: none;
-    }
-
-    /* ============================================
-       MODAL - Mejorado
-       ============================================ */
-    .modal-content {
-      border-radius: var(--radius-xl);
-      border: none;
-    }
-    
-    .modal-header {
-      padding: 1.5rem 1.5rem 0;
-    }
-    
-    .modal-body {
-      padding: 1.5rem;
-    }
-    
-    .modal-footer {
-      padding: 0 1.5rem 1.5rem;
-    }
-
-    /* ============================================
-       RESPONSIVE
-       ============================================ */
-    @media (max-width: 768px) {
-      .table thead { display: none; }
-      .table tbody tr {
-        display: block;
-        background: white;
-        margin-bottom: 1rem;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-sm);
-      }
-      .table tbody td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid var(--bg-body);
-        padding: 0.75rem 1rem;
-      }
-      .table tbody td:last-child { border-bottom: none; }
-      .table tbody td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: var(--text-secondary);
-        font-size: 0.75rem;
-        text-transform: uppercase;
-      }
-      
-      .fab-button {
-        bottom: 1.5rem;
-        right: 1.5rem;
-      }
-      
-      /* Ajustes de tarjetas en móvil */
-      .stats-card {
-        padding: 1rem;
-        min-height: 120px;
-      }
-      .stats-card .stat-val { font-size: 1.25rem; }
-      .stats-card .label { font-size: 0.7rem; }
-      
-      .budget-val { font-size: 2rem; }
-    }
-    
-    /* Toast Notification */
-    .toast-custom {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: white;
-      padding: 1rem 1.5rem;
-      border-radius: 12px;
-      box-shadow: var(--shadow-hover);
-      z-index: 2000;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-left: 4px solid var(--primary);
-      animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes slideInRight { 
-      from { transform: translateX(100%); opacity: 0; } 
-      to { transform: translateX(0); opacity: 1; } 
-    }
-    
-    /* Progress bar personalizado */
-    .progress {
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    
-    .progress-bar {
-      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    
-    /* Scrollbar personalizada */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: var(--bg-body);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--text-secondary);
-    }
-    
-    /* Focus visible para accesibilidad */
-    :focus-visible {
-      outline: 2px solid var(--primary);
-      outline-offset: 2px;
-    }
-    
-    /* Botones mejorados */
-    .btn {
-      border-radius: 0.625rem;
-      font-weight: 500;
-      transition: all 0.15s ease;
-    }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      border: none;
-    }
-    
-    .btn-primary:hover {
-      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-      transform: translateY(-1px);
-    }
-    
-    .btn-success {
-      background: linear-gradient(135deg, var(--success), #059669);
-      border: none;
-    }
-    
-    .btn-outline-primary {
-      border-color: var(--primary);
-      color: var(--primary);
-    }
-    
-    .btn-outline-primary:hover {
-      background: var(--primary);
-      border-color: var(--primary);
-    }
-    
-    .rounded-pill {
-      border-radius: 50rem !important;
-    }
-    
-    /* Alert personalizado */
-    .alert {
-      border-radius: 0.75rem;
-      border: none;
-    }
-    
-    /* Empty state */
-    .empty-state {
-      padding: 3rem 1rem;
-      text-align: center;
-      color: var(--text-secondary);
-    }
-    
-    .empty-state i {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
-    }
-    
-    .empty-state p {
-      margin: 0;
-      font-weight: 500;
-    }
-  </style>
-
-  <script type="module">
-    // Firebase Imports
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import {
-      getFirestore, collection, addDoc, getDocs, getDoc, deleteDoc, doc, query, orderBy, updateDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    // --- CONFIGURACIÓN FIREBASE (INTACTA) ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyAaVSb70OFIoX48T9GbLmTcdXOSvKv2pRk",
-      authDomain: "zona1561-4de30.firebaseapp.com",
-      projectId: "zona1561-4de30",
-      storageBucket: "zona1561-4de30.firebasestorage.app",
-      messagingSenderId: "451366030738",
-      appId: "1:451366030738:web:e638db51fbe24f6a48054b"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    try { getAnalytics(app); } catch(e){ console.warn("Analytics no soportado en este entorno"); }
-    const db = getFirestore(app);
-
-    // Autenticación anónima (requerida por las reglas de Firestore)
-    const auth = getAuth(app);
-    try {
-      await signInAnonymously(auth);
-    } catch(e) {
-      console.error("Error de autenticación en Firebase:", e);
-    }
-
-    // --- CONSTANTES & UTILIDADES ---
-    const BUDGET_TOTAL = 500000;
-    const $ = sel => document.querySelector(sel);
-    const $$ = sel => document.querySelectorAll(sel);
-
-    const PRODUCTS = {
-      descongel: {name:"Descongel x100", cls:"descongel", icon:"❄️"},
-      multidol400: {name:"Multidol 400mg", cls:"multidol400", icon:"💊"},
-      multidol800: {name:"Multidol 800mg", cls:"multidol800", icon:"💊"}
-    };
-
-    // Helpers de Formato
-    const fmtMoney = (v) => new Intl.NumberFormat("es-CO", {style:"currency", currency:"COP", maximumFractionDigits:0}).format(v);
-    const fmtDate = (d) => {
-      const dt = d?.toDate ? d.toDate() : new Date(d + "T00:00:00");
-      return dt.toLocaleDateString("es-CO", { day: 'numeric', month: 'short', year: 'numeric' });
-    };
-
-    function getStatusUI(status) {
-      return status === 'procesado' 
-        ? { label: 'Procesado', class: 'bg-soft-success', icon: 'check-circle' }
-        : { label: 'Pendiente', class: 'bg-soft-warning', icon: 'clock' };
-    }
-
-    // --- FUNCIONALIDAD UI ---
-    function showToast(msg, type="success") {
-      const el = document.createElement("div");
-      el.className = "toast-custom";
-      el.style.borderLeftColor = type === "error" ? "var(--danger)" : "var(--success)";
-      el.innerHTML = `<i class="fas fa-${type === "error" ? "exclamation-circle" : "check-circle"}" style="color:${type === "error" ? "var(--danger)" : "var(--success)"}"></i> <strong>${msg}</strong>`;
-      document.body.appendChild(el);
-      setTimeout(() => { el.style.opacity="0"; el.style.transform="translateY(-10px)"; setTimeout(()=>el.remove(), 300) }, 3000);
-    }
-
-    function toggleLoading(isLoading) {
-      const tbody = $('#payments-table');
-      if (isLoading) {
-        tbody.innerHTML = `
-          <tr><td colspan="9" class="text-center py-5">
-            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
-            <p class="text-muted mt-2 small">Sincronizando con Firebase...</p>
-          </td></tr>`;
-      }
-    }
-
-    // --- LOGICA DE NEGOCIO ---
-    function calculateTotal() {
-      const q = Number($('#quantity').value || 0);
-      const up = Number($('#unitPrice').value || 0);
-      const total = q * up;
-      $('#total-display').textContent = fmtMoney(total);
-      $('#total-value').value = total;
-      $('#total-preview').classList.toggle('d-none', total <= 0);
-    }
-
-    // Corrección de datos antiguos
-    function normalizeData(data) {
-      return {
-        ...data,
-        unitPrice: Number(data.unitPrice ?? data.amount ?? 0),
-        totalAmount: Number(data.totalAmount ?? data.amount ?? (Number(data.quantity||1)*(data.unitPrice||0))),
-        status: data.status || "pendiente",
-        reimbursedAmount: Number(data.reimbursedAmount ?? 0),
-        reimbursedDate: data.reimbursedDate ?? null
-      };
-    }
-
-    function normalizeCashMovementData(data) {
-      const rawType = data.type === 'reintegro' ? 'reintegro' : 'egreso';
-      const normalizedReferenceIds = Array.isArray(data.referencePaymentIds)
-        ? data.referencePaymentIds.filter(Boolean)
-        : [];
-
-      return {
-        ...data,
-        type: rawType,
-        amount: Number(data.amount ?? 0),
-        date: data.date ?? null,
-        notes: data.notes ?? '',
-        referencePaymentIds: normalizedReferenceIds
-      };
-    }
-
-    async function getCashMovements() {
-      const q = query(collection(db, "cash_movements"), orderBy("date", "desc"));
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...normalizeCashMovementData(docSnap.data())
-      }));
-    }
-
-    async function loadPayments() {
-      toggleLoading(true);
-      
-      // Filtros
-      const filters = {
-        prod: $('#filter-product').value,
-        pharm: $('#filter-pharmacy').value,
-        status: $('#filter-status').value,
-        month: $('#filter-date').value
-      };
-
-      let constraints = [orderBy("date", "desc")];
-      // Nota: Firestore requiere índices compuestos para múltiples filtros. 
-      // Aquí usamos filtrado en cliente para robustez si fallan los índices.
-      
-      try {
-        // Intentamos traer lo más reciente (limite de seguridad)
-        const [paymentsSnapshot, cashMovements] = await Promise.all([
-          getDocs(query(collection(db, "payments"), orderBy("date", "desc"))),
-          getCashMovements()
-        ]);
-
-        let payments = paymentsSnapshot.docs.map(doc => ({id: doc.id, ...normalizeData(doc.data())}));
-
-        // Filtrado en Cliente (Client-side filtering) para máxima flexibilidad UX
-        if (filters.prod) payments = payments.filter(p => p.product === filters.prod);
-        if (filters.pharm) payments = payments.filter(p => p.pharmacy === filters.pharm);
-        if (filters.status) payments = payments.filter(p => p.status === filters.status);
-        if (filters.month) {
-          const [y, m] = filters.month.split('-');
-          payments = payments.filter(p => {
-            const d = p.date?.toDate ? p.date.toDate() : new Date(p.date);
-            return d.getFullYear() == y && (d.getMonth() + 1) == m;
-          });
-        }
-
-        renderTable(payments);
-        updateDashboard(payments, cashMovements);
-        updateFiltersUI(payments); // Llenar select de farmacias dinámicamente
-
-      } catch (error) {
-        console.error("Error cargando datos:", error);
-        $('#payments-table').innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4"><i class="fas fa-wifi me-2"></i>Error de conexión. Intente recargar.</td></tr>`;
-      }
-    }
-
-    function renderTable(payments) {
-      const tbody = $('#payments-table');
-      tbody.innerHTML = "";
-
-      if (payments.length === 0) {
-        tbody.innerHTML = `
-          <tr><td colspan="9" class="text-center py-5 opacity-50">
-            <i class="fas fa-inbox fa-3x mb-3 text-muted"></i><br>No se encontraron pagos.
-          </td></tr>`;
-        return;
-      }
-
-      payments.forEach((p, index) => {
-        const prod = PRODUCTS[p.product] || {name: p.product, cls: 'secondary', icon: '📦'};
-        const st = getStatusUI(p.status);
-        const row = document.createElement('tr');
-        
-        // Animación escalonada
-        row.className = "animate-row";
-        row.style.animationDelay = `${index * 0.05}s`;
-
-        row.innerHTML = `
-          <td data-label="Fecha" class="fw-medium text-secondary">${fmtDate(p.date)}</td>
-          <td data-label="Farmacia" class="fw-bold text-dark">${p.pharmacy}</td>
-          <td data-label="Producto">
-            <span class="badge badge-${prod.cls} badge-pill shadow-sm">
-              <span class="me-1">${prod.icon}</span> ${prod.name}
-            </span>
-          </td>
-          <td data-label="Cant.">${p.quantity}</td>
-          <td data-label="Unitario" class="text-muted">${fmtMoney(p.unitPrice)}</td>
-          <td data-label="Total" class="fw-bold text-primary">${fmtMoney(p.totalAmount)}</td>
-          <td data-label="Estado">
-            <button class="btn btn-sm ${st.class} border-0 badge-pill w-100 text-start ps-3"
-              onclick="toggleStatus('${p.id}', '${p.status}')">
-              <i class="fas fa-${st.icon} me-1"></i> ${st.label}
-            </button>
-          </td>
-          <td data-label="Acciones">
-            <div class="d-flex gap-2 justify-content-end justify-content-md-start">
-               <button class="btn btn-light btn-sm text-primary" onclick="openDetails('${p.id}')" aria-label="Ver detalles"><i class="fas fa-eye"></i></button>
-               <button class="btn btn-light btn-sm text-danger" onclick="deleteItem('${p.id}')" aria-label="Eliminar"><i class="fas fa-trash"></i></button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    function updateDashboard(payments, cashMovements = []) {
-      // KPI Principal
-      const validMovements = cashMovements.filter(m => Number.isFinite(m.amount) && m.amount > 0);
-      const egresosFromMovements = validMovements
-        .filter(m => m.type === 'egreso')
-        .reduce((acc, m) => acc + m.amount, 0);
-      const reintegrosFromMovements = validMovements
-        .filter(m => m.type === 'reintegro')
-        .reduce((acc, m) => acc + m.amount, 0);
-
-      const paymentIdsWithEgreso = new Set(
-        validMovements
-          .filter(m => m.type === 'egreso')
-          .flatMap(m => m.referencePaymentIds)
-      );
-      const egresosLegacy = payments
-        .filter(p => !paymentIdsWithEgreso.has(p.id))
-        .reduce((acc, p) => acc + Number(p.totalAmount || 0), 0);
-
-      const legacyReintegros = payments.reduce((acc, p) => {
-        const amountFromLegacy = Number(
-          p.reimbursedAmount
-          ?? p.reintegro
-          ?? p.reintegros
-          ?? p.companyContribution
-          ?? p.companyTopUp
-          ?? p.abonoEmpresa
-          ?? p.abono
-          ?? 0
-        );
-        return acc + (Number.isFinite(amountFromLegacy) ? amountFromLegacy : 0);
-      }, 0);
-
-      const egresos = egresosFromMovements + egresosLegacy;
-      const reintegros = reintegrosFromMovements + legacyReintegros;
-      const available = BUDGET_TOTAL + reintegros - egresos;
-
-      const baseUsageRaw = BUDGET_TOTAL > 0 ? (egresos / BUDGET_TOTAL) * 100 : 0;
-      const baseUsagePercent = Math.min(Math.max(baseUsageRaw, 0), 100);
-
-      $('#kpi-paid').textContent = fmtMoney(egresos);
-      $('#kpi-remaining').textContent = fmtMoney(available);
-      $('#budget-bar').style.width = `${baseUsagePercent}%`;
-      $('#budget-percent').textContent = `${baseUsageRaw.toFixed(1)}%`;
-
-      // Colores de barra
-      const bar = $('#budget-bar');
-      bar.className = `progress-bar progress-bar-striped progress-bar-animated ${baseUsageRaw > 100 ? 'bg-danger' : baseUsagePercent > 90 ? 'bg-danger' : baseUsagePercent > 70 ? 'bg-warning' : 'bg-success'}`;
-
-      const overBudgetEl = $('#kpi-overbudget');
-      const budgetCard = $('#budget-card');
-      if (available < 0) {
-        overBudgetEl.textContent = `Déficit actual: ${fmtMoney(Math.abs(available))}`;
-        overBudgetEl.classList.remove('d-none');
-        budgetCard.classList.add('over-budget');
-      } else if (reintegros > 0) {
-        overBudgetEl.textContent = `Reintegros acumulados: ${fmtMoney(reintegros)}`;
-        overBudgetEl.classList.remove('d-none');
-        budgetCard.classList.remove('over-budget');
-      } else {
-        overBudgetEl.textContent = '';
-        overBudgetEl.classList.add('d-none');
-        budgetCard.classList.remove('over-budget');
-      }
-
-      // Contadores Cards
-      const count = (key) => payments.filter(p => p.product === key).length;
-      $('#stat-descongel').textContent = count('descongel');
-      $('#stat-multi400').textContent = count('multidol400');
-      $('#stat-multi800').textContent = count('multidol800');
-      $('#stat-pending').textContent = payments.filter(p => p.status === 'pendiente').length;
-    }
-
-    function updateFiltersUI(payments) {
-      const select = $('#filter-pharmacy');
-      const current = select.value;
-      const pharmacies = [...new Set(payments.map(p => p.pharmacy))].sort();
-      const fragment = document.createDocumentFragment();
-      const allOption = document.createElement('option');
-      allOption.value = '';
-      allOption.textContent = '🏥 Todas las farmacias';
-      fragment.appendChild(allOption);
-
-      pharmacies.forEach(ph => {
-        const opt = document.createElement('option');
-        opt.value = ph;
-        opt.textContent = ph;
-        fragment.appendChild(opt);
-      });
-
-      select.textContent = '';
-      select.appendChild(fragment);
-      select.value = pharmacies.includes(current) ? current : '';
-    }
-
-    // --- ACCIONES CRUD ---
-    window.addItem = async (e) => {
-      e.preventDefault();
-      const btn = $('#btn-save');
-      const originalText = btn.innerHTML;
-      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-
-      try {
-        const quantity = Number($('#quantity').value);
-        const unitPrice = Number($('#unitPrice').value);
-        const totalValueInput = $('#total-value').value;
-
-        if (quantity <= 0) {
-          showToast("La cantidad debe ser mayor a 0", "error");
-          return;
-        }
-
-        if (unitPrice < 0) {
-          showToast("El precio unitario no puede ser negativo", "error");
-          return;
-        }
-
-        const totalAmount = totalValueInput ? Number(totalValueInput) : quantity * unitPrice;
-        const data = {
-          pharmacy: $('#pharmacy').value.trim(),
-          product: $('#product').value,
-          quantity,
-          unitPrice,
-          totalAmount,
-          date: new Date($('#date').value + "T00:00:00"),
-          status: $('#status').value,
-          notes: $('#notes').value
-        };
-
-        const paymentRef = await addDoc(collection(db, "payments"), data);
-        await addDoc(collection(db, "cash_movements"), {
-          type: 'egreso',
-          amount: totalAmount,
-          date: data.date,
-          referencePaymentIds: [paymentRef.id],
-          notes: `Egreso por pago en farmacia ${data.pharmacy}`
-        });
-        showToast("Pago registrado correctamente");
-        bootstrap.Modal.getInstance($('#formModal')).hide();
-        e.target.reset();
-        $('#total-preview').classList.add('d-none');
-        loadPayments();
-      } catch (err) {
-        console.error(err);
-        showToast("Error al guardar", "error");
-      } finally {
-        btn.disabled = false; btn.innerHTML = originalText;
-      }
-    };
-
-    window.addReintegro = async (e) => {
-      e.preventDefault();
-      const btn = $('#btn-save-reintegro');
-      const originalText = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-
-      try {
-        const amount = Number($('#reintegro-amount').value || 0);
-        const dateInput = $('#reintegro-date').value;
-        const referencesRaw = $('#reintegro-reference').value;
-        const notes = $('#reintegro-notes').value.trim();
-
-        if (amount <= 0) {
-          showToast("El reintegro debe ser mayor a 0", "error");
-          return;
-        }
-
-        if (!dateInput) {
-          showToast("La fecha del reintegro es obligatoria", "error");
-          return;
-        }
-
-        const referencePaymentIds = referencesRaw
-          .split(',')
-          .map(id => id.trim())
-          .filter(Boolean);
-
-        await addDoc(collection(db, "cash_movements"), {
-          type: 'reintegro',
-          amount,
-          date: new Date(dateInput + "T00:00:00"),
-          referencePaymentIds,
-          notes
-        });
-
-        showToast("Reintegro registrado correctamente");
-        bootstrap.Modal.getInstance($('#reintegroModal')).hide();
-        e.target.reset();
-        $('#reintegro-date').value = new Date().toISOString().split('T')[0];
-        loadPayments();
-      } catch (error) {
-        console.error(error);
-        showToast("Error al registrar reintegro", "error");
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-      }
-    };
-
-    window.deleteItem = async (id) => {
-      if(confirm("¿Eliminar este registro permanentemente?")) {
-        try {
-          await deleteDoc(doc(db, "payments", id));
-          showToast("Registro eliminado");
-          loadPayments();
-        } catch(e) { showToast("Error eliminando", "error"); }
-      }
-    };
-
-    window.toggleStatus = async (id, current) => {
-      const next = current === 'pendiente' ? 'procesado' : 'pendiente';
-      try {
-        await updateDoc(doc(db, "payments", id), {status: next});
-        loadPayments(); // Recargar para actualizar UI
-      } catch(e) { console.error(e); }
-    };
-
-    window.openDetails = async (id) => {
-      // Implementación simplificada: buscar en el DOM o volver a pedir (usaremos volver a pedir para asegurar datos)
-      const docSnap = await getDoc(doc(db, "payments", id));
-      if (!docSnap.exists()) {
-        showToast("No se encontró el pago solicitado.", "error");
-        return;
-      }
-      const data = normalizeData(docSnap.data());
-      const status = data.status || "pendiente";
-      const totalAmount = Number(data.totalAmount ?? 0);
-      const prod = PRODUCTS[data.product] || {name: data.product};
-      $('#modal-detail-content').innerHTML = `
-        <div class="text-center mb-4">
-           <div class="display-1 text-secondary">${prod.icon || '📦'}</div>
-           <h4 class="mt-2">${prod.name}</h4>
-           <span class="badge ${getStatusUI(status).class} px-3 py-2 mt-2">${status}</span>
-        </div>
-        <div class="bg-light p-3 rounded border">
-           <div class="d-flex justify-content-between mb-2 border-bottom pb-2"><span>Farmacia:</span> <strong>${data.pharmacy}</strong></div>
-           <div class="d-flex justify-content-between mb-2 border-bottom pb-2"><span>Total:</span> <strong class="text-primary fs-5">${fmtMoney(totalAmount)}</strong></div>
-           <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <span>${fmtDate(data.date)}</span></div>
-           <div class="mt-3"><small class="text-muted d-block">Notas:</small> <p class="mb-0 small">${data.notes || "Sin notas"}</p></div>
-        </div>
-      `;
-      new bootstrap.Modal($('#detailsModal')).show();
-    };
-
-    // --- INICIALIZACIÓN ---
-    // Exponer funciones necesarias para debugging y uso externo
-    window.loadPayments = loadPayments;
-    window.calculateTotal = calculateTotal;
-    window.showToast = showToast;
-    window.toggleLoading = toggleLoading;
-
-    function initApp() {
-      // Set fecha hoy
-      $('#date').value = new Date().toISOString().split('T')[0];
-      
-      // Event Listeners
-      $('#payment-form').addEventListener('submit', window.addItem);
-      $('#reintegro-form').addEventListener('submit', window.addReintegro);
-      $('#quantity').addEventListener('input', calculateTotal);
-      $('#unitPrice').addEventListener('input', calculateTotal);
-      $('#reintegro-date').value = new Date().toISOString().split('T')[0];
-      
-      // Listeners Filtros
-      ['filter-product', 'filter-pharmacy', 'filter-status', 'filter-date'].forEach(id => {
-        document.getElementById(id).addEventListener('change', loadPayments);
-      });
-
-      loadPayments();
-    }
-
-    // Inicializar cuando el DOM esté listo (o inmediatamente si ya lo está)
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
-    } else {
-      initApp();
-    }
-  </script>
-</head>
-<body>
-
-  <!-- Navbar Sticky - Mejorado -->
-  <header class="app-header">
-    <div class="container d-flex justify-content-between align-items-center">
-      <div>
-        <h1 class="h5 mb-0 fw-bold brand-gradient">
-          <i class="fas fa-pills me-2"></i>CRM Pagos
-        </h1>
-        <small class="text-muted d-none d-md-block">Gestión de pagos de medicamentos</small>
-      </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#reintegroModal">
-          <i class="fas fa-hand-holding-dollar me-1"></i> Registrar reintegro
-        </button>
-        <button class="btn btn-sm btn-light border rounded-pill px-3" onclick="location.reload()" aria-label="Recargar datos">
-          <i class="fas fa-sync-alt text-secondary"></i>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <main class="container my-4">
-    
-    <!-- Dashboard Hero -->
-    <div class="row g-4 mb-4">
-      <!-- Tarjeta Presupuesto - Mejorada -->
-      <div class="col-lg-5">
-        <div class="card budget-card h-100 shadow-lg" id="budget-card">
-          <div class="card-body d-flex flex-column justify-content-between p-4 position-relative z-1">
-            <div>
-              <div class="budget-label"><i class="fas fa-wallet me-1"></i> Egresos acumulados</div>
-              <div class="budget-val" id="kpi-paid">$0</div>
-              <div class="small opacity-75 mt-1">Disponible actual: <span id="kpi-remaining">$500,000</span></div>
-              <div class="small fw-semibold mt-1 d-none" id="kpi-overbudget"></div>
-            </div>
-            
-            <div class="glass-panel mt-4">
-              <div class="d-flex justify-content-between small mb-1 fw-bold">
-                <span>Uso del fondo base</span>
-                <span id="budget-percent">0%</span>
-              </div>
-              <div class="progress bg-dark bg-opacity-25" style="height: 8px;">
-                <div id="budget-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Estadísticas Rápidas - Con colores distintivos -->
-      <div class="col-lg-7">
-        <div class="row g-3 h-100">
-          <div class="col-6 col-sm-3">
-            <div class="card stats-card" style="--accent-color: #06b6d4; --icon-bg: #e0f2fe; --icon-color: #06b6d4;">
-              <div class="icon-wrapper"><i class="fas fa-snowflake"></i></div>
-              <div class="stat-val" id="stat-descongel">0</div>
-              <div class="label">Descongel</div>
-            </div>
-          </div>
-          <div class="col-6 col-sm-3">
-             <div class="card stats-card" style="--accent-color: #10b981; --icon-bg: #dcfce7; --icon-color: #10b981;">
-              <div class="icon-wrapper"><i class="fas fa-capsules"></i></div>
-              <div class="stat-val" id="stat-multi400">0</div>
-              <div class="label">Multi 400</div>
-            </div>
-          </div>
-          <div class="col-6 col-sm-3">
-             <div class="card stats-card" style="--accent-color: #8b5cf6; --icon-bg: #f3e8ff; --icon-color: #8b5cf6;">
-              <div class="icon-wrapper"><i class="fas fa-pills"></i></div>
-              <div class="stat-val" id="stat-multi800">0</div>
-              <div class="label">Multi 800</div>
-            </div>
-          </div>
-          <div class="col-6 col-sm-3">
-             <div class="card stats-card" style="--accent-color: #f59e0b; --icon-bg: #fef3c7; --icon-color: #f59e0b;">
-              <div class="icon-wrapper"><i class="fas fa-clock"></i></div>
-              <div class="stat-val text-warning" id="stat-pending">0</div>
-              <div class="label text-warning fw-bold">Pendientes</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Barra de Herramientas & Filtros -->
-    <div class="card mb-4 border-0 shadow-sm">
-      <div class="card-body p-3">
-        <div class="row g-2 align-items-center">
-          <div class="col-12 col-md-auto text-secondary fw-bold small text-uppercase">
-            <i class="fas fa-filter me-1"></i> Filtrar por:
-          </div>
-          <div class="col-6 col-md">
-            <select id="filter-product" class="form-select form-select-sm bg-light border-0">
-              <option value="">📦 Todos los productos</option>
-              <option value="descongel">Descongel</option>
-              <option value="multidol400">Multidol 400</option>
-              <option value="multidol800">Multidol 800</option>
-            </select>
-          </div>
-          <div class="col-6 col-md">
-            <select id="filter-pharmacy" class="form-select form-select-sm bg-light border-0">
-              <option value="">🏥 Todas las farmacias</option>
-            </select>
-          </div>
-          <div class="col-6 col-md-auto">
-            <select id="filter-status" class="form-select form-select-sm bg-light border-0">
-              <option value="">Estado: Todos</option>
-              <option value="pendiente">⏳ Pendiente</option>
-              <option value="procesado">✅ Procesado</option>
-            </select>
-          </div>
-           <div class="col-6 col-md-auto">
-            <input type="month" id="filter-date" class="form-control form-control-sm bg-light border-0">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tabla de Datos -->
-    <div class="card mb-5">
-      <div class="table-responsive table-wrap">
-        <table class="table table-hover mb-0">
-          <thead class="bg-light">
-            <tr>
-              <th>Fecha</th>
-              <th>Farmacia</th>
-              <th>Producto</th>
-              <th>Cant.</th>
-              <th>Unitario</th>
-              <th>Total</th>
-              <th width="140">Estado</th>
-              <th width="100" class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="payments-table">
-            <!-- JS Render -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- FAB Button (Visible en móvil y desktop) -->
-  <button class="fab-button" data-bs-toggle="modal" data-bs-target="#formModal" aria-label="Nuevo Pago">
-    <i class="fas fa-plus"></i>
-  </button>
-
-  <!-- Modal Formulario -->
-  <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow-lg rounded-4">
-        <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title fw-bold text-primary"><i class="fas fa-file-invoice-dollar me-2"></i>Nuevo Pago</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4">
-          <form id="payment-form" class="row g-3">
-            <div class="col-12">
-              <label class="form-label small fw-bold text-uppercase text-secondary">Farmacia</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white border-end-0"><i class="fas fa-store text-muted"></i></span>
-                <input type="text" id="pharmacy" class="form-control border-start-0 ps-0" placeholder="Nombre de la farmacia" required>
-              </div>
-            </div>
-            
-            <div class="col-12">
-              <label class="form-label small fw-bold text-uppercase text-secondary">Producto</label>
-              <select id="product" class="form-select" required>
-                <option value="" selected disabled>Seleccionar...</option>
-                <option value="descongel">❄️ Descongel x100 cápsulas</option>
-                <option value="multidol400">💊 Multidol 400mg</option>
-                <option value="multidol800">💊 Multidol 800mg</option>
-              </select>
-            </div>
-
-            <div class="col-6">
-              <label class="form-label small fw-bold text-uppercase text-secondary">Cantidad</label>
-              <input type="number" id="quantity" class="form-control" placeholder="0" min="1" required>
-            </div>
-            <div class="col-6">
-              <label class="form-label small fw-bold text-uppercase text-secondary">Precio Unit.</label>
-              <input type="number" id="unitPrice" class="form-control" placeholder="$" min="0" step="100" required>
-            </div>
-
-            <!-- Preview Total -->
-            <div class="col-12 d-none" id="total-preview">
-              <div class="alert bg-soft-primary border-0 d-flex justify-content-between align-items-center py-2">
-                <span class="small fw-bold text-primary">TOTAL A PAGAR</span>
-                <span class="fs-5 fw-bold text-primary" id="total-display">$0</span>
-                <input type="hidden" id="total-value">
-              </div>
-            </div>
-
-            <div class="col-6">
-               <label class="form-label small fw-bold text-uppercase text-secondary">Fecha</label>
-               <input type="date" id="date" class="form-control" required>
-            </div>
-            <div class="col-6">
-               <label class="form-label small fw-bold text-uppercase text-secondary">Estado</label>
-               <select id="status" class="form-select">
-                 <option value="pendiente">⏳ Pendiente</option>
-                 <option value="procesado">✅ Procesado</option>
-               </select>
-            </div>
-
-            <div class="col-12">
-              <textarea id="notes" class="form-control" rows="2" placeholder="Notas adicionales (opcional)..."></textarea>
-            </div>
-
-            <div class="col-12 mt-4">
-              <button type="submit" id="btn-save" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm">
-                Guardar Registro
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Reintegro -->
-  <div class="modal fade" id="reintegroModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow-lg rounded-4">
-        <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title fw-bold text-success"><i class="fas fa-hand-holding-dollar me-2"></i>Registrar reintegro</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4">
-          <form id="reintegro-form" class="row g-3">
-            <div class="col-12">
-              <label class="form-label small fw-bold text-uppercase text-secondary">Monto</label>
-              <input type="number" id="reintegro-amount" class="form-control" placeholder="$" min="1" step="100" required>
-            </div>
-            <div class="col-12">
-              <label class="form-label small fw-bold text-uppercase text-secondary">Fecha</label>
-              <input type="date" id="reintegro-date" class="form-control" required>
-            </div>
-            <div class="col-12">
-              <label class="form-label small fw-bold text-uppercase text-secondary">IDs de pagos (opcional)</label>
-              <input type="text" id="reintegro-reference" class="form-control" placeholder="id1,id2,id3">
-              <small class="text-muted">Separa múltiples IDs por coma.</small>
-            </div>
-            <div class="col-12">
-              <label class="form-label small fw-bold text-uppercase text-secondary">Notas (opcional)</label>
-              <textarea id="reintegro-notes" class="form-control" rows="2" placeholder="Detalle del reintegro..."></textarea>
-            </div>
-            <div class="col-12 mt-4">
-              <button type="submit" id="btn-save-reintegro" class="btn btn-success w-100 py-2 rounded-pill fw-bold shadow-sm">
-                Guardar reintegro
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Detalles -->
-  <div class="modal fade" id="detailsModal" tabindex="-1">
-     <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0">
-           <div class="modal-body p-4" id="modal-detail-content">
-              <!-- Contenido JS -->
-           </div>
-           <div class="modal-footer border-0 pt-0 justify-content-center">
-              <button class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
-           </div>
-        </div>
-     </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+1|<!DOCTYPE html>
+2|<html lang="es">
+3|<head>
+4|  <meta charset="UTF-8" />
+5|  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+6|  <meta name="description" content="Sistema profesional de gestión de pagos para medicamentos">
+7|  <meta name="theme-color" content="#4f46e5">
+8|  <title>CRM Control de Pagos - Medicamentos</title>
+9|
+10|  <!-- Google Fonts: Inter -->
+11|  <link rel="preconnect" href="https://fonts.googleapis.com">
+12|  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+13|  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+14|
+15|  <!-- Bootstrap & Icons -->
+16|  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+17|  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+18|
+  <link rel="stylesheet" href="styles.css">
+542|
+543|  <script type="module">
+544|    // Firebase Imports
+545|    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+546|    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+547|    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+548|    import {
+549|      getFirestore, collection, addDoc, getDocs, getDoc, deleteDoc, doc, query, orderBy, updateDoc
+550|    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+551|
+552|    // --- CONFIGURACIÓN FIREBASE (INTACTA) ---
+553|    const firebaseConfig = {
+554|      apiKey: "«reda...…»",
+555|      authDomain: "zona1561-4de30.firebaseapp.com",
+556|      projectId: "zona1561-4de30",
+557|      storageBucket: "zona1561-4de30.firebasestorage.app",
+558|      messagingSenderId: "451366030738",
+559|      appId: "1:451366030738:web:e638db51fbe24f6a48054b"
+560|    };
+561|
+562|    const app = initializeApp(firebaseConfig);
+563|    try { getAnalytics(app); } catch(e){ console.warn("Analytics no soportado en este entorno"); }
+564|    const db = getFirestore(app);
+565|
+566|    // Autenticación anónima (requerida por las reglas de Firestore)
+567|    const auth = getAuth(app);
+568|    try {
+569|      await signInAnonymously(auth);
+570|    } catch(e) {
+571|      console.error("Error de autenticación en Firebase:", e);
+572|    }
+573|
+574|    // --- CONSTANTES & UTILIDADES ---
+575|    const BUDGET_TOTAL = 500000;
+576|    const $ = sel => document.querySelector(sel);
+577|    const $$ = sel => document.querySelectorAll(sel);
+578|
+579|    const PRODUCTS = {
+580|      descongel: {name:"Descongel x100", cls:"descongel", icon:"❄️"},
+581|      multidol400: {name:"Multidol 400mg", cls:"multidol400", icon:"💊"},
+582|      multidol800: {name:"Multidol 800mg", cls:"multidol800", icon:"💊"}
+583|    };
+584|
+585|    // Helpers de Formato
+586|    const fmtMoney = (v) => new Intl.NumberFormat("es-CO", {style:"currency", currency:"COP", maximumFractionDigits:0}).format(v);
+587|    const fmtDate = (d) => {
+588|      const dt = d?.toDate ? d.toDate() : new Date(d + "T00:00:00");
+589|      return dt.toLocaleDateString("es-CO", { day: 'numeric', month: 'short', year: 'numeric' });
+590|    };
+591|
+592|    function getStatusUI(status) {
+593|      return status === 'procesado' 
+594|        ? { label: 'Procesado', class: 'bg-soft-success', icon: 'check-circle' }
+595|        : { label: 'Pendiente', class: 'bg-soft-warning', icon: 'clock' };
+596|    }
+597|
+598|    // --- FUNCIONALIDAD UI ---
+599|    function showToast(msg, type="success") {
+600|      const el = document.createElement("div");
+601|      el.className = "toast-custom";
+602|      el.style.borderLeftColor = type === "error" ? "var(--danger)" : "var(--success)";
+603|      el.innerHTML = `<i class="fas fa-${type === "error" ? "exclamation-circle" : "check-circle"}" style="color:${type === "error" ? "var(--danger)" : "var(--success)"}"></i> <strong>${msg}</strong>`;
+604|      document.body.appendChild(el);
+605|      setTimeout(() => { el.style.opacity="0"; el.style.transform="translateY(-10px)"; setTimeout(()=>el.remove(), 300) }, 3000);
+606|    }
+607|
+608|    function toggleLoading(isLoading) {
+609|      const tbody = $('#payments-table');
+610|      if (isLoading) {
+611|        tbody.innerHTML = `
+612|          <tr><td colspan="9" class="text-center py-5">
+613|            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+614|            <p class="text-muted mt-2 small">Sincronizando con Firebase...</p>
+615|          </td></tr>`;
+616|      }
+617|    }
+618|
+619|    // --- LOGICA DE NEGOCIO ---
+620|    function calculateTotal() {
+621|      const q = Number($('#quantity').value || 0);
+622|      const up = Number($('#unitPrice').value || 0);
+623|      const total = q * up;
+624|      $('#total-display').textContent = fmtMoney(total);
+625|      $('#total-value').value = total;
+626|      $('#total-preview').classList.toggle('d-none', total <= 0);
+627|    }
+628|
+629|    // Corrección de datos antiguos
+630|    function normalizeData(data) {
+631|      return {
+632|        ...data,
+633|        unitPrice: Number(data.unitPrice ?? data.amount ?? 0),
+634|        totalAmount: Number(data.totalAmount ?? data.amount ?? (Number(data.quantity||1)*(data.unitPrice||0))),
+635|        status: data.status || "pendiente",
+636|        reimbursedAmount: Number(data.reimbursedAmount ?? 0),
+637|        reimbursedDate: data.reimbursedDate ?? null
+638|      };
+639|    }
+640|
+641|    function normalizeCashMovementData(data) {
+642|      const rawType = data.type === 'reintegro' ? 'reintegro' : 'egreso';
+643|      const normalizedReferenceIds = Array.isArray(data.referencePaymentIds)
+644|        ? data.referencePaymentIds.filter(Boolean)
+645|        : [];
+646|
+647|      return {
+648|        ...data,
+649|        type: rawType,
+650|        amount: Number(data.amount ?? 0),
+651|        date: data.date ?? null,
+652|        notes: data.notes ?? '',
+653|        referencePaymentIds: normalizedReferenceIds
+654|      };
+655|    }
+656|
+657|    async function getCashMovements() {
+658|      const q = query(collection(db, "cash_movements"), orderBy("date", "desc"));
+659|      const snapshot = await getDocs(q);
+660|      return snapshot.docs.map(docSnap => ({
+661|        id: docSnap.id,
+662|        ...normalizeCashMovementData(docSnap.data())
+663|      }));
+664|    }
+665|
+666|    async function loadPayments() {
+667|      toggleLoading(true);
+668|      
+669|      // Filtros
+670|      const filters = {
+671|        prod: $('#filter-product').value,
+672|        pharm: $('#filter-pharmacy').value,
+673|        status: $('#filter-status').value,
+674|        month: $('#filter-date').value
+675|      };
+676|
+677|      let constraints = [orderBy("date", "desc")];
+678|      // Nota: Firestore requiere índices compuestos para múltiples filtros. 
+679|      // Aquí usamos filtrado en cliente para robustez si fallan los índices.
+680|      
+681|      try {
+682|        // Intentamos traer lo más reciente (limite de seguridad)
+683|        const [paymentsSnapshot, cashMovements] = await Promise.all([
+684|          getDocs(query(collection(db, "payments"), orderBy("date", "desc"))),
+685|          getCashMovements()
+686|        ]);
+687|
+688|        let payments = paymentsSnapshot.docs.map(doc => ({id: doc.id, ...normalizeData(doc.data())}));
+689|
+690|        // Filtrado en Cliente (Client-side filtering) para máxima flexibilidad UX
+691|        if (filters.prod) payments = payments.filter(p => p.product === filters.prod);
+692|        if (filters.pharm) payments = payments.filter(p => p.pharmacy === filters.pharm);
+693|        if (filters.status) payments = payments.filter(p => p.status === filters.status);
+694|        if (filters.month) {
+695|          const [y, m] = filters.month.split('-');
+696|          payments = payments.filter(p => {
+697|            const d = p.date?.toDate ? p.date.toDate() : new Date(p.date);
+698|            return d.getFullYear() == y && (d.getMonth() + 1) == m;
+699|          });
+700|        }
+701|
+702|        renderTable(payments);
+703|        updateDashboard(payments, cashMovements);
+704|        updateFiltersUI(payments); // Llenar select de farmacias dinámicamente
+705|
+706|      } catch (error) {
+707|        console.error("Error cargando datos:", error);
+708|        $('#payments-table').innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4"><i class="fas fa-wifi me-2"></i>Error de conexión. Intente recargar.</td></tr>`;
+709|      }
+710|    }
+711|
+712|    function renderTable(payments) {
+713|      const tbody = $('#payments-table');
+714|      tbody.innerHTML = "";
+715|
+716|      if (payments.length === 0) {
+717|        tbody.innerHTML = `
+718|          <tr><td colspan="9" class="text-center py-5 opacity-50">
+719|            <i class="fas fa-inbox fa-3x mb-3 text-muted"></i><br>No se encontraron pagos.
+720|          </td></tr>`;
+721|        return;
+722|      }
+723|
+724|      payments.forEach((p, index) => {
+725|        const prod = PRODUCTS[p.product] || {name: p.product, cls: 'secondary', icon: '📦'};
+726|        const st = getStatusUI(p.status);
+727|        const row = document.createElement('tr');
+728|        
+729|        // Animación escalonada
+730|        row.className = "animate-row";
+731|        row.style.animationDelay = `${index * 0.05}s`;
+732|
+733|        row.innerHTML = `
+734|          <td data-label="Fecha" class="fw-medium text-secondary">${fmtDate(p.date)}</td>
+735|          <td data-label="Farmacia" class="fw-bold text-dark">${p.pharmacy}</td>
+736|          <td data-label="Producto">
+737|            <span class="badge badge-${prod.cls} badge-pill shadow-sm">
+738|              <span class="me-1">${prod.icon}</span> ${prod.name}
+739|            </span>
+740|          </td>
+741|          <td data-label="Cant.">${p.quantity}</td>
+742|          <td data-label="Unitario" class="text-muted">${fmtMoney(p.unitPrice)}</td>
+743|          <td data-label="Total" class="fw-bold text-primary">${fmtMoney(p.totalAmount)}</td>
+744|          <td data-label="Estado">
+745|            <button class="btn btn-sm ${st.class} border-0 badge-pill w-100 text-start ps-3"
+746|              onclick="toggleStatus('${p.id}', '${p.status}')">
+747|              <i class="fas fa-${st.icon} me-1"></i> ${st.label}
+748|            </button>
+749|          </td>
+750|          <td data-label="Acciones">
+751|            <div class="d-flex gap-2 justify-content-end justify-content-md-start">
+752|               <button class="btn btn-light btn-sm text-primary" onclick="openDetails('${p.id}')" aria-label="Ver detalles"><i class="fas fa-eye"></i></button>
+753|               <button class="btn btn-light btn-sm text-danger" onclick="deleteItem('${p.id}')" aria-label="Eliminar"><i class="fas fa-trash"></i></button>
+754|            </div>
+755|          </td>
+756|        `;
+757|        tbody.appendChild(row);
+758|      });
+759|    }
+760|
+761|    function updateDashboard(payments, cashMovements = []) {
+762|      // KPI Principal
+763|      const validMovements = cashMovements.filter(m => Number.isFinite(m.amount) && m.amount > 0);
+764|      const egresosFromMovements = validMovements
+765|        .filter(m => m.type === 'egreso')
+766|        .reduce((acc, m) => acc + m.amount, 0);
+767|      const reintegrosFromMovements = validMovements
+768|        .filter(m => m.type === 'reintegro')
+769|        .reduce((acc, m) => acc + m.amount, 0);
+770|
+771|      const paymentIdsWithEgreso = new Set(
+772|        validMovements
+773|          .filter(m => m.type === 'egreso')
+774|          .flatMap(m => m.referencePaymentIds)
+775|      );
+776|      const egresosLegacy = payments
+777|        .filter(p => !paymentIdsWithEgreso.has(p.id))
+778|        .reduce((acc, p) => acc + Number(p.totalAmount || 0), 0);
+779|
+780|      const legacyReintegros = payments.reduce((acc, p) => {
+781|        const amountFromLegacy = Number(
+782|          p.reimbursedAmount
+783|          ?? p.reintegro
+784|          ?? p.reintegros
+785|          ?? p.companyContribution
+786|          ?? p.companyTopUp
+787|          ?? p.abonoEmpresa
+788|          ?? p.abono
+789|          ?? 0
+790|        );
+791|        return acc + (Number.isFinite(amountFromLegacy) ? amountFromLegacy : 0);
+792|      }, 0);
+793|
+794|      const egresos = egresosFromMovements + egresosLegacy;
+795|      const reintegros = reintegrosFromMovements + legacyReintegros;
+796|      const available = BUDGET_TOTAL + reintegros - egresos;
+797|
+798|      const baseUsageRaw = BUDGET_TOTAL > 0 ? (egresos / BUDGET_TOTAL) * 100 : 0;
+799|      const baseUsagePercent = Math.min(Math.max(baseUsageRaw, 0), 100);
+800|
+801|      $('#kpi-paid').textContent = fmtMoney(egresos);
+802|      $('#kpi-remaining').textContent = fmtMoney(available);
+803|      $('#budget-bar').style.width = `${baseUsagePercent}%`;
+804|      $('#budget-percent').textContent = `${baseUsageRaw.toFixed(1)}%`;
+805|
+806|      // Colores de barra
+807|      const bar = $('#budget-bar');
+808|      bar.className = `progress-bar progress-bar-striped progress-bar-animated ${baseUsageRaw > 100 ? 'bg-danger' : baseUsagePercent > 90 ? 'bg-danger' : baseUsagePercent > 70 ? 'bg-warning' : 'bg-success'}`;
+809|
+810|      const overBudgetEl = $('#kpi-overbudget');
+811|      const budgetCard = $('#budget-card');
+812|      if (available < 0) {
+813|        overBudgetEl.textContent = `Déficit actual: ${fmtMoney(Math.abs(available))}`;
+814|        overBudgetEl.classList.remove('d-none');
+815|        budgetCard.classList.add('over-budget');
+816|      } else if (reintegros > 0) {
+817|        overBudgetEl.textContent = `Reintegros acumulados: ${fmtMoney(reintegros)}`;
+818|        overBudgetEl.classList.remove('d-none');
+819|        budgetCard.classList.remove('over-budget');
+820|      } else {
+821|        overBudgetEl.textContent = '';
+822|        overBudgetEl.classList.add('d-none');
+823|        budgetCard.classList.remove('over-budget');
+824|      }
+825|
+826|      // Contadores Cards
+827|      const count = (key) => payments.filter(p => p.product === key).length;
+828|      $('#stat-descongel').textContent = count('descongel');
+829|      $('#stat-multi400').textContent = count('multidol400');
+830|      $('#stat-multi800').textContent = count('multidol800');
+831|      $('#stat-pending').textContent = payments.filter(p => p.status === 'pendiente').length;
+832|    }
+833|
+834|    function updateFiltersUI(payments) {
+835|      const select = $('#filter-pharmacy');
+836|      const current = select.value;
+837|      const pharmacies = [...new Set(payments.map(p => p.pharmacy))].sort();
+838|      const fragment = document.createDocumentFragment();
+839|      const allOption = document.createElement('option');
+840|      allOption.value = '';
+841|      allOption.textContent = '🏥 Todas las farmacias';
+842|      fragment.appendChild(allOption);
+843|
+844|      pharmacies.forEach(ph => {
+845|        const opt = document.createElement('option');
+846|        opt.value = ph;
+847|        opt.textContent = ph;
+848|        fragment.appendChild(opt);
+849|      });
+850|
+851|      select.textContent = '';
+852|      select.appendChild(fragment);
+853|      select.value = pharmacies.includes(current) ? current : '';
+854|    }
+855|
+856|    // --- ACCIONES CRUD ---
+857|    window.addItem = async (e) => {
+858|      e.preventDefault();
+859|      const btn = $('#btn-save');
+860|      const originalText = btn.innerHTML;
+861|      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+862|
+863|      try {
+864|        const quantity = Number($('#quantity').value);
+865|        const unitPrice = Number($('#unitPrice').value);
+866|        const totalValueInput = $('#total-value').value;
+867|
+868|        if (quantity <= 0) {
+869|          showToast("La cantidad debe ser mayor a 0", "error");
+870|          return;
+871|        }
+872|
+873|        if (unitPrice < 0) {
+874|          showToast("El precio unitario no puede ser negativo", "error");
+875|          return;
+876|        }
+877|
+878|        const totalAmount = totalValueInput ? Number(totalValueInput) : quantity * unitPrice;
+879|        const data = {
+880|          pharmacy: $('#pharmacy').value.trim(),
+881|          product: $('#product').value,
+882|          quantity,
+883|          unitPrice,
+884|          totalAmount,
+885|          date: new Date($('#date').value + "T00:00:00"),
+886|          status: $('#status').value,
+887|          notes: $('#notes').value
+888|        };
+889|
+890|        const paymentRef = await addDoc(collection(db, "payments"), data);
+891|        await addDoc(collection(db, "cash_movements"), {
+892|          type: 'egreso',
+893|          amount: totalAmount,
+894|          date: data.date,
+895|          referencePaymentIds: [paymentRef.id],
+896|          notes: `Egreso por pago en farmacia ${data.pharmacy}`
+897|        });
+898|        showToast("Pago registrado correctamente");
+899|        bootstrap.Modal.getInstance($('#formModal')).hide();
+900|        e.target.reset();
+901|        $('#total-preview').classList.add('d-none');
+902|        loadPayments();
+903|      } catch (err) {
+904|        console.error(err);
+905|        showToast("Error al guardar", "error");
+906|      } finally {
+907|        btn.disabled = false; btn.innerHTML = originalText;
+908|      }
+909|    };
+910|
+911|    window.addReintegro = async (e) => {
+912|      e.preventDefault();
+913|      const btn = $('#btn-save-reintegro');
+914|      const originalText = btn.innerHTML;
+915|      btn.disabled = true;
+916|      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+917|
+918|      try {
+919|        const amount = Number($('#reintegro-amount').value || 0);
+920|        const dateInput = $('#reintegro-date').value;
+921|        const referencesRaw = $('#reintegro-reference').value;
+922|        const notes = $('#reintegro-notes').value.trim();
+923|
+924|        if (amount <= 0) {
+925|          showToast("El reintegro debe ser mayor a 0", "error");
+926|          return;
+927|        }
+928|
+929|        if (!dateInput) {
+930|          showToast("La fecha del reintegro es obligatoria", "error");
+931|          return;
+932|        }
+933|
+934|        const referencePaymentIds = referencesRaw
+935|          .split(',')
+936|          .map(id => id.trim())
+937|          .filter(Boolean);
+938|
+939|        await addDoc(collection(db, "cash_movements"), {
+940|          type: 'reintegro',
+941|          amount,
+942|          date: new Date(dateInput + "T00:00:00"),
+943|          referencePaymentIds,
+944|          notes
+945|        });
+946|
+947|        showToast("Reintegro registrado correctamente");
+948|        bootstrap.Modal.getInstance($('#reintegroModal')).hide();
+949|        e.target.reset();
+950|        $('#reintegro-date').value = new Date().toISOString().split('T')[0];
+951|        loadPayments();
+952|      } catch (error) {
+953|        console.error(error);
+954|        showToast("Error al registrar reintegro", "error");
+955|      } finally {
+956|        btn.disabled = false;
+957|        btn.innerHTML = originalText;
+958|      }
+959|    };
+960|
+961|    window.deleteItem = async (id) => {
+962|      if(confirm("¿Eliminar este registro permanentemente?")) {
+963|        try {
+964|          await deleteDoc(doc(db, "payments", id));
+965|          showToast("Registro eliminado");
+966|          loadPayments();
+967|        } catch(e) { showToast("Error eliminando", "error"); }
+968|      }
+969|    };
+970|
+971|    window.toggleStatus = async (id, current) => {
+972|      const next = current === 'pendiente' ? 'procesado' : 'pendiente';
+973|      try {
+974|        await updateDoc(doc(db, "payments", id), {status: next});
+975|        loadPayments(); // Recargar para actualizar UI
+976|      } catch(e) { console.error(e); }
+977|    };
+978|
+979|    window.openDetails = async (id) => {
+980|      // Implementación simplificada: buscar en el DOM o volver a pedir (usaremos volver a pedir para asegurar datos)
+981|      const docSnap = await getDoc(doc(db, "payments", id));
+982|      if (!docSnap.exists()) {
+983|        showToast("No se encontró el pago solicitado.", "error");
+984|        return;
+985|      }
+986|      const data = normalizeData(docSnap.data());
+987|      const status = data.status || "pendiente";
+988|      const totalAmount = Number(data.totalAmount ?? 0);
+989|      const prod = PRODUCTS[data.product] || {name: data.product};
+990|      $('#modal-detail-content').innerHTML = `
+991|        <div class="text-center mb-4">
+992|           <div class="display-1 text-secondary">${prod.icon || '📦'}</div>
+993|           <h4 class="mt-2">${prod.name}</h4>
+994|           <span class="badge ${getStatusUI(status).class} px-3 py-2 mt-2">${status}</span>
+995|        </div>
+996|        <div class="bg-light p-3 rounded border">
+997|           <div class="d-flex justify-content-between mb-2 border-bottom pb-2"><span>Farmacia:</span> <strong>${data.pharmacy}</strong></div>
+998|           <div class="d-flex justify-content-between mb-2 border-bottom pb-2"><span>Total:</span> <strong class="text-primary fs-5">${fmtMoney(totalAmount)}</strong></div>
+999|           <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <span>${fmtDate(data.date)}</span></div>
+1000|           <div class="mt-3"><small class="text-muted d-block">Notas:</small> <p class="mb-0 small">${data.notes || "Sin notas"}</p></div>
+1001|        </div>
+1002|      `;
+1003|      new bootstrap.Modal($('#detailsModal')).show();
+1004|    };
+1005|
+1006|    // --- INICIALIZACIÓN ---
+1007|    // Exponer funciones necesarias para debugging y uso externo
+1008|    window.loadPayments = loadPayments;
+1009|    window.calculateTotal = calculateTotal;
+1010|    window.showToast = showToast;
+1011|    window.toggleLoading = toggleLoading;
+1012|
+1013|    function initApp() {
+1014|      // Set fecha hoy
+1015|      $('#date').value = new Date().toISOString().split('T')[0];
+1016|      
+1017|      // Event Listeners
+1018|      $('#payment-form').addEventListener('submit', window.addItem);
+1019|      $('#reintegro-form').addEventListener('submit', window.addReintegro);
+1020|      $('#quantity').addEventListener('input', calculateTotal);
+1021|      $('#unitPrice').addEventListener('input', calculateTotal);
+1022|      $('#reintegro-date').value = new Date().toISOString().split('T')[0];
+1023|      
+1024|      // Listeners Filtros
+1025|      ['filter-product', 'filter-pharmacy', 'filter-status', 'filter-date'].forEach(id => {
+1026|        document.getElementById(id).addEventListener('change', loadPayments);
+1027|      });
+1028|
+1029|      loadPayments();
+1030|    }
+1031|
+1032|    // Inicializar cuando el DOM esté listo (o inmediatamente si ya lo está)
+1033|    if (document.readyState === 'loading') {
+1034|      document.addEventListener('DOMContentLoaded', initApp);
+1035|    } else {
+1036|      initApp();
+1037|    }
+1038|  </script>
+1039|</head>
+1040|<body>
+1041|
+1042|  <!-- Navbar Sticky - Mejorado -->
+1043|  <header class="app-header">
+1044|    <div class="container d-flex justify-content-between align-items-center">
+1045|      <div>
+1046|        <h1 class="h5 mb-0 fw-bold brand-gradient">
+1047|          <i class="fas fa-pills me-2"></i>CRM Pagos
+1048|        </h1>
+1049|        <small class="text-muted d-none d-md-block">Gestión de pagos de medicamentos</small>
+1050|      </div>
+1051|      <div class="d-flex gap-2">
+1052|        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#reintegroModal">
+1053|          <i class="fas fa-hand-holding-dollar me-1"></i> Registrar reintegro
+1054|        </button>
+1055|        <button class="btn btn-sm btn-light border rounded-pill px-3" onclick="location.reload()" aria-label="Recargar datos">
+1056|          <i class="fas fa-sync-alt text-secondary"></i>
+1057|        </button>
+1058|      </div>
+1059|    </div>
+1060|  </header>
+1061|
+1062|  <main class="container my-4">
+1063|    
+1064|    <!-- Dashboard Hero -->
+1065|    <div class="row g-4 mb-4">
+1066|      <!-- Tarjeta Presupuesto - Mejorada -->
+1067|      <div class="col-lg-5">
+1068|        <div class="card budget-card h-100 shadow-lg" id="budget-card">
+1069|          <div class="card-body d-flex flex-column justify-content-between p-4 position-relative z-1">
+1070|            <div>
+1071|              <div class="budget-label"><i class="fas fa-wallet me-1"></i> Egresos acumulados</div>
+1072|              <div class="budget-val" id="kpi-paid">$0</div>
+1073|              <div class="small opacity-75 mt-1">Disponible actual: <span id="kpi-remaining">$500,000</span></div>
+1074|              <div class="small fw-semibold mt-1 d-none" id="kpi-overbudget"></div>
+1075|            </div>
+1076|            
+1077|            <div class="glass-panel mt-4">
+1078|              <div class="d-flex justify-content-between small mb-1 fw-bold">
+1079|                <span>Uso del fondo base</span>
+1080|                <span id="budget-percent">0%</span>
+1081|              </div>
+1082|              <div class="progress bg-dark bg-opacity-25" style="height: 8px;">
+1083|                <div id="budget-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+1084|              </div>
+1085|            </div>
+1086|          </div>
+1087|        </div>
+1088|      </div>
+1089|
+1090|      <!-- Estadísticas Rápidas - Con colores distintivos -->
+1091|      <div class="col-lg-7">
+1092|        <div class="row g-3 h-100">
+1093|          <div class="col-6 col-sm-3">
+1094|            <div class="card stats-card" style="--accent-color: #06b6d4; --icon-bg: #e0f2fe; --icon-color: #06b6d4;">
+1095|              <div class="icon-wrapper"><i class="fas fa-snowflake"></i></div>
+1096|              <div class="stat-val" id="stat-descongel">0</div>
+1097|              <div class="label">Descongel</div>
+1098|            </div>
+1099|          </div>
+1100|          <div class="col-6 col-sm-3">
+1101|             <div class="card stats-card" style="--accent-color: #10b981; --icon-bg: #dcfce7; --icon-color: #10b981;">
+1102|              <div class="icon-wrapper"><i class="fas fa-capsules"></i></div>
+1103|              <div class="stat-val" id="stat-multi400">0</div>
+1104|              <div class="label">Multi 400</div>
+1105|            </div>
+1106|          </div>
+1107|          <div class="col-6 col-sm-3">
+1108|             <div class="card stats-card" style="--accent-color: #8b5cf6; --icon-bg: #f3e8ff; --icon-color: #8b5cf6;">
+1109|              <div class="icon-wrapper"><i class="fas fa-pills"></i></div>
+1110|              <div class="stat-val" id="stat-multi800">0</div>
+1111|              <div class="label">Multi 800</div>
+1112|            </div>
+1113|          </div>
+1114|          <div class="col-6 col-sm-3">
+1115|             <div class="card stats-card" style="--accent-color: #f59e0b; --icon-bg: #fef3c7; --icon-color: #f59e0b;">
+1116|              <div class="icon-wrapper"><i class="fas fa-clock"></i></div>
+1117|              <div class="stat-val text-warning" id="stat-pending">0</div>
+1118|              <div class="label text-warning fw-bold">Pendientes</div>
+1119|            </div>
+1120|          </div>
+1121|        </div>
+1122|      </div>
+1123|    </div>
+1124|
+1125|    <!-- Barra de Herramientas & Filtros -->
+1126|    <div class="card mb-4 border-0 shadow-sm">
+1127|      <div class="card-body p-3">
+1128|        <div class="row g-2 align-items-center">
+1129|          <div class="col-12 col-md-auto text-secondary fw-bold small text-uppercase">
+1130|            <i class="fas fa-filter me-1"></i> Filtrar por:
+1131|          </div>
+1132|          <div class="col-6 col-md">
+1133|            <select id="filter-product" class="form-select form-select-sm bg-light border-0">
+1134|              <option value="">📦 Todos los productos</option>
+1135|              <option value="descongel">Descongel</option>
+1136|              <option value="multidol400">Multidol 400</option>
+1137|              <option value="multidol800">Multidol 800</option>
+1138|            </select>
+1139|          </div>
+1140|          <div class="col-6 col-md">
+1141|            <select id="filter-pharmacy" class="form-select form-select-sm bg-light border-0">
+1142|              <option value="">🏥 Todas las farmacias</option>
+1143|            </select>
+1144|          </div>
+1145|          <div class="col-6 col-md-auto">
+1146|            <select id="filter-status" class="form-select form-select-sm bg-light border-0">
+1147|              <option value="">Estado: Todos</option>
+1148|              <option value="pendiente">⏳ Pendiente</option>
+1149|              <option value="procesado">✅ Procesado</option>
+1150|            </select>
+1151|          </div>
+1152|           <div class="col-6 col-md-auto">
+1153|            <input type="month" id="filter-date" class="form-control form-control-sm bg-light border-0">
+1154|          </div>
+1155|        </div>
+1156|      </div>
+1157|    </div>
+1158|
+1159|    <!-- Tabla de Datos -->
+1160|    <div class="card mb-5">
+1161|      <div class="table-responsive table-wrap">
+1162|        <table class="table table-hover mb-0">
+1163|          <thead class="bg-light">
+1164|            <tr>
+1165|              <th>Fecha</th>
+1166|              <th>Farmacia</th>
+1167|              <th>Producto</th>
+1168|              <th>Cant.</th>
+1169|              <th>Unitario</th>
+1170|              <th>Total</th>
+1171|              <th width="140">Estado</th>
+1172|              <th width="100" class="text-end">Acciones</th>
+1173|            </tr>
+1174|          </thead>
+1175|          <tbody id="payments-table">
+1176|            <!-- JS Render -->
+1177|          </tbody>
+1178|        </table>
+1179|      </div>
+1180|    </div>
+1181|
+1182|  </main>
+1183|
+1184|  <!-- FAB Button (Visible en móvil y desktop) -->
+1185|  <button class="fab-button" data-bs-toggle="modal" data-bs-target="#formModal" aria-label="Nuevo Pago">
+1186|    <i class="fas fa-plus"></i>
+1187|  </button>
+1188|
+1189|  <!-- Modal Formulario -->
+1190|  <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+1191|    <div class="modal-dialog modal-dialog-centered">
+1192|      <div class="modal-content border-0 shadow-lg rounded-4">
+1193|        <div class="modal-header border-0 pb-0">
+1194|          <h5 class="modal-title fw-bold text-primary"><i class="fas fa-file-invoice-dollar me-2"></i>Nuevo Pago</h5>
+1195|          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+1196|        </div>
+1197|        <div class="modal-body p-4">
+1198|          <form id="payment-form" class="row g-3">
+1199|            <div class="col-12">
+1200|              <label class="form-label small fw-bold text-uppercase text-secondary">Farmacia</label>
+1201|              <div class="input-group">
+1202|                <span class="input-group-text bg-white border-end-0"><i class="fas fa-store text-muted"></i></span>
+1203|                <input type="text" id="pharmacy" class="form-control border-start-0 ps-0" placeholder="Nombre de la farmacia" required>
+1204|              </div>
+1205|            </div>
+1206|            
+1207|            <div class="col-12">
+1208|              <label class="form-label small fw-bold text-uppercase text-secondary">Producto</label>
+1209|              <select id="product" class="form-select" required>
+1210|                <option value="" selected disabled>Seleccionar...</option>
+1211|                <option value="descongel">❄️ Descongel x100 cápsulas</option>
+1212|                <option value="multidol400">💊 Multidol 400mg</option>
+1213|                <option value="multidol800">💊 Multidol 800mg</option>
+1214|              </select>
+1215|            </div>
+1216|
+1217|            <div class="col-6">
+1218|              <label class="form-label small fw-bold text-uppercase text-secondary">Cantidad</label>
+1219|              <input type="number" id="quantity" class="form-control" placeholder="0" min="1" required>
+1220|            </div>
+1221|            <div class="col-6">
+1222|              <label class="form-label small fw-bold text-uppercase text-secondary">Precio Unit.</label>
+1223|              <input type="number" id="unitPrice" class="form-control" placeholder="$" min="0" step="100" required>
+1224|            </div>
+1225|
+1226|            <!-- Preview Total -->
+1227|            <div class="col-12 d-none" id="total-preview">
+1228|              <div class="alert bg-soft-primary border-0 d-flex justify-content-between align-items-center py-2">
+1229|                <span class="small fw-bold text-primary">TOTAL A PAGAR</span>
+1230|                <span class="fs-5 fw-bold text-primary" id="total-display">$0</span>
+1231|                <input type="hidden" id="total-value">
+1232|              </div>
+1233|            </div>
+1234|
+1235|            <div class="col-6">
+1236|               <label class="form-label small fw-bold text-uppercase text-secondary">Fecha</label>
+1237|               <input type="date" id="date" class="form-control" required>
+1238|            </div>
+1239|            <div class="col-6">
+1240|               <label class="form-label small fw-bold text-uppercase text-secondary">Estado</label>
+1241|               <select id="status" class="form-select">
+1242|                 <option value="pendiente">⏳ Pendiente</option>
+1243|                 <option value="procesado">✅ Procesado</option>
+1244|               </select>
+1245|            </div>
+1246|
+1247|            <div class="col-12">
+1248|              <textarea id="notes" class="form-control" rows="2" placeholder="Notas adicionales (opcional)..."></textarea>
+1249|            </div>
+1250|
+1251|            <div class="col-12 mt-4">
+1252|              <button type="submit" id="btn-save" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm">
+1253|                Guardar Registro
+1254|              </button>
+1255|            </div>
+1256|          </form>
+1257|        </div>
+1258|      </div>
+1259|    </div>
+1260|  </div>
+1261|
+1262|  <!-- Modal Reintegro -->
+1263|  <div class="modal fade" id="reintegroModal" tabindex="-1" aria-hidden="true">
+1264|    <div class="modal-dialog modal-dialog-centered">
+1265|      <div class="modal-content border-0 shadow-lg rounded-4">
+1266|        <div class="modal-header border-0 pb-0">
+1267|          <h5 class="modal-title fw-bold text-success"><i class="fas fa-hand-holding-dollar me-2"></i>Registrar reintegro</h5>
+1268|          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+1269|        </div>
+1270|        <div class="modal-body p-4">
+1271|          <form id="reintegro-form" class="row g-3">
+1272|            <div class="col-12">
+1273|              <label class="form-label small fw-bold text-uppercase text-secondary">Monto</label>
+1274|              <input type="number" id="reintegro-amount" class="form-control" placeholder="$" min="1" step="100" required>
+1275|            </div>
+1276|            <div class="col-12">
+1277|              <label class="form-label small fw-bold text-uppercase text-secondary">Fecha</label>
+1278|              <input type="date" id="reintegro-date" class="form-control" required>
+1279|            </div>
+1280|            <div class="col-12">
+1281|              <label class="form-label small fw-bold text-uppercase text-secondary">IDs de pagos (opcional)</label>
+1282|              <input type="text" id="reintegro-reference" class="form-control" placeholder="id1,id2,id3">
+1283|              <small class="text-muted">Separa múltiples IDs por coma.</small>
+1284|            </div>
+1285|            <div class="col-12">
+1286|              <label class="form-label small fw-bold text-uppercase text-secondary">Notas (opcional)</label>
+1287|              <textarea id="reintegro-notes" class="form-control" rows="2" placeholder="Detalle del reintegro..."></textarea>
+1288|            </div>
+1289|            <div class="col-12 mt-4">
+1290|              <button type="submit" id="btn-save-reintegro" class="btn btn-success w-100 py-2 rounded-pill fw-bold shadow-sm">
+1291|                Guardar reintegro
+1292|              </button>
+1293|            </div>
+1294|          </form>
+1295|        </div>
+1296|      </div>
+1297|    </div>
+1298|  </div>
+1299|
+1300|  <!-- Modal Detalles -->
+1301|  <div class="modal fade" id="detailsModal" tabindex="-1">
+1302|     <div class="modal-dialog modal-sm modal-dialog-centered">
+1303|        <div class="modal-content rounded-4 border-0">
+1304|           <div class="modal-body p-4" id="modal-detail-content">
+1305|              <!-- Contenido JS -->
+1306|           </div>
+1307|           <div class="modal-footer border-0 pt-0 justify-content-center">
+1308|              <button class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+1309|           </div>
+1310|        </div>
+1311|     </div>
+1312|  </div>
+1313|
+1314|  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+1315|</body>
+1316|</html>
