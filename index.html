@@ -434,11 +434,13 @@
 
     // ===== NORMALIZACIÓN =====
     function normalizePayment(data) {
+      const rawStatus = (data.status || "pendiente").toString().trim().toLowerCase();
+      const normalizedStatus = rawStatus === "procesado" ? "procesado" : "pendiente";
       return {
         ...data,
         unitPrice: Number(data.unitPrice ?? data.amount ?? 0),
         totalAmount: Number(data.totalAmount ?? data.amount ?? (Number(data.quantity || 1) * (data.unitPrice || 0))),
-        status: data.status || "pendiente",
+        status: normalizedStatus,
         reimbursedAmount: Number(data.reimbursedAmount ?? 0),
         reimbursedDate: data.reimbursedDate ?? null,
       };
@@ -487,7 +489,7 @@
       filteredPayments = allPayments.filter(p => {
         if (f.product && p.product !== f.product) return false;
         if (f.pharmacy && p.pharmacy !== f.pharmacy) return false;
-        if (f.status && p.status !== f.status) return false;
+        if (f.status && p.status.toLowerCase() !== f.status.toLowerCase()) return false;
         if (f.month) {
           const [y, m] = f.month.split("-");
           const d = p.date?.toDate ? p.date.toDate() : new Date(p.date);
