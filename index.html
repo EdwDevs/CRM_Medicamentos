@@ -22,14 +22,14 @@
             slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' },
           },
           animation: {
-            'fade-in': 'fadeIn 0.3s ease-out',
-            'slide-up': 'slideUp 0.4s ease-out',
+            'fade-in': 'fadeIn 0.2s ease-out',
+            'slide-up': 'slideUp 0.3s ease-out',
             'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
           },
           keyframes: {
             fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-            slideUp: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-            pulseSoft: { '0%, 100%': { opacity: '1' }, '50%': { opacity: '0.7' } },
+            slideUp: { '0%': { opacity: '0', transform: 'translateY(8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+            pulseSoft: { '0%, 100%': { opacity: '1' }, '50%': { opacity: '0.6' } },
           },
         }
       }
@@ -37,24 +37,33 @@
   </script>
   <style>
     .chart-container { position: relative; height: 280px; }
-    .stat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1); }
-    .table-row { transition: background-color 0.15s ease; }
+    .stat-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .stat-card:hover { transform: translateY(-1px); box-shadow: 0 8px 20px -4px rgb(0 0 0 / 0.08); }
+    .table-row { transition: background-color 0.1s ease; }
     .table-row:hover { background-color: rgb(248 250 252); }
+    .table-row.selected { background-color: #eef2ff; }
     .badge { font-size: 0.6875rem; font-weight: 600; padding: 0.25rem 0.625rem; }
-    .modal-overlay { animation: fadeIn 0.2s ease-out; }
-    .modal-content { animation: slideUp 0.3s ease-out; }
+    .modal-overlay { animation: fadeIn 0.15s ease-out; }
+    .modal-content { animation: slideUp 0.2s ease-out; }
+    .status-switch { position: relative; width: 48px; height: 26px; }
+    .status-switch input { opacity: 0; width: 0; height: 0; }
+    .status-switch .slider { position: absolute; cursor: pointer; inset: 0; background: #f59e0b; border-radius: 13px; transition: 0.2s; }
+    .status-switch .slider::before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .status-switch input:checked + .slider { background: #10b981; }
+    .status-switch input:checked + .slider::before { transform: translateX(22px); }
+    .status-switch input:focus-visible + .slider { outline: 2px solid #6366f1; outline-offset: 2px; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgb(203 213 225); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: rgb(148 163 184); }
+    .kbd { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; padding: 0.125rem 0.375rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; color: #475569; }
   </style>
 </head>
 <body class="bg-slate-50 font-sans antialiased">
   <!-- Header -->
-  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200">
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex h-16 items-center justify-between">
+      <div class="flex h-16 items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center gap-3">
           <div class="p-2 bg-primary-500 rounded-xl text-white" aria-hidden="true">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -64,9 +73,9 @@
             <p class="text-xs text-slate-500">Executive Analytics Dashboard</p>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="hidden sm:block text-sm text-slate-500" id="lastSync">Última sincronización: —</span>
-          <button class="p-2 rounded-xl hover:bg-slate-100 transition-colors" onclick="loadData()" aria-label="Actualizar datos">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="hidden sm:block text-xs text-slate-500" id="lastSync">Última sincronización: —</span>
+          <button class="p-2 rounded-xl hover:bg-slate-100 transition-colors" onclick="loadData()" aria-label="Actualizar datos (Ctrl+R)" title="Actualizar (Ctrl+R)">
             <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </button>
           <button class="btn-primary px-4 py-2 rounded-xl text-sm font-medium" data-modal="addPayment">
@@ -88,7 +97,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <div class="bg-white rounded-2xl border border-slate-200 p-6 animate-slide-up">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-slate-900">Tendencia de Egresos (30 días)</h2>
+          <h2 class="text-lg font-semibold text-slate-900">Tendencia de Egresos</h2>
           <select id="trendPeriod" class="text-sm border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500" onchange="renderTrendChart()">
             <option value="30">Últimos 30 días</option>
             <option value="90">Últimos 90 días</option>
@@ -101,12 +110,12 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 animate-slide-up" style="animation-delay: 0.1s;">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 animate-slide-up" style="animation-delay: 0.05s;">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-slate-900">Distribución por Producto</h2>
-          <div class="flex gap-1">
-            <button class="px-3 py-1 text-xs rounded-lg bg-primary-50 text-primary-700" onclick="setProductView('count')">Cantidad</button>
-            <button class="px-3 py-1 text-xs rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200" onclick="setProductView('amount')">Monto</button>
+          <div class="flex gap-1" role="group" aria-label="Vista de producto">
+            <button class="px-3 py-1 text-xs rounded-lg bg-primary-50 text-primary-700" onclick="setProductView('count')" aria-pressed="true">Cantidad</button>
+            <button class="px-3 py-1 text-xs rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200" onclick="setProductView('amount')" aria-pressed="false">Monto</button>
           </div>
         </div>
         <div class="chart-container">
@@ -117,14 +126,14 @@
 
     <!-- Second Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-      <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 animate-slide-up" style="animation-delay: 0.2s;">
+      <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 animate-slide-up" style="animation-delay: 0.1s;">
         <h2 class="text-lg font-semibold text-slate-900 mb-4">Gasto por Farmacia (Top 10)</h2>
         <div class="chart-container h-80">
           <canvas id="pharmacyChart"></canvas>
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 animate-slide-up" style="animation-delay: 0.3s;">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 animate-slide-up" style="animation-delay: 0.15s;">
         <h2 class="text-lg font-semibold text-slate-900 mb-4">Estatus de Pagos</h2>
         <div class="chart-container h-64">
           <canvas id="statusChart"></canvas>
@@ -136,38 +145,46 @@
     </div>
 
     <!-- Filters & Table -->
-    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden animate-slide-up" style="animation-delay: 0.4s;">
+    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden animate-slide-up" style="animation-delay: 0.2s;">
       <!-- Filter Bar -->
       <div class="p-4 border-b border-slate-200 bg-slate-50">
         <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          <div class="flex flex-wrap gap-3 w-full sm:w-auto">
-            <select id="filterProduct" class="filter-select px-3 py-2 text-sm border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary-500" onchange="applyFilters()">
+          <div class="flex flex-wrap gap-3 w-full sm:w-auto" role="group" aria-label="Filtros">
+            <label for="filterProduct" class="sr-only">Filtrar por producto</label>
+            <select id="filterProduct" class="px-3 py-2 text-sm border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500" onchange="applyFilters()">
               <option value="">📦 Todos los productos</option>
               <option value="descongel">❄️ Descongel x100</option>
               <option value="multidol400">💊 Multidol 400mg</option>
               <option value="multidol800">💊 Multidol 800mg</option>
             </select>
-            <select id="filterPharmacy" class="filter-select px-3 py-2 text-sm border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary-500" onchange="applyFilters()">
+            <label for="filterPharmacy" class="sr-only">Filtrar por farmacia</label>
+            <select id="filterPharmacy" class="px-3 py-2 text-sm border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500" onchange="applyFilters()">
               <option value="">🏥 Todas las farmacias</option>
             </select>
-            <select id="filterStatus" class="filter-select px-3 py-2 text-sm border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary-500" onchange="applyFilters()">
+            <label for="filterStatus" class="sr-only">Filtrar por estado</label>
+            <select id="filterStatus" class="px-3 py-2 text-sm border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500" onchange="applyFilters()">
               <option value="">⚡ Todos los estados</option>
               <option value="pendiente">⏳ Pendiente</option>
               <option value="procesado">✅ Procesado</option>
             </select>
-            <input type="month" id="filterMonth" class="filter-select px-3 py-2 text-sm border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary-500" onchange="applyFilters()" />
+            <label for="filterMonth" class="sr-only">Filtrar por mes</label>
+            <input type="month" id="filterMonth" class="px-3 py-2 text-sm border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500" onchange="applyFilters()" />
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="text-sm text-slate-500" id="resultCount">0 registros</span>
             <button class="btn-secondary px-3 py-2 text-sm" onclick="clearFilters()">Limpiar</button>
             <button class="btn-secondary px-3 py-2 text-sm" onclick="exportCSV()">Exportar CSV</button>
           </div>
         </div>
+        <!-- Shortcut hints -->
+        <div class="mt-3 flex flex-wrap gap-3 text-xs text-slate-400" id="shortcutHints">
+          <!-- Rendered by JS -->
+        </div>
       </div>
 
       <!-- Table -->
       <div class="overflow-x-auto">
-        <table class="w-full" role="grid">
+        <table class="w-full" role="grid" aria-label="Lista de pagos">
           <thead class="bg-slate-50 border-b border-slate-200">
             <tr>
               <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Fecha</th>
@@ -198,10 +215,10 @@
       <div class="p-4 border-t border-slate-200 flex items-center justify-between" id="pagination">
         <span class="text-sm text-slate-500" id="pageInfo">Página 1 de 1</span>
         <div class="flex gap-1">
-          <button class="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" onclick="changePage(-1)" id="prevPage" aria-label="Anterior">
+          <button class="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" onclick="changePage(-1)" id="prevPage" aria-label="Página anterior" title="Anterior (←)">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           </button>
-          <button class="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" onclick="changePage(1)" id="nextPage" aria-label="Siguiente">
+          <button class="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" onclick="changePage(1)" id="nextPage" aria-label="Página siguiente" title="Siguiente (→)">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
@@ -351,14 +368,15 @@
 
     // ===== CONSTANTES =====
     const BUDGET_TOTAL = 500000;
+    const PAGE_SIZE = 25;
     const PRODUCTS = {
       descongel: { name: "Descongel x100", short: "Descongel", icon: "❄️", color: "bg-cyan-100 text-cyan-700 border-cyan-200" },
       multidol400: { name: "Multidol 400mg", short: "Multi 400", icon: "💊", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
       multidol800: { name: "Multidol 800mg", short: "Multi 800", icon: "💊", color: "bg-violet-100 text-violet-700 border-violet-200" },
     };
     const STATUS_UI = {
-      pendiente: { label: "Pendiente", class: "bg-amber-50 text-amber-700 border-amber-200", icon: "clock" },
-      procesado: { label: "Procesado", class: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "check-circle" },
+      pendiente: { label: "Pendiente", class: "bg-amber-50 text-amber-700 border-amber-200", icon: "clock", switchColor: "amber" },
+      procesado: { label: "Procesado", class: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "check-circle", switchColor: "emerald" },
     };
 
     // ===== ESTADO GLOBAL =====
@@ -366,9 +384,9 @@
     let allCashMovements = [];
     let filteredPayments = [];
     let currentPage = 1;
-    const PAGE_SIZE = 25;
     let trendChart, productChart, pharmacyChart, statusChart;
-    let productViewMode = 'count'; // 'count' | 'amount'
+    let productViewMode = 'count';
+    let selectedRowId = null;
 
     // ===== UTILIDADES =====
     const fmt = (v) => new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(v);
@@ -395,21 +413,21 @@
     }
 
     function openModal(name) {
-      document.getElementById(`modal${name.charAt(0).toUpperCase() + name.slice(1)}`).classList.remove("hidden");
-      document.getElementById(`modal${name.charAt(0).toUpperCase() + name.slice(1)}`).classList.add("flex");
+      const map = { addPayment: "AddPayment", reintegro: "Reintegro", detail: "Detail" };
+      const el = document.getElementById("modal" + map[name]);
+      el.classList.remove("hidden"); el.classList.add("flex");
       document.body.style.overflow = "hidden";
-      if (name === "addPayment") {
-        document.getElementById("payDate").value = new Date().toISOString().split("T")[0];
-        document.getElementById("payTotalPreview").textContent = "$0";
-      }
-      if (name === "reintegro") {
-        document.getElementById("reiDate").value = new Date().toISOString().split("T")[0];
-      }
+      if (name === "addPayment") { document.getElementById("payDate").value = new Date().toISOString().split("T")[0]; document.getElementById("payTotalPreview").textContent = "$0"; }
+      if (name === "reintegro") { document.getElementById("reiDate").value = new Date().toISOString().split("T")[0]; }
+      setTimeout(() => { const inp = el.querySelector("input, select, textarea"); if (inp) inp.focus(); }, 50);
     }
     function closeModal(name) {
-      document.getElementById(`modal${name.charAt(0).toUpperCase() + name.slice(1)}`).classList.add("hidden");
-      document.getElementById(`modal${name.charAt(0).toUpperCase() + name.slice(1)}`).classList.remove("flex");
+      const map = { addPayment: "AddPayment", reintegro: "Reintegro", detail: "Detail" };
+      const el = document.getElementById("modal" + map[name]);
+      el.classList.add("hidden"); el.classList.remove("flex");
       document.body.style.overflow = "";
+      selectedRowId = null;
+      renderTable();
     }
     window.openModal = openModal;
     window.closeModal = closeModal;
@@ -478,18 +496,20 @@
         return true;
       });
       currentPage = 1;
+      selectedRowId = null;
       renderTable();
       updateKPIs();
       updateCharts();
       updatePharmacyFilter();
       updateResultCount();
+      renderShortcuts();
     }
     function clearFilters() {
       ["filterProduct", "filterPharmacy", "filterStatus", "filterMonth"].forEach(id => $("#" + id).value = "");
       applyFilters();
     }
     function updatePharmacyFilter() {
-      const pharmacies = [...new Set(allPayments.map(p => p.pharmacy))].sort();
+      const pharmacies = [...new Set(filteredPayments.map(p => p.pharmacy))].sort();
       const sel = $("#filterPharmacy");
       const curr = sel.value;
       sel.innerHTML = '<option value="">🏥 Todas las farmacias</option>' + pharmacies.map(p => `<option value="${p}">${p}</option>`).join("");
@@ -497,6 +517,21 @@
     }
     function updateResultCount() {
       $("#resultCount").textContent = `${filteredPayments.length} registro${filteredPayments.length !== 1 ? "s" : ""}`;
+    }
+    function renderShortcuts() {
+      const isMac = navigator.platform.includes("Mac");
+      const mod = isMac ? "⌘" : "Ctrl";
+      $("#shortcutHints").innerHTML = `
+        <span><kbd class="kbd">${mod}+N</kbd> Nuevo pago</span>
+        <span><kbd class="kbd">${mod}+R</kbd> Reintegro</span>
+        <span><kbd class="kbd">${mod}+E</kbd> Exportar CSV</span>
+        <span><kbd class="kbd">${mod}+F</kbd> Buscar</span>
+        <span><kbd class="kbd">F5</kbd> Actualizar</span>
+        <span>↑/↓ Navegar</span>
+        <span>Enter Cambiar estado</span>
+        <span>Espacio Ver detalle</span>
+        <span>Del Eliminar</span>
+      `;
     }
 
     // ===== KPIs =====
@@ -555,11 +590,11 @@
       tbody.innerHTML = pageData.map((p, i) => {
         const prod = PRODUCTS[p.product] || { name: p.product, short: p.product, icon: "📦", color: "bg-slate-100 text-slate-700" };
         const st = STATUS_UI[p.status] || STATUS_UI.pendiente;
-        const rowIdx = start + i;
+        const isSelected = selectedRowId === p.id;
         return `
-          <tr class="table-row animate-fade-in" style="animation-delay: ${i * 0.02}s">
+          <tr class="table-row animate-fade-in ${isSelected ? 'selected' : ''}" data-id="${p.id}" tabindex="0" style="animation-delay: ${i * 0.015}s" onclick="selectRow('${p.id}', event)" ondblclick="openDetail('${p.id}')" onkeydown="handleRowKeydown(event, '${p.id}', '${p.status}')">
             <td class="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">${fmtDateShort(p.date)}</td>
-            <td class="px-4 py-3 text-sm font-medium text-slate-900">${p.pharmacy}</td>
+            <td class="px-4 py-3 text-sm font-medium text-slate-900 truncate max-w-xs">${p.pharmacy}</td>
             <td class="px-4 py-3 text-sm">
               <span class="badge ${prod.color} border">${prod.icon} ${prod.short}</span>
             </td>
@@ -567,33 +602,43 @@
             <td class="px-4 py-3 text-sm text-right text-slate-500">${fmt(p.unitPrice)}</td>
             <td class="px-4 py-3 text-sm text-right font-semibold text-slate-900">${fmt(p.totalAmount)}</td>
             <td class="px-4 py-3 text-sm">
-              <button class="badge ${st.class} border flex items-center gap-1" onclick="toggleStatus('${p.id}', '${p.status}')">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${st.icon === 'clock' ? 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' : 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'}"/></svg>
-                ${st.label}
-              </button>
+              <label class="status-switch" onclick="event.stopPropagation(); toggleStatus('${p.id}', '${p.status}')" title="Click para cambiar estado">
+                <input type="checkbox" ${p.status === "procesado" ? "checked" : ""} onchange="event.stopPropagation(); toggleStatus('${p.id}', '${p.status}')">
+                <span class="slider"></span>
+              </label>
+              <span class="ml-2 text-xs font-medium ${p.status === 'procesado' ? 'text-emerald-600' : 'text-amber-600'}">${st.label}</span>
             </td>
             <td class="px-4 py-3 text-sm text-right">
               <div class="flex items-center justify-end gap-1">
-                <button class="p-2 rounded-lg hover:bg-slate-100 text-slate-500" onclick="openDetail('${p.id}')" aria-label="Ver detalle"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
-                <button class="p-2 rounded-lg hover:bg-rose-50 text-rose-500" onclick="deletePayment('${p.id}')" aria-label="Eliminar"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                <button class="p-2 rounded-lg hover:bg-slate-100 text-slate-500" onclick="event.stopPropagation(); openDetail('${p.id}')" aria-label="Ver detalle"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
+                <button class="p-2 rounded-lg hover:bg-rose-50 text-rose-500" onclick="event.stopPropagation(); deletePayment('${p.id}')" aria-label="Eliminar"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
               </div>
             </td>
           </tr>
         `;
       }).join("");
 
-      // Pagination
       const totalPages = Math.ceil(filteredPayments.length / PAGE_SIZE);
       $("#pageInfo").textContent = `Página ${currentPage} de ${totalPages || 1}`;
       $("#prevPage").disabled = currentPage <= 1;
       $("#nextPage").disabled = currentPage >= totalPages;
     }
-    function changePage(delta) {
-      const totalPages = Math.ceil(filteredPayments.length / PAGE_SIZE);
-      if (currentPage + delta >= 1 && currentPage + delta <= totalPages) {
-        currentPage += delta;
-        renderTable();
+    function selectRow(id, e) {
+      if (e.target.closest("button, label, input, select")) return;
+      selectedRowId = selectedRowId === id ? null : id;
+      renderTable();
+    }
+    function handleRowKeydown(e, id, status) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        if (e.key === "Enter") toggleStatus(id, status);
+        else openDetail(id);
       }
+      if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deletePayment(id); }
+    }
+    function changePage(delta) {
+      const total = Math.ceil(filteredPayments.length / PAGE_SIZE);
+      if (currentPage + delta >= 1 && currentPage + delta <= total) { currentPage += delta; renderTable(); }
     }
 
     // ===== CHARTS =====
@@ -622,7 +667,6 @@
           daily[key] = (daily[key] || 0) + Number(p.totalAmount || 0);
         }
       });
-      // Add cash movements egresos
       allCashMovements.filter(m => m.type === "egreso" && m.date).forEach(m => {
         const d = m.date?.toDate ? m.date.toDate() : new Date(m.date);
         if (d >= cutoff) {
@@ -644,27 +688,8 @@
       const ctx = document.getElementById("trendChart").getContext("2d");
       trendChart = new Chart(ctx, {
         type: "line",
-        data: {
-          labels,
-          datasets: [{
-            label: "Egresos diarios",
-            data,
-            borderColor: "rgb(99 102 241)",
-            backgroundColor: "rgba(99 102 241, 0.1)",
-            fill: true,
-            tension: 0.3,
-            pointRadius: 0,
-            pointHoverRadius: 5,
-            borderWidth: 2,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { intersect: false, mode: "index" },
-          plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", titleFont: { size: 13 }, bodyFont: { size: 12 }, padding: 12, callbacks: { label: ctx => ` ${fmt(ctx.parsed.y)}` } } },
-          scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8, color: "#94a3b8" } }, y: { grid: { color: "#f1f5f9" }, ticks: { color: "#94a3b8", callback: v => fmt(v) } } },
-        }
+        data: { labels, datasets: [{ label: "Egresos diarios", data, borderColor: "rgb(99 102 241)", backgroundColor: "rgba(99 102 241, 0.1)", fill: true, tension: 0.3, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: "index" }, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", titleFont: { size: 13 }, bodyFont: { size: 12 }, padding: 12, callbacks: { label: ctx => ` ${fmt(ctx.parsed.y)}` } } }, scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8, color: "#94a3b8" } }, y: { grid: { color: "#f1f5f9" }, ticks: { color: "#94a3b8", callback: v => fmt(v) } } } },
       });
     }
 
@@ -676,51 +701,34 @@
         agg[key].count++;
         agg[key].amount += Number(p.totalAmount || 0);
       });
-
       const labels = Object.keys(agg).map(k => PRODUCTS[k]?.short || k);
       const data = Object.values(agg).map(v => productViewMode === "count" ? v.count : v.amount);
 
       const ctx = document.getElementById("productChart").getContext("2d");
       productChart = new Chart(ctx, {
         type: "doughnut",
-        data: {
-          labels,
-          datasets: [{
-            data,
-            backgroundColor: ["#06b6d4", "#10b981", "#8b5cf6"],
-            borderWidth: 0,
-            borderRadius: 8,
-            spacing: 2,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: "65%",
-          plugins: { legend: { position: "bottom", labels: { usePointStyle: true, padding: 16, font: { size: 11 } } }, tooltip: { backgroundColor: "#1e293b", callbacks: { label: ctx => ` ${productViewMode === "count" ? ctx.parsed : fmt(ctx.parsed)}` } } },
-        }
+        data: { labels, datasets: [{ data, backgroundColor: ["#06b6d4", "#10b981", "#8b5cf6"], borderWidth: 0, borderRadius: 8, spacing: 2 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: "65%", plugins: { legend: { position: "bottom", labels: { usePointStyle: true, padding: 16, font: { size: 11 } } }, tooltip: { backgroundColor: "#1e293b", callbacks: { label: ctx => ` ${productViewMode === "count" ? ctx.parsed : fmt(ctx.parsed)}` } } } },
       });
     }
     window.setProductView = (mode) => {
       productViewMode = mode;
       $$("#productChart + div button").forEach((b, i) => {
         b.className = `px-3 py-1 text-xs rounded-lg ${i === (mode === "count" ? 0 : 1) ? "bg-primary-50 text-primary-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`;
+        b.setAttribute("aria-pressed", i === (mode === "count" ? 0 : 1));
       });
       renderProductChart();
     };
 
     function renderPharmacyChart() {
       const agg = {};
-      filteredPayments.forEach(p => {
-        agg[p.pharmacy] = (agg[p.pharmacy] || 0) + Number(p.totalAmount || 0);
-      });
+      filteredPayments.forEach(p => { agg[p.pharmacy] = (agg[p.pharmacy] || 0) + Number(p.totalAmount || 0); });
       allCashMovements.filter(m => m.type === "egreso").forEach(m => {
         m.referencePaymentIds.forEach(id => {
           const p = allPayments.find(x => x.id === id);
           if (p) agg[p.pharmacy] = (agg[p.pharmacy] || 0) + m.amount;
         });
       });
-
       const sorted = Object.entries(agg).sort((a, b) => b[1] - a[1]).slice(0, 10);
       const labels = sorted.map(([k]) => k.length > 18 ? k.slice(0, 18) + "…" : k);
       const data = sorted.map(([, v]) => v);
@@ -729,13 +737,7 @@
       pharmacyChart = new Chart(ctx, {
         type: "bar",
         data: { labels, datasets: [{ label: "Gasto", data, backgroundColor: "rgba(99 102 241, 0.8)", borderRadius: 6, borderSkipped: false }] },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", callbacks: { label: ctx => ` ${fmt(ctx.parsed.x)}` } } },
-          scales: { x: { grid: { color: "#f1f5f9" }, ticks: { color: "#94a3b8", callback: v => fmt(v) } }, y: { grid: { display: false }, ticks: { color: "#64748b" } } },
-        }
+        options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", callbacks: { label: ctx => ` ${fmt(ctx.parsed.x)}` } } }, scales: { x: { grid: { color: "#f1f5f9" }, ticks: { color: "#94a3b8", callback: v => fmt(v) } }, y: { grid: { display: false }, ticks: { color: "#64748b" } } } },
       });
     }
 
@@ -763,23 +765,11 @@
       btn.disabled = true; btn.innerHTML = `<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg> Guardando...`;
 
       const totalAmount = Number($("#payQuantity").value) * Number($("#payUnitPrice").value);
-      const data = {
-        pharmacy: $("#payPharmacy").value.trim(),
-        product: $("#payProduct").value,
-        quantity: Number($("#payQuantity").value),
-        unitPrice: Number($("#payUnitPrice").value),
-        totalAmount,
-        date: new Date($("#payDate").value + "T00:00:00"),
-        status: $("#payStatus").value,
-        notes: $("#payNotes").value,
-      };
+      const data = { pharmacy: $("#payPharmacy").value.trim(), product: $("#payProduct").value, quantity: Number($("#payQuantity").value), unitPrice: Number($("#payUnitPrice").value), totalAmount, date: new Date($("#payDate").value + "T00:00:00"), status: $("#payStatus").value, notes: $("#payNotes").value };
 
       try {
         const paymentRef = await addDoc(collection(db, "payments"), data);
-        await addDoc(collection(db, "cash_movements"), {
-          type: "egreso", amount: totalAmount, date: data.date,
-          referencePaymentIds: [paymentRef.id], notes: `Egreso por pago en farmacia ${data.pharmacy}`
-        });
+        await addDoc(collection(db, "cash_movements"), { type: "egreso", amount: totalAmount, date: data.date, referencePaymentIds: [paymentRef.id], notes: `Egreso por pago en farmacia ${data.pharmacy}` });
         showToast("Pago registrado correctamente");
         closeModal("addPayment");
         e.target.reset();
@@ -796,11 +786,7 @@
 
       const refs = $("#reiReferences").value.split(",").map(s => s.trim()).filter(Boolean);
       try {
-        await addDoc(collection(db, "cash_movements"), {
-          type: "reintegro", amount: Number($("#reiAmount").value),
-          date: new Date($("#reiDate").value + "T00:00:00"),
-          referencePaymentIds: refs, notes: $("#reiNotes").value,
-        });
+        await addDoc(collection(db, "cash_movements"), { type: "reintegro", amount: Number($("#reiAmount").value), date: new Date($("#reiDate").value + "T00:00:00"), referencePaymentIds: refs, notes: $("#reiNotes").value });
         showToast("Reintegro registrado");
         closeModal("reintegro");
         e.target.reset();
@@ -812,14 +798,12 @@
 
     window.deletePayment = async (id) => {
       if (!confirm("¿Eliminar este registro permanentemente?")) return;
-      try { await deleteDoc(doc(db, "payments", id)); showToast("Eliminado"); loadData(); }
-      catch (e) { showToast("Error eliminando", "error"); }
+      try { await deleteDoc(doc(db, "payments", id)); showToast("Eliminado"); loadData(); } catch (e) { showToast("Error eliminando", "error"); }
     };
 
     window.toggleStatus = async (id, current) => {
       const next = current === "pendiente" ? "procesado" : "pendiente";
-      try { await updateDoc(doc(db, "payments", id), { status: next }); loadData(); }
-      catch (e) { showToast("Error actualizando", "error"); }
+      try { await updateDoc(doc(db, "payments", id), { status: next }); showToast(`Estado: ${next}`); loadData(); } catch (e) { showToast("Error actualizando", "error"); }
     };
 
     window.openDetail = async (id) => {
@@ -850,15 +834,9 @@
     window.exportCSV = () => {
       if (filteredPayments.length === 0) { showToast("No hay datos para exportar", "error"); return; }
       const headers = ["Fecha", "Farmacia", "Producto", "Cantidad", "Unitario", "Total", "Estado", "Notas"];
-      const rows = filteredPayments.map(p => [
-        fmtDate(p.date), p.pharmacy, PRODUCTS[p.product]?.name || p.product,
-        p.quantity, fmt(p.unitPrice), fmt(p.totalAmount),
-        p.status === "procesado" ? "Procesado" : "Pendiente", p.notes || ""
-      ]);
-      const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
-      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = `pagos_${new Date().toISOString().split("T")[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+      const rows = filteredPayments.map(p => [fmtDate(p.date), p.pharmacy, PRODUCTS[p.product]?.name || p.product, p.quantity, fmt(p.unitPrice), fmt(p.totalAmount), p.status === "procesado" ? "Procesado" : "Pendiente", p.notes || ""]);
+      const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" })); a.download = `pagos_${new Date().toISOString().split("T")[0]}.csv`; a.click();
       showToast("CSV exportado");
     };
 
@@ -875,6 +853,18 @@
     document.addEventListener("click", e => {
       const trigger = e.target.closest("[data-modal]");
       if (trigger) { e.preventDefault(); openModal(trigger.dataset.modal); }
+    });
+
+    // Global keyboard shortcuts
+    document.addEventListener("keydown", e => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "n") { e.preventDefault(); openModal("addPayment"); }
+        if (e.key === "r") { e.preventDefault(); openModal("reintegro"); }
+        if (e.key === "e") { e.preventDefault(); exportCSV(); }
+        if (e.key === "f") { e.preventDefault(); $("#filterProduct").focus(); }
+      }
+      if (e.key === "F5") { e.preventDefault(); loadData(); }
     });
 
     // Init
