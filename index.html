@@ -509,11 +509,14 @@
       applyFilters();
     }
     function updatePharmacyFilter() {
-      const pharmacies = [...new Set(filteredPayments.map(p => p.pharmacy))].sort();
+      // SIEMPRE usar allPayments para que el dropdown muestre TODAS las farmacias disponibles
+      const pharmacies = [...new Set(allPayments.map(p => p.pharmacy))].sort();
       const sel = $("#filterPharmacy");
       const curr = sel.value;
       sel.innerHTML = '<option value="">🏥 Todas las farmacias</option>' + pharmacies.map(p => `<option value="${p}">${p}</option>`).join("");
-      sel.value = pharmacies.includes(curr) ? curr : "";
+      // Si la farmacia actual ya no existe en los datos filtrados, limpiarla
+      const stillValid = filteredPayments.some(p => p.pharmacy === curr);
+      sel.value = (curr && stillValid) ? curr : "";
     }
     function updateResultCount() {
       $("#resultCount").textContent = `${filteredPayments.length} registro${filteredPayments.length !== 1 ? "s" : ""}`;
