@@ -3,6 +3,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
+window.addEventListener('error', e => { const el = document.getElementById('debugStatus'); if (el) el.textContent = 'error: '+e.message; });
   getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, onSnapshot, getDoc, getDocs,
   writeBatch, Timestamp, serverTimestamp
