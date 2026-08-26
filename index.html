@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.tailwindcss.com">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js">
 <script>
 tailwind.config = {
   theme: {
@@ -28,7 +28,7 @@ tailwind.config = {
     }
   }
 };
-</script>
+
 <style>
 :root {
   --sidebar-w: 260px; --sidebar-w-collapsed: 72px; --header-h: 64px; --drawer-w: 480px; --row-h: 44px;
@@ -89,7 +89,6 @@ body { font-feature-settings: "cv02","cv03","cv04","cv11"; -webkit-font-smoothin
 if (document.getElementById('debugStatus')) document.getElementById('debugStatus').textContent = 'script started';
 console.log("SCRIPT RUNNING");
 
-<script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
