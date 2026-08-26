@@ -194,6 +194,7 @@ async function loadData() {
     renderAllNavBadges();
     renderModule(currentModule);
     toast('Sincronizado', 'success');
+    if (document.getElementById('debugStatus')) { document.getElementById('debugStatus').textContent = 'loaded '+allPayments.length+' pagos'; }
   } catch(e) {
     console.error('loadData error', e);
     toast('Error cargando datos', 'error');
@@ -576,3 +577,6 @@ function renderDrawerTabContent(tab) {
     else if (tab==='notes') renderPaymentNotes(drawerPaymentId);
   }
 }
+
+// Auto‑load data on page start
+loadData();
