@@ -1,17 +1,15 @@
-
-<script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-window.addEventListener('error', e => { const el = document.getElementById('debugStatus'); if (el) el.textContent = 'error: '+e.message; });
   getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, onSnapshot, getDoc, getDocs,
   writeBatch, Timestamp, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+window.addEventListener('error', e => { const el = document.getElementById('debugStatus'); if (el) el.textContent = 'error: '+e.message; });
 
 // ====== FIREBASE CONFIG (REAL) ======
 const firebaseConfig = {
-  apiKey: "***",
+  apiKey: "AIzaSyAaVSb70OFIoX48T9GbLmTcdXOSvKv2pRk",
   authDomain: "zona1561-4de30.firebaseapp.com",
   projectId: "zona1561-4de30",
   storageBucket: "zona1561-4de30.firebasestorage.app",
@@ -544,8 +542,16 @@ $('#columnsBtn')?.addEventListener('click', e => { e.stopPropagation(); $('#colu
 document.addEventListener('click', e => { if (!e.target.closest('#columnsBtn,#columnsDropdown')) $('#columnsDropdown')?.classList.add('hidden'); });
 function renderColumnsDropdown() {
   $('#columnsDropdown').innerHTML = GRID_COLUMNS.map(col => `
-    <label class=\"flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-50 cursor-pointer\">\n      <input type=\"checkbox\" class=\"w-4 h-4 rounded border-surface-300 text-brand-6`;
-  // ... (omitted for brevity)
+    <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-50 cursor-pointer">
+      <input type="checkbox" class="w-4 h-4 rounded border-surface-300 text-brand-600" ${columnsConfig[col.key] !== false ? 'checked' : ''} onchange="toggleColumn('${col.key}', this.checked)">
+      <span class="text-sm text-surface-700">${col.label}</span>
+    </label>`).join('');
+}
+function toggleColumn(key, visible) {
+  if (visible) delete columnsConfig[key]; else columnsConfig[key] = false;
+  localStorage.setItem('crm_columnsConfig', JSON.stringify(columnsConfig));
+  renderGridHeader();
+  if (currentModule === 'payments') renderPaymentsGrid();
 }
 
 // ====== DRAWER ======

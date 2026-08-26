@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
-<script src="https://cdn.tailwindcss.com">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 tailwind.config = {
   theme: {
@@ -29,6 +29,7 @@ tailwind.config = {
   }
 };
 
+</script>
 <style>
 :root {
   --sidebar-w: 260px; --sidebar-w-collapsed: 72px; --header-h: 64px; --drawer-w: 480px; --row-h: 44px;
@@ -86,9 +87,6 @@ body { font-feature-settings: "cv02","cv03","cv04","cv11"; -webkit-font-smoothin
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
 <script type="module">
-if (document.getElementById('debugStatus')) document.getElementById('debugStatus').textContent = 'script started';
-console.log("SCRIPT RUNNING");
-
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
@@ -100,7 +98,7 @@ window.addEventListener('error', e => { const el = document.getElementById('debu
 
 // ====== FIREBASE CONFIG (REAL) ======
 const firebaseConfig = {
-  apiKey: "***",
+  apiKey: "AIzaSyAaVSb70OFIoX48T9GbLmTcdXOSvKv2pRk",
   authDomain: "zona1561-4de30.firebaseapp.com",
   projectId: "zona1561-4de30",
   storageBucket: "zona1561-4de30.firebasestorage.app",
@@ -633,8 +631,16 @@ $('#columnsBtn')?.addEventListener('click', e => { e.stopPropagation(); $('#colu
 document.addEventListener('click', e => { if (!e.target.closest('#columnsBtn,#columnsDropdown')) $('#columnsDropdown')?.classList.add('hidden'); });
 function renderColumnsDropdown() {
   $('#columnsDropdown').innerHTML = GRID_COLUMNS.map(col => `
-    <label class=\"flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-50 cursor-pointer\">\n      <input type=\"checkbox\" class=\"w-4 h-4 rounded border-surface-300 text-brand-6`;
-  // ... (omitted for brevity)
+    <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-50 cursor-pointer">
+      <input type="checkbox" class="w-4 h-4 rounded border-surface-300 text-brand-600" ${columnsConfig[col.key] !== false ? 'checked' : ''} onchange="toggleColumn('${col.key}', this.checked)">
+      <span class="text-sm text-surface-700">${col.label}</span>
+    </label>`).join('');
+}
+function toggleColumn(key, visible) {
+  if (visible) delete columnsConfig[key]; else columnsConfig[key] = false;
+  localStorage.setItem('crm_columnsConfig', JSON.stringify(columnsConfig));
+  renderGridHeader();
+  if (currentModule === 'payments') renderPaymentsGrid();
 }
 
 // ====== DRAWER ======
@@ -670,6 +676,7 @@ function renderDrawerTabContent(tab) {
 
 // Auto‑load data on page start
 loadData();
+
 </script>
 </head>
 <body class="font-sans">
