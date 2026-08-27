@@ -1,849 +1,255 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#2563eb" />
-<link rel="manifest" href="manifest.json" />
-<title>CRM Pagos — Professional</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        brand: {50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a',950:'#172554'},
-        success:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d'},
-        warning:{50:'#fffbeb',100:'#fef3c7',200:'#fde68a',300:'#fcd34d',400:'#fbbf24',500:'#f59e0b',600:'#d97706',700:'#b45309'},
-        danger: {50:'#fef2f2',100:'#fee2e2',200:'#fecaca',300:'#fca5a5',400:'#f87171',500:'#ef4444',600:'#dc2626',700:'#b91c1c'},
-        surface:{0:'#ffffff',50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a',950:'#020617'}
-      },
-      fontFamily: {sans:['Inter','system-ui','sans-serif']},
-      boxShadow: {card:'0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04)', drawer:'-10px 0 30px -10px rgb(0 0 0 / 0.15)'},
-      spacing: {18:'4.5rem', 88:'22rem', 128:'32rem'}
-    }
-  }
-};
-
-</script>
-<style>
-:root {
-  --sidebar-w: 260px; --sidebar-w-collapsed: 72px; --header-h: 64px; --drawer-w: 480px; --row-h: 44px;
-  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
-  --focus-ring: 0 0 0 3px rgb(59 130 246 / 0.3);
-}
-html, body { height: 100%; }
-body { font-feature-settings: "cv02","cv03","cv04","cv11"; -webkit-font-smoothing: antialiased; }
-.app-shell { display: grid; grid-template-columns: var(--sidebar-w) 1fr; grid-template-rows: var(--header-h) 1fr; min-height: 100vh; background: #f8fafc; }
-.app-shell.sidebar-collapsed { grid-template-columns: var(--sidebar-w-collapsed) 1fr; }
-@media (max-width: 1024px) { .app-shell { grid-template-columns: 1fr; } }
-.sidebar { grid-row: 1 / 3; width: var(--sidebar-w); background: #0f172a; color: #e2e8f0; transition: width .2s ease; overflow-y: auto; }
-.app-shell.sidebar-collapsed .sidebar { width: var(--sidebar-w-collapsed); }
-@media (max-width: 1024px) { .sidebar { position: fixed; left: 0; top: 0; height: 100%; z-index: 60; transform: translateX(-100%); transition: transform .25s; } .sidebar.mobile-open { transform: translateX(0); } }
-.app-shell.sidebar-collapsed .sidebar .nav-label,
-.app-shell.sidebar-collapsed .sidebar .nav-badge,
-.app-shell.sidebar-collapsed .sidebar .brand-text { display: none; }
-.nav-item { display: flex; align-items: center; gap: .75rem; padding: .6rem .9rem; border-radius: 10px; cursor: pointer; color: #cbd5e1; transition: all .15s; }
-.nav-item:hover { background: #1e293b; color: #fff; }
-.nav-item.active { background: #2563eb; color: #fff; box-shadow: 0 4px 14px -4px rgb(37 99 235 / 0.5); }
-.header { grid-column: 2; grid-row: 1; height: var(--header-h); background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; padding: 0 1.25rem; gap: 1rem; position: sticky; top: 0; z-index: 40; }
-.main { grid-column: 2; grid-row: 2; overflow-y: auto; padding: 1.5rem; }
-@media (max-width: 1024px) { .header { grid-column: 1; } .main { grid-column: 1; } }
-.grid-cell { display: flex; align-items: center; padding: 0 .75rem; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.grid-row { display: flex; border-bottom: 1px solid #f1f5f9; cursor: pointer; height: var(--row-h); transition: background .1s; }
-.grid-row:hover { background: #f8fafc; }
-.grid-row.selected { background: #eff6ff; }
-.grid-header-row { display: flex; background: #f8fafc; border-bottom: 2px solid #e2e8f0; height: 40px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #475569; }
-.density-compact .grid-row { height: 36px; }
-.density-comfortable .grid-row { height: 56px; }
-.drawer { position: fixed; top: 0; right: 0; height: 100vh; width: var(--drawer-w); background: #fff; box-shadow: var(--drawer-shadow); transform: translateX(100%); transition: transform .25s ease; z-index: 70; overflow-y: auto; max-width: 100vw; }
-.drawer.open { transform: translateX(0); }
-.drawer-overlay { position: fixed; inset: 0; background: rgb(15 23 42 / 0.4); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; }
-.drawer-overlay.open { opacity: 1; pointer-events: auto; }
-.btn-primary { background: #2563eb; color: #fff; padding: .5rem 1rem; border-radius: 10px; font-weight: 500; transition: all .15s; cursor: pointer; border: none; }
-.btn-primary:hover { background: #1d4ed8; }
-.btn-secondary { background: #f1f5f9; color: #334155; padding: .5rem 1rem; border-radius: 10px; font-weight: 500; transition: all .15s; cursor: pointer; border: 1px solid #e2e8f0; }
-.btn-secondary:hover { background: #e2e8f0; }
-.btn-danger { background: #fef2f2; color: #b91c1c; padding: .5rem 1rem; border-radius: 10px; font-weight: 500; transition: all .15s; cursor: pointer; border: 1px solid #fecaca; }
-.btn-danger:hover { background: #fee2e2; }
-.input-editorial { width: 100%; padding: .5rem .75rem; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; transition: all .15s; background: #fff; }
-.input-editorial:focus { outline: none; border-color: #3b82f6; box-shadow: var(--focus-ring); }
-.badge { display: inline-flex; align-items: center; gap: .25rem; padding: .15rem .55rem; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
-.toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: .5rem; z-index: 80; }
-.toast { background: #fff; padding: .75rem 1rem; border-radius: 10px; box-shadow: 0 10px 30px -10px rgb(0 0 0 / .25); display: flex; align-items: center; gap: .75rem; min-width: 280px; border-left: 4px solid #2563eb; animation: slideRight .3s ease; }
-.toast.success { border-left-color: #16a34a; }
-.toast.error { border-left-color: #dc2626; }
-@keyframes slideRight { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.focus-ring:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-</style>
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {
-  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-  query, where, orderBy, limit, onSnapshot, getDoc, getDocs,
-  writeBatch, Timestamp, serverTimestamp
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-window.addEventListener('error', e => { const el = document.getElementById('debugStatus'); if (el) el.textContent = 'error: '+e.message; });
-
-// ====== FIREBASE CONFIG (REAL) ======
-const firebaseConfig = {
-  apiKey: "AIzaSyAaVSb70OFIoX48T9GbLmTcdXOSvKv2pRk",
-  authDomain: "zona1561-4de30.firebaseapp.com",
-  projectId: "zona1561-4de30",
-  storageBucket: "zona1561-4de30.firebasestorage.app",
-  messagingSenderId: "451366030738",
-  appId: "1:451366030738:web:e638db51fbe24f6a48054b"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-try { await signInAnonymously(auth); } catch (e) { console.warn('Auth anon failed', e); }
-
-// ====== CONSTANTS ======
-const BUDGET_TOTAL = parseInt(localStorage.getItem('crm_budget') || '500000');
-const PAGE_SIZE_DEFAULT = 50;
-const PRODUCTS = JSON.parse(localStorage.getItem('crm_products') || '{"descongel":{"name":"Descongel x100","short":"Descongel","icon":"❄️","color":"bg-cyan-100 text-cyan-700"},"multidol400":{"name":"Multidol 400mg","short":"Multidol 400","icon":"💊","color":"bg-emerald-100 text-emerald-700"},"multidol800":{"name":"Multidol 800mg","short":"Multidol 800","icon":"💊","color":"bg-violet-100 text-violet-700"}}');
-const STATUS = {
-  pendiente: {label:'Pendiente', short:'PEND', icon:'⏳', badge:'bg-warning-100 text-warning-700'},
-  procesado: {label:'Procesado', short:'PROC', icon:'✅', badge:'bg-success-100 text-success-700'}
-};
-
-// ====== STATE ======
-let allPayments = [];
-let allCashMovements = [];
-let filteredPayments = [];
-let currentPage = 1;
-let pageSize = PAGE_SIZE_DEFAULT;
-const selectedIds = new Set();
-let currentModule = 'dashboard';
-let drawerMode = null;
-let drawerPaymentId = null;
-let activeFilters = {};
-let savedViews = JSON.parse(localStorage.getItem('crm_savedViews') || '{}');
-let columnsConfig = JSON.parse(localStorage.getItem('crm_columnsConfig') || '{"fecha":true,"farmacia":true,"producto":true,"cantidad":true,"unitario":true,"total":true,"estado":true,"reintegros":true,"acciones":true}');
-let sortState = [];
-let sidebarCollapsed = localStorage.getItem('crm_sidebarCollapsed') === 'true';
-let trendChart = null, productChart = null, pharmacyChart = null, statusChart = null;
-let reintegroByPayment = {};
-let unsubPayments = null, unsubCash = null;
-
-// ====== DOM HELPERS ======
-const $ = (s, p=document) => p.querySelector(s);
-const $$ = (s, p=document) => Array.from(p.querySelectorAll(s));
-const fmt = n => new Intl.NumberFormat('es-CO', {style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(n||0));
-function fmtDate(d) {
-  if (!d) return '—';
-  const date = d?.toDate ? d.toDate() : new Date(d);
-  return isNaN(date) ? '—' : date.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'});
-}
-function fmtDateTime(d) {
-  if (!d) return '—';
-  const date = d?.toDate ? d.toDate() : new Date(d);
-  return isNaN(date) ? '—' : date.toLocaleString('es-CO', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-}
-
-// ====== NORMALIZATION ======
-function normalizePayment(d) {
-  const rawStatus = (d.status ?? 'pendiente').toString().trim().toLowerCase();
-  const status = rawStatus === 'procesado' ? 'procesado' : 'pendiente';
-  return {
-    pharmacy: (d.pharmacy || d.pharmacia || d.farmacia || '').toString().trim(),
-    product: (d.product || d.producto || 'descongel').toString().trim().toLowerCase(),
-    quantity: Number(d.quantity || d.cantidad || 1),
-    unitPrice: Number(d.unitPrice || d.unitario || d.precioUnitario || 0),
-    totalAmount: Number(d.totalAmount || d.total || (Number(d.quantity||1) * Number(d.unitPrice||d.unitario||0))),
-    date: d.date || d.fecha || null,
-    status,
-    notes: (d.notes || d.notas || '').toString(),
-    reimbursedAmount: Number(d.reimbursedAmount || d.reintegro || 0),
-    companyContribution: Number(d.companyContribution || d.aporteEmpresa || 0),
-    createdAt: d.createdAt || null,
-    updatedAt: d.updatedAt || null,
-  };
-}
-function normalizeCash(d) {
-  return {
-    type: (d.type || d.tipo || 'egreso').toString().trim().toLowerCase(),
-    amount: Number(d.amount || d.monto || 0),
-    date: d.date || d.fecha || null,
-    referencePaymentIds: Array.isArray(d.referencePaymentIds) ? d.referencePaymentIds : (Array.isArray(d.paymentIds) ? d.paymentIds : []),
-    notes: (d.notes || d.notas || '').toString(),
-  };
-}
-function buildReintegroIndex() {
-  reintegroByPayment = {};
-  allCashMovements.filter(m => m.type === 'reintegro').forEach(m => {
-    (m.referencePaymentIds || []).forEach(id => {
-      if (!reintegroByPayment[id]) reintegroByPayment[id] = [];
-      reintegroByPayment[id].push(m);
-    });
-  });
-}
-
-// ====== TOAST ======
-function toast(msg, type='') {
-  const c = $('#toastContainer');
-  const el = document.createElement('div');
-  el.className = 'toast ' + type;
-  el.innerHTML = `<div class="flex-1 text-sm">${msg}</div><button class="text-surface-400 hover:text-surface-600" onclick="this.parentElement.remove()">×</button>`;
-  c.appendChild(el);
-  setTimeout(() => el.remove(), 3500);
-}
-window.toast = toast;
-
-// ====== MODULE SWITCHING ======
-function switchModule(tab) {
-  currentModule = tab;
-  $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
-  const titles = {dashboard:'Dashboard',payments:'Pagos',pharmacies:'Farmacias',reintegros:'Reintegros',reports:'Reportes',settings:'Configuración'};
-  $('#pageTitle').textContent = titles[tab] || tab;
-  ['dashboard','payments','pharmacies','reintegros','reports','settings'].forEach(t => {
-    const el = $('#panel-' + t);
-    if (el) el.classList.toggle('hidden', t !== tab);
-  });
-  closeDrawer();
-  renderModule(tab);
-}
-window.switchModule = switchModule;
-
-function renderModule(tab) {
-  if (tab === 'dashboard') renderDashboard();
-  else if (tab === 'payments') { renderAdvancedFilters(); renderPaymentsGrid(); }
-  else if (tab === 'pharmacies') renderPharmacies();
-  else if (tab === 'reintegros') renderReintegros();
-  else if (tab === 'reports') renderReports();
-  else if (tab === 'settings') renderSettings();
-}
-
-// ====== SIDEBAR NAV ======
-$$('.nav-item[data-tab]').forEach(n => n.addEventListener('click', e => { e.preventDefault(); switchModule(n.dataset.tab); }));
-
-// ====== MOBILE MENU / SIDEBAR TOGGLE ======
-$('#sidebarToggle').addEventListener('click', () => {
-  sidebarCollapsed = !sidebarCollapsed;
-  localStorage.setItem('crm_sidebarCollapsed', sidebarCollapsed);
-  $('#appShell').classList.toggle('sidebar-collapsed', sidebarCollapsed);
-});
-$('#mobileMenuBtn').addEventListener('click', () => $('#sidebar').classList.toggle('mobile-open'));
-$('#sidebarOverlay')?.remove?.();
-
-// ====== THEME ======
-function applyTheme(t) {
-  document.documentElement.classList.toggle('dark', t === 'dark');
-  $('#iconSun').classList.toggle('hidden', t !== 'dark');
-  $('#iconMoon').classList.toggle('hidden', t === 'dark');
-  localStorage.setItem('crm_theme', t);
-}
-const savedTheme = localStorage.getItem('crm_theme') || 'light';
-applyTheme(savedTheme);
-$('#themeToggle').addEventListener('click', () => applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark'));
-
-// ====== USER MENU ======
-$('#userMenuBtn').addEventListener('click', e => { e.stopPropagation(); $('#userMenu').classList.toggle('hidden'); });
-document.addEventListener('click', e => { if (!$('#userMenu').contains(e.target) && e.target !== $('#userMenuBtn')) $('#userMenu').classList.add('hidden'); });
-$('#signOutBtn').addEventListener('click', () => toast('Sesión cerrada (demo)'));
-
-// ====== GLOBAL SEARCH ======
-let searchTimer = null;
-$('#globalSearch').addEventListener('input', e => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    activeFilters.search = e.target.value.trim();
-    applyModuleFilters();
-    if (currentModule !== 'payments') switchModule('payments');
-  }, 180);
-});
-
-// ====== QUICK CREATE ======
-$('#quickCreateBtn').addEventListener('click', () => openDrawer('createPayment'));
-
-// ====== DATA LOADING ======
-async function loadData() {
-  try {
-    const [paySnap, cashSnap] = await Promise.all([
-      new Promise(res => { const u = onSnapshot(query(collection(db,'payments'), orderBy('date','desc')), s => { allPayments = s.docs.map(d => ({id:d.id, ...normalizePayment(d.data())})); res(s); }, err => { console.error(err); res(null); }); unsubPayments = u; }),
-      new Promise(res => { const u = onSnapshot(query(collection(db,'cash_movements'), orderBy('date','desc')), s => { allCashMovements = s.docs.map(d => ({id:d.id, ...normalizeCash(d.data())})); res(s); }, err => { console.error(err); res(null); }); unsubCash = u; }),
-    ]);
-    buildReintegroIndex();
-    applyModuleFilters();
-    renderAllNavBadges();
-    renderModule(currentModule);
-    toast('Sincronizado', 'success');
-    if (document.getElementById('debugStatus')) { document.getElementById('debugStatus').textContent = 'loaded '+allPayments.length+' pagos'; }
-  } catch(e) {
-    console.error('loadData error', e);
-    toast('Error cargando datos', 'error');
-  }
-}
-window.loadData = loadData;
-
-function renderAllNavBadges() {
-  $('#navCountPayments').textContent = allPayments.length;
-  $('#navCountReintegros').textContent = allCashMovements.filter(m => m.type === 'reintegro').length;
-  const pharmacies = new Set(allPayments.map(p => p.pharmacy).filter(Boolean));
-  $('#navCountPharmacies').textContent = pharmacies.size;
-}
-
-// ====== DASHBOARD ======
-function renderDashboard() {
-  const period = parseInt($('#dashPeriod').value);
-  const cutoff = Date.now() - period * 86400000;
-  const recent = allPayments.filter(p => { const t = p.date?.toDate ? p.date.toDate() : new Date(p.date); return t >= cutoff; });
-  const totalEgresos = recent.reduce((a,p) => a + p.totalAmount, 0);
-  const totalReintegros = recent.filter(m => m.type === 'reintegro' && (() => { const t = m.date?.toDate ? m.date.toDate() : new Date(m.date); return t >= cutoff; })()).reduce((a,m) => a + m.amount, 0);
-  const uso = totalEgresos - totalReintegros;
-  const pctUso = BUDGET_TOTAL ? Math.min(100, Math.round((uso / BUDGET_TOTAL) * 100)) : 0;
-  const pendientes = recent.filter(p => p.status === 'pendiente').length;
-  const disponibles = BUDGET_TOTAL - uso;
-
-  $('#kpiGrid').innerHTML = `
-    <div class="bg-white rounded-xl border border-surface-200 p-5 shadow-card"><p class="text-xs font-semibold text-surface-500 uppercase tracking-wider">Egresos</p><p class="text-2xl font-extrabold text-surface-900 mt-1">${fmt(totalEgresos)}</p><p class="text-xs text-surface-500 mt-1">${recent.length} pagos</p></div>
-    <div class="bg-white rounded-xl border border-surface-200 p-5 shadow-card"><p class="text-xs font-semibold text-surface-500 uppercase tracking-wider">Reintegros</p><p class="text-2xl font-extrabold text-success-600 mt-1">${fmt(totalReintegros)}</p></div>
-    <div class="bg-white rounded-xl border border-surface-200 p-5 shadow-card"><p class="text-xs font-semibold text-surface-500 uppercase tracking-wider">Uso de fondo</p><p class="text-2xl font-extrabold text-brand-600 mt-1">${pctUso}%</p><div class="mt-2 h-2 bg-surface-100 rounded-full overflow-hidden"><div class="h-full bg-brand-500" style="width:${pctUso}%"></div></div></div>
-    <div class="bg-white rounded-xl border border-surface-200 p-5 shadow-card"><p class="text-xs font-semibold text-surface-500 uppercase tracking-wider">Disponible</p><p class="text-2xl font-extrabold ${disponibles<0?'text-danger-600':'text-surface-900'} mt-1">${fmt(disponibles)}</p><p class="text-xs ${pendientes>0?'text-warning-600':'text-surface-500'} mt-1">${pendientes} pendientes</p></div>
-  `;
-
-  // Charts
-  if (trendChart) trendChart.destroy();
-  if (productChart) productChart.destroy();
-  const byMonth = {};
-  recent.forEach(p => { const t = p.date?.toDate ? p.date.toDate() : new Date(p.date); const k = t.toLocaleDateString('es-CO', {month:'short'}); byMonth[k] = (byMonth[k] || 0) + p.totalAmount; });
-  trendChart = new Chart($('#trendChart'), {type:'line', data:{labels:Object.keys(byMonth), datasets:[{label:'Egresos', data:Object.values(byMonth), borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.1)', tension:.3, fill:true}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
-
-  const byProduct = {};
-  recent.forEach(p => { const k = (PRODUCTS[p.product]?.short || p.product); byProduct[k] = (byProduct[k] || 0) + p.totalAmount; });
-  productChart = new Chart($('#productChart'), {type:'doughnut', data:{labels:Object.keys(byProduct), datasets:[{data:Object.values(byProduct), backgroundColor:['#06b6d4','#22c55e','#8b5cf6','#f59e0b','#ec4899']}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right'}}}});
-
-  $('#dashRecentList').innerHTML = recent.slice(0,8).map(p => `
-    <div class="flex items-center justify-between py-2 border-b border-surface-100 cursor-pointer hover:bg-surface-50 px-2 rounded" onclick="openDrawer('viewPayment','${p.id}')">
-      <div class="flex items-center gap-3 min-w-0">
-        <span class="badge ${STATUS[p.status]?.badge || ''}">${STATUS[p.status]?.short || '?'}</span>
-        <div class="min-w-0"><p class="text-sm font-medium truncate">${p.pharmacy}</p><p class="text-xs text-surface-500">${fmtDate(p.date)}</p></div>
-      </div>
-      <span class="font-mono font-semibold">${fmt(p.totalAmount)}</span>
-    </div>
-  `).join('') || '<p class="text-sm text-surface-500 text-center py-4">Sin pagos en el período</p>';
-}
-window.renderDashboard = renderDashboard;
-
-$('#dashPeriod').addEventListener('change', renderDashboard);
-
-// ====== GRID COLUMNS ======
-const GRID_COLUMNS = [
-  {key:'fecha', label:'Fecha', width:'100px', sortable:true},
-  {key:'farmacia', label:'Farmacia', width:'minmax(180px,1fr)', sortable:true},
-  {key:'producto', label:'Producto', width:'150px'},
-  {key:'cantidad', label:'Cant.', width:'80px', align:'right', sortable:true, type:'number'},
-  {key:'unitario', label:'Unitario', width:'120px', align:'right', sortable:true, type:'number'},
-  {key:'total', label:'Total', width:'130px', align:'right', sortable:true, type:'number'},
-  {key:'estado', label:'Estado', width:'120px', align:'center', sortable:true},
-  {key:'reintegros', label:'Reintegros', width:'130px', align:'right'},
-  {key:'acciones', label:'', width:'60px', align:'center'},
-];
-
-function renderCell(p, col) {
-  if (col.key === 'fecha') return fmtDate(p.date);
-  if (col.key === 'farmacia') return `<span class="truncate">${p.pharmacy || '—'}</span>`;
-  if (col.key === 'producto') { const pr = PRODUCTS[p.product] || {short:p.product, color:'bg-surface-100 text-surface-600'}; return `<span class="badge ${pr.color}">${pr.short}</span>`; }
-  if (col.key === 'cantidad') return p.quantity;
-  if (col.key === 'unitario') return `<span class="font-mono">${fmt(p.unitPrice)}</span>`;
-  if (col.key === 'total') return `<span class="font-mono font-semibold">${fmt(p.totalAmount)}</span>`;
-  if (col.key === 'estado') return `<span class="badge ${STATUS[p.status]?.badge || ''}">${STATUS[p.status]?.short || p.status}</span>`;
-  if (col.key === 'reintegros') { const r = reintegroByPayment[p.id] || []; const t = r.reduce((a,x)=>a+x.amount,0); return t > 0 ? `<span class="font-mono text-success-600">${fmt(t)}</span>` : '<span class="text-surface-400 font-mono">—</span>'; }
-  if (col.key === 'acciones') return `<button class="p-1 rounded hover:bg-surface-100" onclick="event.stopPropagation();openDrawer('viewPayment','${p.id}')" aria-label="Ver"><svg class="w-4 h-4 text-surface-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>`;
-  return '';
-}
-
-function renderGridHeader() {
-  const visible = GRID_COLUMNS.filter(c => columnsConfig[c.key] !== false);
-  const totalFlex = visible.filter(c => c.width && c.width.startsWith('minmax')).length;
-  const fixedTotal = visible.filter(c => !c.width.startsWith('minmax')).reduce((a,c)=>a+parseInt(c.width),0);
-  const flexWidth = `minmax(120px, 1fr)`;
-  $('#gridHeader').innerHTML = visible.map(col => {
-    const w = col.width.startsWith('minmax') ? flexWidth : col.width;
-    return `<div class="grid-cell" style="width:${w};justify-content:${col.align==='right'?'flex-end':col.align==='center'?'center':'flex-start'};" data-key="${col.key}">
-      <div class="flex items-center gap-1.5 w-full">
-        <span class="truncate">${col.label}</span>
-        ${col.sortable ? `<button class="sort-btn text-surface-400 hover:text-surface-700 p-0.5" data-sort="${col.key}" aria-label="Ordenar por ${col.label}"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M3 12h18M3 20h18"/></svg></button>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-  $$('#gridHeader .sort-btn').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); toggleSort(btn.dataset.sort, e.shiftKey); }));
-}
-window.renderGridHeader = renderGridHeader;
-
-function toggleSort(key, multi) {
-  const idx = sortState.findIndex(s => s.key === key);
-  if (idx >= 0) { sortState[idx].dir = sortState[idx].dir === 'asc' ? 'desc' : 'asc'; if (!multi) sortState = [sortState[idx]]; }
-  else { if (!multi) sortState = []; sortState.push({key, dir:'asc'}); }
-  applyModuleFilters(); renderGridHeader(); updateSortIndicators();
-}
-window.toggleSort = toggleSort;
-
-function applySort(arr) {
-  if (!sortState.length) return arr;
-  return [...arr].sort((a,b) => {
-    for (const {key, dir} of sortState) {
-      let va = key === 'farmacia' ? a.pharmacy : a[key];
-      let vb = key === 'farmacia' ? b.pharmacy : b[key];
-      if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
-      if (va == null && vb == null) continue;
-      if (va == null) return 1;
-      if (vb == null) return -1;
-      if (va < vb) return dir === 'asc' ? -1 : 1;
-      if (va > vb) return dir === 'asc' ? 1 : -1;
-    }
-    return 0;
-  });
-}
-
-function updateSortIndicators() {
-  $$('#gridHeader .sort-btn').forEach(btn => {
-    const sort = sortState.find(s => s.key === btn.dataset.sort);
-    const svg = btn.querySelector('svg');
-    if (sort) {
-      btn.classList.add('text-brand-600'); btn.classList.remove('text-surface-400');
-      svg.innerHTML = sort.dir === 'asc' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 9l7 7 7-7"/>';
-    } else {
-      btn.classList.remove('text-brand-600'); btn.classList.add('text-surface-400');
-      svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M3 12h18M3 20h18"/>';
-    }
-  });
-}
-
-
-// ====== FILTROS ======
-function applyModuleFilters() {
-  filteredPayments = allPayments.filter(p => {
-    if (activeFilters.product && p.product !== activeFilters.product) return false;
-    if (activeFilters.pharmacy && p.pharmacy !== activeFilters.pharmacy) return false;
-    if (activeFilters.status && p.status !== activeFilters.status) return false;
-    if (activeFilters.month) {
-      const t = p.date?.toDate ? p.date.toDate() : new Date(p.date);
-      const key = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0');
-      if (key !== activeFilters.month) return false;
-    }
-    if (activeFilters.dateFrom) {
-      const t = p.date?.toDate ? p.date.toDate() : new Date(p.date);
-      if (t < new Date(activeFilters.dateFrom + 'T00:00:00')) return false;
-    }
-    if (activeFilters.dateTo) {
-      const t = p.date?.toDate ? p.date.toDate() : new Date(p.date);
-      if (t > new Date(activeFilters.dateTo + 'T23:59:59')) return false;
-    }
-    if (activeFilters.amountMin && p.totalAmount < Number(activeFilters.amountMin)) return false;
-    if (activeFilters.amountMax && p.totalAmount > Number(activeFilters.amountMax)) return false;
-    if (activeFilters.search) {
-      const q = activeFilters.search.toLowerCase();
-      const hay = (p.pharmacy + ' ' + (p.notes||'') + ' ' + p.id).toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
-    return true;
-  });
-  filteredPayments = applySort(filteredPayments);
-  currentPage = 1;
-  if (currentModule === 'payments') renderPaymentsGrid();
-  $('#gridResultCount').textContent = filteredPayments.length + ' registros';
-}
-window.applyModuleFilters = applyModuleFilters;
-
-function renderAdvancedFilters() {
-  const pharmOptions = [...new Set(allPayments.map(p => p.pharmacy).filter(Boolean))].sort();
-  $('#advancedFilters').innerHTML = `
-    <div><label class=\"block text-xs font-medium text-surface-500 mb-1\">Producto</label>
-      <select class=\"input-editorial text-sm\" data-filter=\"product\"><option value=\"\">Todos</option>
-      ${Object.entries(PRODUCTS).map(([k,v])=>`<option value=\"${k}\">${v.icon} ${v.name}</option>`).join('')}</select></div>
-    <div><label class=\"block text-xs font-medium text-surface-500 mb-1\">Farmacia</label>
-      <select class=\"input-editorial text-sm\" data-filter=\"pharmacy\"><option value=\"\">Todas</option>
-      ${pharmOptions.map(ph=>`<option value=\"${ph}\">${ph}</option>`).join('')}</select></div>
-    <div><label class=\"block text-xs font-medium text-surface-500 mb-1\">Estado</label>
-      <select class=\"input-editorial text-sm\" data-filter=\"status\"><option value=\"\">Todos</option><option value=\"pendiente\">\u23f3 Pendiente</option><option value=\"procesado\">\u2705 Procesado</option></select></div>
-    <div><label class=\"block text-xs font-medium text-surface-500 mb-1\">Mes</label>
-      <select class=\"input-editorial text-sm\" data-filter=\"month\"><option value=\"\">Cualquier mes</option>
-      ${Array.from({length:12},(_,i)=>{const d=new Date();d.setMonth(d.getMonth()-i);const val=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');return `<option value=\"${val}\">${d.toLocaleDateString('es-CO',{month:'long',year:'numeric'})}</option>`;}).join('')}</select></div>
-    <div class=\"grid grid-cols-2 gap-2\">\n      <div><label class=\"block text-xs font-medium text-surface-500 mb-1\">Desde</label><input type=\"date\" class=\"input-editorial text-sm\" data-filter=\"dateFrom\"></div>\n      <div><label class=\"block text-xs font-medium text-surface-500 mb-1\">Hasta</label><input type=\"date\" class=\"input-editorial text-sm\" data-filter=\"dateTo\"></div>\n    </div>\n    <div class=\"grid grid-cols-2 gap-2\">\n      <div><label class=\"block text-xs font-medium text-surface-500 mb-1\">M\u00edn $</label><input type=\"number\" class=\"input-editorial text-sm\" data-filter=\"amountMin\" step=\"100\" min=\"0\"></div>\n      <div><label class=\"block text-xs font-medium text-surface-500 mb-1\">M\u00e1x $</label><input type=\"number\" class=\"input-editorial text-sm\" data-filter=\"amountMax\" step=\"100\" min=\"0\"></div>\n    </div>\n    <div><label class=\"block text-xs font-medium text-surface-500 mb-1\">B\u00fasqueda</label>\n      <input type=\"text\" class=\"input-editorial text-sm\" data-filter=\"search\" placeholder=\"Farmacia, notas, ID...\"></div>`;
-  $$('#advancedFilters [data-filter]').forEach(el => {
-    if (activeFilters[el.dataset.filter] !== undefined) el.value = activeFilters[el.dataset.filter];
-    el.addEventListener('change', () => {
-      const k = el.dataset.filter, v = el.value;
-      if (v === '') delete activeFilters[k]; else activeFilters[k] = v;
-      applyModuleFilters();
-    });
-  });
-  renderSavedViewsDropdown();
-}
-
-// ====== SAVED VIEWS ======
-function renderSavedViewsDropdown() {
-  $('#savedViews').innerHTML = '<option value=\"\">\u2014 Vista \u2014</option>' + Object.keys(savedViews).map(n=>`<option value=\"${n}\">${n}</option>`).join('');
-}
-$('#savedViews').addEventListener('change', () => {
-  const v = savedViews[$('#savedViews').value]; if (!v) return;
-  activeFilters = {...v.filters}; sortState = v.sort ? [...v.sort] : [];
-  columnsConfig = {...columnsConfig, ...(v.columns||{})}; pageSize = v.pageSize || PAGE_SIZE_DEFAULT;
-  renderAdvancedFilters(); renderGridHeader(); renderPaymentsGrid();
-});
-$('#saveViewBtn').addEventListener('click', () => {
-  const n = prompt('Nombre de la vista:'); if (!n) return;
-  savedViews[n] = {filters:{...activeFilters}, sort:[...sortState], columns:{...columnsConfig}, pageSize};
-  localStorage.setItem('crm_savedViews', JSON.stringify(savedViews));
-  renderSavedViewsDropdown(); toast('Vista \"'+n+'\" guardada','success');
-});
-$('#deleteViewBtn').addEventListener('click', () => {
-  const n = $('#savedViews').value; if (!n) return toast('Selecciona una vista','error');
-  if (!confirm('¿Borrar vista \"'+n+'\"?')) return;
-  delete savedViews[n];
-  localStorage.setItem('crm_savedViews', JSON.stringify(savedViews));
-  renderSavedViewsDropdown(); toast('Vista eliminada');
-});
-$('#clearFiltersBtn').addEventListener('click', () => { activeFilters = {}; renderAdvancedFilters(); applyModuleFilters(); });
-
-// ====== GRID BODY ======
-function renderPaymentsGrid() {
-  const visible = GRID_COLUMNS.filter(c => columnsConfig[c.key] !== false);
-  const start = (currentPage-1)*pageSize;
-  const pageData = filteredPayments.slice(start, start+pageSize);
-  renderGridHeader();
-  if (!pageData.length) {
-    $('#gridBody').innerHTML='';
-    $('#gridEmptyState').classList.remove('hidden');
-    $('#statusBar').style.display='none';
-    return;
-  }
-  $('#gridEmptyState').classList.add('hidden');
-  $('#statusBar').style.display='flex';
-  const density = $('#densitySelect')?.value || 'standard';
-  $('#gridContainer').classList.toggle('density-compact', density==='compact');
-  $('#gridContainer').classList.toggle('density-comfortable', density==='comfortable');
-  const widths = visible.map(c => c.width.startsWith('minmax') ? 'minmax(120px,1fr)' : c.width);
-  $('#gridBody').innerHTML = pageData.map(p => {
-    const sel = selectedIds.has(p.id) ? ' selected' : '';
-    return `<div class=\"grid-row${sel}\" data-id=\"${p.id}\" tabindex=\"0\" onclick=\"handleRowClick('${p.id}',event)\">${
-      visible.map((col,i)=>`<div class=\"grid-cell\" style=\"width:${widths[i]};justify-content:${col.align==='right'?'flex-end':col.align==='center'?'center':'flex-start'};\">${renderCell(p,col)}</div>`).join('')}
-      <div class=\"grid-cell\" style=\"width:60px;justify-content:center;\"><input type=\"checkbox\" class=\"w-4 h-4 rounded border-surface-300 text-brand-600\" ${selectedIds.has(p.id)?'checked':''} onclick=\"event.stopPropagation();toggleSelect('${p.id}')\" aria-label=\"Seleccionar\"></div></div>`;
-  }).join('');
-  updatePagination();
-  $('#gridStatusText').textContent = `Mostrando ${start+1}\u2013${Math.min(start+pageSize, filteredPayments.length)} de ${filteredPayments.length}`;
-}
-window.renderPaymentsGrid = renderPaymentsGrid;
-
-function handleRowClick(id, e) {
-  if (e.target.closest('button,input,select,a')) return;
-  if (e.ctrlKey || e.metaKey) { selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id); updateSelectionUI(); return; }
-  if (e.shiftKey) { selectedIds.add(id); updateSelectionUI(); return; }
-  openDrawer('viewPayment', id);
-}
-window.handleRowClick = handleRowClick;
-
-function toggleSelect(id) { selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id); updateSelectionUI(); }
-window.toggleSelect = toggleSelect;
-
-function updateSelectionUI() {
-  $$('#gridBody .grid-row').forEach(r => r.classList.toggle('selected', selectedIds.has(r.dataset.id)));
-  const count = selectedIds.size;
-  if (count>0) {
-    const existing = $('#bulkBar'); if (existing) existing.remove();
-    const bar = document.createElement('div');
-    bar.id='bulkBar';
-    bar.className='fixed bottom-6 left-1/2 -translate-x-1/2 bg-brand-600 text-white rounded-xl shadow-lg px-4 py-2.5 flex items-center gap-3 z-50';
-    bar.innerHTML = `<span class=\"text-sm font-medium\">${count} seleccionados</span>
-      <button class=\"text-xs bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg\" onclick=\"bulkSetStatus('procesado')\">\u2705 Procesar</button>
-      <button class=\"text-xs bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg\" onclick=\"bulkSetStatus('pendiente')\">\u23f3 Pendiente</button>
-      <button class=\"text-xs bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg\" onclick=\"bulkExport()\">\ud83d\udce5 CSV</button>
-      <button class=\"text-xs bg-danger-500 hover:bg-danger-600 px-2.5 py-1 rounded-lg\" onclick=\"bulkDelete()\">\ud83d\uddd1\ufe0f Eliminar</button>
-      <button class=\"text-xs hover:bg-white/20 px-1.5 py-1 rounded\" onclick=\"clearSelection()\">\u00d7</button>`;
-    document.body.appendChild(bar);
-  } else { $('#bulkBar')?.remove(); }
-}
-window.updateSelectionUI = updateSelectionUI;
-function clearSelection() { selectedIds.clear(); updateSelectionUI(); }
-window.clearSelection = clearSelection;
-
-async function bulkSetStatus(s) {
-  if (!selectedIds.size) return;
-  const batch = writeBatch(db);
-  selectedIds.forEach(id => batch.update(doc(db,'payments',id), {status:s}));
-  await batch.commit(); toast(`${selectedIds.size} pagos → ${s}`,'success'); clearSelection();
-}
-window.bulkSetStatus = bulkSetStatus;
-
-async function bulkDelete() {
-  if (!selectedIds.size || !confirm(`¿Eliminar ${selectedIds.size} pagos?`)) return;
-  const batch = writeBatch(db);
-  selectedIds.forEach(id => batch.delete(doc(db,'payments',id)));
-  await batch.commit(); toast('Pagos eliminados','success'); clearSelection();
-}
-window.bulkDelete = bulkDelete;
-
-function bulkExport() {
-  const rows = [...selectedIds].map(id => {
-    const p = allPayments.find(p=>p.id===id);
-    const r = reintegroByPayment[id]||[]; const rt = r.reduce((a,x)=>a+x.amount,0);
-    return [fmtDate(p.date), p.pharmacy, PRODUCTS[p.product]?.name||p.product, p.quantity, p.unitPrice, p.totalAmount, STATUS[p.status]?.label||p.status, rt>0?rt:'', (p.notes||'').replace(/\"/g,'\"\"')];
-  });
-  downloadCSV(rows,'pagos_seleccionados');
-  toast('CSV exportado','success');
-}
-window.bulkExport = bulkExport;
-
-function csvRow(p) {
-  const r = reintegroByPayment[p.id]||[]; const rt = r.reduce((a,x)=>a+x.amount,0);
-  return [fmtDate(p.date), p.pharmacy, PRODUCTS[p.product]?.name||p.product, p.quantity, p.unitPrice, p.totalAmount, STATUS[p.status]?.label||p.status, rt>0?rt:'', (p.notes||'').replace(/\"/g,'\"\"')];
-}
-function downloadCSV(rows, name) {
-  const headers = ['Fecha','Farmacia','Producto','Cant','Unitario','Total','Estado','Reintegros','Notas'];
-  const csv = '\\\\uFEFF' + [headers.join(','), ...rows.map(r=>r.map(v=>`\"${v}\"`).join(','))].join('\\\\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
-  a.download = name+'_'+new Date().toISOString().split('T')[0]+'.csv';
-  a.click();
-}
-$('#exportGridBtn').addEventListener('click', () => { if (!filteredPayments.length) return toast('Sin datos','error'); downloadCSV(filteredPayments.map(csvRow),'pagos_filtrados'); toast('CSV exportado','success'); });
-
-// ====== PAGINATION ======
-function updatePagination() {
-  const totalPages = Math.max(1, Math.ceil(filteredPayments.length / pageSize));
-  $('#pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
-  $('#prevPage').disabled = currentPage <= 1;
-  $('#nextPage').disabled = currentPage >= totalPages;
-  pageSize = parseInt($('#pageSizeSelect').value);
-}
-$('#prevPage')?.addEventListener('click', () => { if (currentPage>1) { currentPage--; renderPaymentsGrid(); } });
-$('#nextPage')?.addEventListener('click', () => { const tp = Math.ceil(filteredPayments.length/pageSize); if (currentPage<tp) { currentPage++; renderPaymentsGrid(); } });
-$('#pageSizeSelect')?.addEventListener('change', () => { pageSize = parseInt($('#pageSizeSelect').value); currentPage=1; renderPaymentsGrid(); });
-$('#densitySelect')?.addEventListener('change', renderPaymentsGrid);
-
-// Columns dropdown
-$('#columnsBtn')?.addEventListener('click', e => { e.stopPropagation(); $('#columnsDropdown').classList.toggle('hidden'); renderColumnsDropdown(); });
-document.addEventListener('click', e => { if (!e.target.closest('#columnsBtn,#columnsDropdown')) $('#columnsDropdown')?.classList.add('hidden'); });
-function renderColumnsDropdown() {
-  $('#columnsDropdown').innerHTML = GRID_COLUMNS.map(col => `
-    <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-50 cursor-pointer">
-      <input type="checkbox" class="w-4 h-4 rounded border-surface-300 text-brand-600" ${columnsConfig[col.key] !== false ? 'checked' : ''} onchange="toggleColumn('${col.key}', this.checked)">
-      <span class="text-sm text-surface-700">${col.label}</span>
-    </label>`).join('');
-}
-function toggleColumn(key, visible) {
-  if (visible) delete columnsConfig[key]; else columnsConfig[key] = false;
-  localStorage.setItem('crm_columnsConfig', JSON.stringify(columnsConfig));
-  renderGridHeader();
-  if (currentModule === 'payments') renderPaymentsGrid();
-}
-
-// ====== DRAWER ======
-function openDrawer(mode, paymentId) {
-  drawerMode = mode; drawerPaymentId = paymentId || null;
-  const titles = {createPayment:'Nuevo Pago', createReintegro:'Nuevo Reintegro', viewPayment:'Detalle del Pago', editPayment:'Editar Pago'};
-  $('#drawerTitle').textContent = titles[mode] || 'Detalle';
-  const showTabs = (mode === 'viewPayment' || mode === 'editPayment');
-  $('#drawerTabs').classList.toggle('hidden', !showTabs);
-  if (showTabs) {
-    $('#drawerTabs').innerHTML = ['detail','history','reintegros','notes'].map((t,i)=>`<button class=\"drawer-tab px-3 py-2.5 text-sm font-medium border-b-2 ${i===0?'border-brand-600 text-brand-600':'border-transparent text-surface-500 hover:text-surface-700'}\" data-tab=\"${t}\">${{detail:'Detalle',history:'Historial',reintegros:'Reintegros',notes:'Notas'}[t]}</button>`).join('');
-    $$('#drawerTabs .drawer-tab').forEach(b => b.addEventListener('click', () => { $$('#drawerTabs .drawer-tab').forEach(x=>{ x.classList.remove('border-brand-600','text-brand-600'); x.classList.add('border-transparent','text-surface-500'); }); b.classList.add('border-brand-600','text-brand-600'); renderDrawerTabContent(b.dataset.tab); }));
-  }
-  renderDrawerTabContent('detail');
-  $('#drawer').classList.add('open');
-  $('#drawerOverlay').classList.add('open');
-}
-window.openDrawer = openDrawer;
-function closeDrawer() { $('#drawer').classList.remove('open'); $('#drawerOverlay').classList.remove('open'); drawerMode=null; drawerPaymentId=null; }
-window.closeDrawer = closeDrawer;
-$('#drawerOverlay').addEventListener('click', closeDrawer);
-document.addEventListener('keydown', e => { if (e.key==='Escape') closeDrawer(); });
-function renderDrawerTabContent(tab) {
-  if (drawerMode==='createPayment') return renderCreatePaymentForm();
-  if (drawerMode==='createReintegro') return renderCreateReintegroForm();
-  if (drawerMode==='viewPayment' || drawerMode==='editPayment') {
-    if (tab==='detail') renderPaymentDetail(drawerPaymentId);
-    else if (tab==='history') renderPaymentHistory(drawerPaymentId);
-    else if (tab==='reintegros') renderPaymentReintegros(drawerPaymentId);
-    else if (tab==='notes') renderPaymentNotes(drawerPaymentId);
-  }
-}
-
-// Auto‑load data on page start
-loadData();
-
-</script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="manifest" href="manifest.json" />
+    <title>CRM Medicamentos — Profesional</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --sidebar-w: 260px;
+            --sidebar-w-collapsed: 80px;
+            --header-h: 70px;
+            --drawer-w: 480px;
+            --row-h: 48px;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --focus-ring: 0 0 0 3px rgb(59 130 246 / 0.3);
+        }
+        html, body { height: 100%; margin: 0; }
+        body { font-feature-settings: "cv02","cv03","cv04","cv11"; -webkit-font-smoothing: antialiased; background: #f8fafc; }
+        .app { display: flex; flex-direction: column; min-height: 100vh; }
+        .app-header { height: var(--header-h); background: white; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; position: sticky; top: 0; z-index: 40; }
+        .app-header .logo { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; color: #1e293b; }
+        .app-header .logo img { height: 28px; width: auto; }
+        .app-header .actions { display: flex; align-items: center; gap: 1rem; }
+        .app-sidebar { position: fixed; left: 0; top: var(--header-h); bottom: 0; width: var(--sidebar-w); background: #0f172a; color: #e2e8f0; overflow-y: auto; transition: transform 0.25s ease, width 0.25s ease; z-index: 50; }
+        .app-sidebar.collapsed { width: var(--sidebar-w-collapsed); }
+        .app-sidebar .brand { padding: 1.5rem; text-align: center; border-bottom: 1px solid #1e293b; }
+        .app-sidebar .brand-text { font-weight: 600; font-size: 1.125rem; color: white; display: block; }
+        .app-sidebar .brand-text.collapsed-only { display: none; }
+        .app-sidebar.collapsed .brand-text.full { display: none; }
+        .app-sidebar.collapsed .brand-text.collapsed-only { display: block; }
+        .app-sidebar .nav { margin-top: 1.5rem; }
+        .app-sidebar .nav-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-radius: var(--radius-md); cursor: pointer; color: #cbd5e1; transition: background 0.15s, color 0.15s; }
+        .app-sidebar .nav-item:hover { background: #1e293b; color: white; }
+        .app-sidebar .nav-item.active { background: #2563eb; color: white; box-shadow: 0 4px 12px -2px rgb(37 99 235 / 0.4); }
+        .app-sidebar .nav-item .icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+        .app-sidebar .nav-item .label { font-weight: 500; white-space: nowrap; }
+        .app-sidebar .nav-item .badge { margin-left: auto; background: #1e293b; color: #fff; padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.75rem; }
+        .app-sidebar .nav-item.collapsed-only .label { display: none; }
+        .app-sidebar.collapsed .nav-item .label { display: none; }
+        .app-sidebar.collapsed .nav-item .badge { margin-left: 0; }
+        .app-main { flex: 1; overflow-y: auto; padding: 2rem; margin-left: var(--sidebar-w); transition: margin-left 0.25s ease; }
+        .app-sidebar.collapsed ~ .app-main { margin-left: var(--sidebar-w-collapsed); }
+        @media (max-width: 1024px) {
+            .app-sidebar { transform: translateX(-100%); }
+            .app-sidebar.mobile-open { transform: translateX(0); }
+            .app-main { margin-left: 0; }
+            .app-header { padding: 0 1rem; }
+        }
+        .app-drawer { position: fixed; top: 0; right: 0; height: 100vh; width: var(--drawer-w); background: white; box-shadow: -4px 0 12px -2px rgb(0 0 0 / 0.15); transform: translateX(100%); transition: transform 0.25s ease; z-index: 60; overflow-y: auto; }
+        .app-drawer.open { transform: translateX(0); }
+        .app-drawer-overlay { position: fixed; inset: 0; background: rgb(15 23 42 / 0.4); opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 55; }
+        .app-drawer-overlay.open { opacity: 1; pointer-events: auto; }
+        .app-drawer-header { padding: 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .app-drawer-title { font-weight: 600; font-size: 1.25rem; color: #1e293b; }
+        .app-drawer-close { background: none; border: none; font-size: 1.25rem; color: #64748b; cursor: pointer; }
+        .app-drawer-close:hover { color: #334155; }
+        .app-content { padding: 2rem; }
+        .app-title { font-weight: 700; font-size: 1.75rem; color: #1e293b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
+        .app-title .icon { width: 24px; height: 24px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: white; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04); border: 1px solid #f1f5f9; transition: transform 0.1s, box-shadow 0.1s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.08); }
+        .stat-card .label { font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .stat-card .value { font-size: 2.25rem; font-weight: 800; color: #1e293b; line-height: 1; }
+        .stat-card .subtext { font-size: 0.875rem; color: #64748b; margin-top: 0.5rem; }
+        .stat-card .progress { height: 6px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; margin-top: 1rem; }
+        .stat-card .progress-bar { height: 100%; background: #2563eb; transition: width 0.3s ease; }
+        .filters-card { background: white; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04); border: 1px solid #f1f5f9; margin-bottom: 2rem; }
+        .filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .filter-group { display: flex; flex-direction: column; }
+        .filter-group label { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; color: #334155; }
+        .filter-group input, .filter-group select { padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: var(--radius-md); background: white; font-size: 0.875rem; }
+        .filter-group input:focus, .filter-group select:focus { outline: none; border-color: #3b82f6; box-shadow: var(--focus-ring); }
+        .table-responsive { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid #e2e8f0; background: white; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th, td { padding: 1rem; text-align: left; font-size: 0.875rem; }
+        thead { background: #f8fafc; }
+        thead th { font-weight: 600; color: #475569; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; }
+        tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.1s; }
+        tbody tr:hover { background: #f8fafc; }
+        tbody tr.selected { background: #eff6ff; }
+        .badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+        .badge-success { background: #dcfce7; color: #16a34a; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .badge-info { background: #dbeafe; color: #2563eb; }
+        .btn-primary { background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: background 0.15s; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: white; color: #64748b; border: 1px solid #e2e8f0; padding: 0.5rem 1rem; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: background 0.15s; }
+        .btn-secondary:hover { background: #f8fafc; }
+        .btn-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 0.5rem 1rem; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: background 0.15s; }
+        .btn-danger:hover { background: #fee2e2; }
+        .btn-outline { background: transparent; color: #2563eb; border: 1px solid #2563eb; padding: 0.5rem 1rem; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s; }
+        .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 80; }
+        .toast { background: white; padding: 0.75rem 1rem; border-radius: var(--radius-lg); box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.15); display: flex; align-items: center; gap: 0.75rem; min-width: 280px; border-left: 4px solid #2563eb; animation: slideRight 0.3s ease; }
+        .toast.success { border-left-color: #16a34a; }
+        .toast.error { border-left-color: #dc2626; }
+        @keyframes slideRight { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .chart-container { background: white; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04); border: 1px solid #f1f5f9; margin-bottom: 2rem; }
+    </style>
 </head>
-<body class="font-sans">
-<div id="debugStatus" style="position:fixed;bottom:0;right:0;background:#fffa;z-index:9999;padding:4px;font-size:12px;border:1px solid #333;">loading…</div>
+<body>
+    <div id="appShell" class="app">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <!-- Optional logo image -->
+                <img src="https://via.placeholder.com/28x28?text=CM" alt="Logo">
+                <div class="brand-text">CRM Medicamentos</div>
+            </div>
+            <div class="actions">
+                <button id="themeToggle" class="btn-secondary" title="Cambiar tema">
+                    <svg id="iconSun" xmlns="http://www.w3.org/2000/svg" class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <svg id="iconMoon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.352-5.646z"></path></svg>
+                </button>
+                <button id="sidebarToggle" class="btn-secondary" title="Colapsar/Expandir barra lateral">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <button id="quickCreateBtn" class="btn-primary" title="Nuevo pago">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    Nuevo Pago
+                </button>
+                <div id="userMenu" class="relative ml-4">
+                    <button id="userMenuBtn" class="btn-secondary flex items-center gap-2" title="Usuario">
+                        <span class="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium">ED</span>
+                        <div>
+                            <div class="text-sm font-medium">Edward S.</div>
+                            <div class="text-xs text-gray-500">edwardse1491</div>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="userMenuDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 hidden z-50">
+                        <div class="px-4 py-2 text-sm text-gray-600">Mi perfil</div>
+                        <div class="px-4 py-2 text-sm text-gray-600 border-t">Cerrar sesión</div>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-<div id="appShell" class="app-shell">
-
-  <aside id="sidebar" class="sidebar" role="navigation" aria-label="Navegación principal">
-    <div class="p-5 flex items-center gap-3 border-b border-surface-800">
-      <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold flex-shrink-0">CR</div>
-      <div class="brand-text"><p class="text-white font-semibold text-sm">CRM Pagos</p><p class="text-surface-400 text-xs">Medicamentos</p></div>
-    </div>
-    <nav class="p-3 space-y-1" id="sideNav">
-      <a class="nav-item active" data-tab="dashboard" href="#dashboard"><svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="nav-label">Dashboard</span></a>
-      <a class="nav-item" data-tab="payments" href="#payments"><svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span class="nav-label">Pagos</span><span class="nav-badge ml-auto bg-brand-500 text-white text-xs px-1.5 py-0.5 rounded-full" id="navCountPayments">0</span></a>
-      <a class="nav-item" data-tab="pharmacies" href="#pharmacies"><svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg><span class="nav-label">Farmacias</span><span class="nav-badge ml-auto bg-surface-700 text-white text-xs px-1.5 py-0.5 rounded-full" id="navCountPharmacies">0</span></a>
-      <a class="nav-item" data-tab="reintegros" href="#reintegros"><svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-.879-.878-.879-2.303 0-3.182C10.221 7.775 10.97 7.5 12 7.5c.725 0 1.45.22 2.003.659.879.879.879 2.303 0 3.182z"/></svg><span class="nav-label">Reintegros</span><span class="nav-badge ml-auto bg-success-500 text-white text-xs px-1.5 py-0.5 rounded-full" id="navCountReintegros">0</span></a>
-      <a class="nav-item" data-tab="reports" href="#reports"><svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span class="nav-label">Reportes</span></a>
-      <a class="nav-item" data-tab="settings" href="#settings"><svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span class="nav-label">Configuración</span></a>
-    </nav>
-    <div class="p-3 border-t border-surface-800">
-      <button id="sidebarToggle" class="w-full nav-item focus-ring" aria-label="Colapsar sidebar"><svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg><span class="nav-label">Colapsar</span></button>
-    </div>
-  </aside>
-
-  <header class="header">
-    <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg hover:bg-surface-100" aria-label="Menú"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-    <h1 id="pageTitle" class="text-lg font-semibold text-surface-900 flex-1">Dashboard</h1>
-    <div class="hidden md:flex items-center bg-surface-100 rounded-lg px-3 py-1.5 w-72">
-      <svg class="w-4 h-4 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <input id="globalSearch" type="text" placeholder="Buscar pagos, farmacias, notas…" class="bg-transparent outline-none ml-2 text-sm w-full" aria-label="Búsqueda global">
-      <kbd class="hidden lg:inline-block text-[10px] text-surface-400 bg-white border border-surface-200 px-1.5 py-0.5 rounded font-mono">Ctrl K</kbd>
-    </div>
-    <button id="themeToggle" class="p-2 rounded-lg hover:bg-surface-100" aria-label="Cambiar tema">
-      <svg id="iconSun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-      <svg id="iconMoon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-    </button>
-    <button id="notifBtn" class="p-2 rounded-lg hover:bg-surface-100 relative" aria-label="Notificaciones">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-      <span id="notifBadge" class="hidden absolute top-1 right-1 w-2 h-2 bg-danger-500 rounded-full"></span>
-    </button>
-    <div class="relative">
-      <button id="userMenuBtn" class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-surface-100" aria-label="Menú usuario">
-        <div class="w-8 h-8 rounded-full bg-brand-500 text-white flex items-center justify-center text-xs font-semibold">ED</div>
-        <div class="hidden lg:block text-left"><p class="text-xs font-medium text-surface-900 leading-tight">Edward S.</p><p class="text-[10px] text-surface-500 leading-tight">edwardse1491</p></div>
-      </button>
-      <div id="userMenu" class="hidden absolute right-0 mt-2 w-56 bg-white border border-surface-200 rounded-xl shadow-lg z-50">
-        <div class="p-3 border-b border-surface-100"><p class="text-sm font-medium">Edward Serrano S.</p><p class="text-xs text-surface-500">edwardse1491@gmail.com</p></div>
-        <button id="signOutBtn" class="w-full text-left px-3 py-2 text-sm hover:bg-surface-50">Cerrar sesión</button>
-      </div>
-    </div>
-    <button id="quickCreateBtn" class="hidden lg:flex btn-primary items-center gap-2 text-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Nuevo Pago</button>
-  </header>
-
-  <main class="main">
-
-    <!-- ============== DASHBOARD ============== -->
-    <section id="panel-dashboard" class="space-y-6">
-      <div class="flex items-center justify-between">
-        <div><h2 class="text-2xl font-bold text-surface-900">Resumen</h2><p class="text-sm text-surface-500 mt-0.5">Estado de pagos, presupuesto y actividad reciente</p></div>
-        <select id="dashPeriod" class="input-editorial w-40"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="365">Último año</option></select>
-      </div>
-      <div id="kpiGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
-      <div id="chartsGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="bg-white rounded-xl border border-surface-200 p-5 shadow-card"><h3 class="font-semibold text-surface-900 mb-3">Tendencia de pagos</h3><div style="height:280px"><canvas id="trendChart"></canvas></div></div>
-        <div class="bg-white rounded-xl border border-surface-200 p-5 shadow-card"><h3 class="font-semibold text-surface-900 mb-3">Distribución por producto</h3><div style="height:280px"><canvas id="productChart"></canvas></div></div>
-      </div>
-      <div class="bg-white rounded-xl border border-surface-200 p-5 shadow-card">
-        <h3 class="font-semibold text-surface-900 mb-3">Pagos recientes</h3>
-        <div id="dashRecentList" class="space-y-2"></div>
-      </div>
-    </section>
-
-    <!-- ============== PAYMENTS ============== -->
-    <section id="panel-payments" class="hidden space-y-4">
-      <div class="flex items-center justify-between flex-wrap gap-3">
-        <div><h2 class="text-2xl font-bold text-surface-900">Pagos</h2><p class="text-sm text-surface-500 mt-0.5" id="paySubtitle">Listado completo con filtros y acciones masivas</p></div>
-        <div class="flex items-center gap-2">
-          <button class="btn-secondary text-sm" onclick="openDrawer('createReintegro')">+ Reintegro</button>
-          <button class="btn-primary text-sm" onclick="openDrawer('createPayment')">+ Nuevo Pago</button>
-        </div>
-      </div>
-      <div class="flex gap-4 items-start">
-        <!-- Filters sidebar -->
-        <aside id="filtersSidebar" class="w-72 flex-shrink-0 bg-white rounded-xl border border-surface-200 p-4 space-y-4">
-          <div class="flex items-center justify-between"><h4 class="font-semibold text-surface-900">Filtros</h4><button id="clearFiltersBtn" class="text-xs text-brand-600 hover:underline">Limpiar</button></div>
-          <div id="advancedFilters" class="space-y-3"></div>
-          <div class="pt-3 border-t border-surface-100">
-            <label class="block text-xs font-medium text-surface-500 mb-1">Vistas guardadas</label>
-            <select id="savedViews" class="input-editorial text-sm"></select>
-            <div class="flex gap-2 mt-2"><button id="saveViewBtn" class="btn-secondary text-xs px-2 py-1 flex-1">Guardar</button><button id="deleteViewBtn" class="btn-danger text-xs px-2 py-1">Borrar</button></div>
-          </div>
+        <!-- Sidebar -->
+        <aside id="appSidebar" class="app-sidebar">
+            <div class="brand">
+                <div class="brand-text full">CRM Medicamentos</div>
+                <div class="brand-text collapsed-only">CM</div>
+            </div>
+            <nav class="nav">
+                <a href="#" class="nav-item active" data-tab="dashboard">
+                    <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 001 1h3m-3 0h9l-7-7-7-7z"></path></svg></div>
+                    <div class="label">Dashboard</div>
+                    <div class="badge" id="navCountDashboard">0</div>
+                </a>
+                <a href="#" class="nav-item" data-tab="payments">
+                    <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></div>
+                    <div class="label">Pagos</div>
+                    <div class="badge" id="navCountPayments">0</div>
+                </a>
+                <a href="#" class="nav-item" data-tab="pharmacies">
+                    <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c4 0 6 4 6 6H6c0-2 2-4 6-4z"></path></svg></div>
+                    <div class="label">Farmacias</div>
+                    <div class="badge" id="navCountPharmacies">0</div>
+                </a>
+                <a href="#" class="nav-item" data-tab="reintegros">
+                    <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m2 0H9m11 0H9m-3 10h3a2 2 0 002-2V9a2 2 0 012-2V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 01-2 2v2z"></path></svg></div>
+                    <div class="label">Reintegros</div>
+                    <div class="badge" id="navCountReintegros">0</div>
+                </a>
+                <a href="#" class="nav-item" data-tab="reports">
+                    <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c4 0 6 4 6 6H6c0-2 2-4 6-4z"></path></svg></div>
+                    <div class="label">Reportes</div>
+                    <div class="badge" id="navCountReports">0</div>
+                </a>
+                <a href="#" class="nav-item" data-tab="settings">
+                    <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3h6l-5-5V8H7a2 2 0 00-2 2v10a2 2 0 002 2h6l-3-3v-4z"></path></svg></div>
+                    <div class="label">Configuración</div>
+                    <div class="badge" id="navCountSettings">0</div>
+                </a>
+            </nav>
         </aside>
-        <!-- Grid area -->
-        <div class="flex-1 min-w-0 space-y-3">
-          <div class="bg-white rounded-xl border border-surface-200 p-3 flex items-center justify-between flex-wrap gap-2">
-            <div class="flex items-center gap-3">
-              <span class="text-sm text-surface-500" id="gridResultCount">0 registros</span>
-              <select id="densitySelect" class="input-editorial text-sm w-32"><option value="comfortable">Cómoda</option><option value="standard" selected>Estándar</option><option value="compact">Compacta</option></select>
-              <div class="relative">
-                <button id="columnsBtn" class="btn-secondary text-sm flex items-center gap-1">Columnas <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button>
-                <div id="columnsDropdown" class="hidden absolute mt-1 bg-white border border-surface-200 rounded-lg shadow-lg p-2 z-30 w-56"></div>
-              </div>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <div class="app-content">
+                <div id="debugStatus" class="mb-4 text-sm text-gray-500">loading…</div>
+                <h1 id="pageTitle" class="app-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c4 0 6 4 6 6H6c0-2 2-4 6-4z"></path></svg>
+                    Dashboard
+                </h1>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid" id="statsGrid">
+                    <!-- Will be filled by JS -->
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6" id="chartsContainer">
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="productChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Payments -->
+                <div class="mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        Pagos recientes
+                    </h2>
+                    <div id="recentPaymentsList" class="space-y-2">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Modules Panels (hidden by default, shown via JS) -->
+                <section id="panels" class="hidden">
+                    <div id="panel-dashboard" class="mb-6"></div>
+                    <div id="panel-payments" class="mb-6">
+                        <div class="filters-card" id="advancedFilters"></div>
+                        <div class="mb-4">
+                            <div id="gridResultCount" class="text-sm text-gray-500"></div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="paymentsTable">
+                                <thead id="gridHeader"></thead>
+                                <tbody id="gridBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between">
+                            <button id="prevPageBtn" class="btn-secondary">Anterior</button>
+                            <button id="nextPageBtn" class="btn-primary">Siguiente</button>
+                        </div>
+                    </div>
+                    <div id="panel-pharmacies" class="mb-6"></div>
+                    <div id="panel-reintegros" class="mb-6"></div>
+                    <div id="panel-reports" class="mb-6"></div>
+                    <div id="panel-settings" class="mb-6"></div>
+                </section>
             </div>
-            <button id="exportGridBtn" class="btn-secondary text-sm">Exportar CSV</button>
-          </div>
-          <div id="gridContainer" class="bg-white rounded-xl border border-surface-200 shadow-card overflow-hidden">
-            <div id="gridHeader" class="grid-header-row"></div>
-            <div id="gridBody"></div>
-            <div id="gridEmptyState" class="hidden text-center py-16">
-              <svg class="mx-auto h-12 w-12 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-              <h3 class="mt-3 text-lg font-medium text-surface-900">Sin pagos</h3>
-              <p class="mt-1 text-surface-500">Ajusta los filtros o crea el primer pago</p>
-              <button id="emptyCreateBtn" class="btn-primary mt-4 text-sm" onclick="openDrawer('createPayment')">+ Nuevo Pago</button>
-            </div>
-          </div>
-          <div id="statusBar" class="flex items-center justify-between bg-white rounded-xl border border-surface-200 px-4 py-2 text-sm">
-            <span id="gridStatusText">—</span>
-            <div class="flex items-center gap-3">
-              <button id="prevPage" class="btn-secondary text-xs px-2 py-1" disabled>‹ Anterior</button>
-              <span id="pageInfo" class="font-mono">Página 1 de 1</span>
-              <button id="nextPage" class="btn-secondary text-xs px-2 py-1" disabled>Siguiente ›</button>
-              <select id="pageSizeSelect" class="input-editorial text-xs w-20"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option></select>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+        </main>
 
-    <!-- ============== PHARMACIES ============== -->
-    <section id="panel-pharmacies" class="hidden space-y-4">
-      <div class="flex items-center justify-between"><div><h2 class="text-2xl font-bold text-surface-900">Farmacias</h2><p class="text-sm text-surface-500 mt-0.5">Mapa de relaciones, salud y volumen por farmacia</p></div></div>
-      <div id="pharmaciesContent"></div>
-    </section>
-
-    <!-- ============== REINTEGROS ============== -->
-    <section id="panel-reintegros" class="hidden space-y-4">
-      <div class="flex items-center justify-between"><div><h2 class="text-2xl font-bold text-surface-900">Reintegros</h2><p class="text-sm text-surface-500 mt-0.5">Movimientos de caja positivos y conciliaciones</p></div><button id="newReintegroBtn" class="btn-primary text-sm" onclick="openDrawer('createReintegro')">+ Nuevo Reintegro</button></div>
-      <div id="reintegrosContent" class="bg-white rounded-xl border border-surface-200 shadow-card"></div>
-    </section>
-
-    <!-- ============== REPORTS ============== -->
-    <section id="panel-reports" class="hidden space-y-4">
-      <div><h2 class="text-2xl font-bold text-surface-900">Reportes</h2><p class="text-sm text-surface-500 mt-0.5">Genera y descarga reportes ejecutivos y operativos</p></div>
-      <div id="reportsContent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-    </section>
-
-    <!-- ============== SETTINGS ============== -->
-    <section id="panel-settings" class="hidden space-y-4">
-      <div><h2 class="text-2xl font-bold text-surface-900">Configuración</h2><p class="text-sm text-surface-500 mt-0.5">Personaliza el CRM, gestiona productos y datos</p></div>
-      <div id="settingsContent" class="bg-white rounded-xl border border-surface-200 shadow-card p-6"></div>
-    </section>
-
-  </main>
-</div>
-
-<!-- Drawer -->
-<div id="drawerOverlay" class="drawer-overlay"></div>
-<aside id="drawer" class="drawer" role="dialog" aria-modal="true">
-  <div class="sticky top-0 bg-white border-b border-surface-200 px-5 py-4 flex items-center justify-between z-10">
-    <h3 id="drawerTitle" class="text-lg font-semibold text-surface-900">Drawer</h3>
-    <button onclick="closeDrawer()" class="p-1.5 rounded-lg hover:bg-surface-100" aria-label="Cerrar"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-  </div>
-  <div id="drawerTabs" class="hidden sticky top-[65px] bg-white border-b border-surface-200 px-5 flex gap-4 z-10"></div>
-  <div id="drawerContent" class="p-5 space-y-4"></div>
-  <div id="drawerFooter" class="sticky bottom-0 bg-white border-t border-surface-200 p-4 flex justify-end gap-2"></div>
-</aside>
-
-<div id="toastContainer" class="toast-container"></div>
-
+        <!-- Drawer -->
+        <div id="appDrawer" class="app-drawer">
+            <div class="app-drawer-header">
+                <h2 class="app-drawer-title" id="drawerTitle">Detalles</h2>
+                <button id="drawerCloseBtn" class="app-drawer-close" aria-label="Cerrar">&times;</button>
+            </div
