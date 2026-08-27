@@ -586,4 +586,411 @@ function renderDrawerTabContent(tab) {
 }
 
 // Auto‑load data on page start
+
+// ====== PHARMACIES ======
+function renderPharmacies() {
+  const pharmContent = $('#pharmaciesContent');
+  if (!pharmContent) return;
+  pharmContent.innerHTML = `
+    <div class="p-6">
+      <h2 class="text-2xl font-bold text-surface-900 mb-4">Mapa de Farmacias</h2>
+      <p class="text-surface-500">Esta sección muestra el resumen por farmacia: volumen, salud, último pago, etc.</p>
+      <div class="mt-4">
+        <button id="refreshPharmaciesBtn" class="btn-primary">Actualizar datos</button>
+      </div>
+    </div>`;
+  $('#refreshPharmaciesBtn')?.addEventListener('click', () => {
+    toast('Recargando farmacias...', 'info');
+    // TODO: implement actual refresh
+    setTimeout(() => toast('Farmacias actualizadas', 'success'), 800);
+  });
+}
+window.renderPharmacies = renderPharmacies;
+
+// ====== REINTEGROS ======
+function renderReintegros() {
+  const reiContent = $('#reintegrosContent');
+  if (!reiContent) return;
+  reiContent.innerHTML = `
+    <div class="p-6">
+      <h2 class="text-2xl font-bold text-surface-900 mb-4">Movimientos de Reintegro</h2>
+      <p class="text-surface-500">Lista de reintegros aplicados a pagos.</p>
+      <div class="mt-4">
+        <button id="refreshReintegrosBtn" class="btn-primary">Actualizar</button>
+      </div>
+    </div>`;
+  $('#refreshReintegrosBtn')?.addEventListener('click', () => {
+    toast('Recargando reintegros...', 'info');
+    setTimeout(() => toast('Reintegros actualizados', 'success'), 800);
+  });
+}
+window.renderReintegros = renderReintegros;
+
+// ====== REPORTS ======
+function renderReports() {
+  const repContent = $('#reportsContent');
+  if (!repContent) return;
+  repContent.innerHTML = `
+    <div class="p-6">
+      <h2 class="text-2xl font-bold text-surface-900 mb-4">Reportes</h2>
+      <p class="text-surface-500">Genera y descarga reportes ejecutivos y operativos.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <button class="btn-primary w-full" onclick="toast('Reporte de ventas por producto')">Ventas por Producto</button>
+        <button class="btn-primary w-full" onclick="toast('Reporte de reintegros')">Reporte de Reintegros</button>
+        <button class="btn-primary w-full" onclick="toast('Reporte de farmacias top')">Top Farmacias</button>
+        <button class="btn-primary w-full" onclick="toast('Reporte de pagos por estado')">Pagos por Estado</button>
+      </div>
+    </div>`;
+}
+window.renderReports = renderReports;
+
+// ====== SETTINGS ======
+function renderSettings() {
+  const setContent = $('#settingsContent');
+  if (!setContent) return;
+  setContent.innerHTML = `
+    <div class="p-6">
+      <h2 class="text-2xl font-bold text-surface-900 mb-4">Configuración</h2>
+      <div class="space-y-4">
+        <div class="border rounded-xl p-4">
+          <h3 class="font-semibold text-surface-900 mb-2">Presupuesto</h3>
+          <div class="flex items-center gap-2">
+            <span class="w-20">Presupuesto mensual:</span>
+            <input id="budgetInput" type="number" class="input-editorial w-32" value="${BUDGET_TOTAL}" step="10000">
+            <button id="saveBudgetBtn" class="btn-primary btn-sm">Guardar</button>
+          </div>
+          <p class="text-sm text-surface-500 mt-2">Este presupuesto se usa para alertas de gasto.</p>
+        </div>
+        <div class="border rounded-xl p-4">
+          <h3 class="font-semibold text-surface-900 mb-2">Productos</h3>
+          <div id="productsList" class="space-y-2"></div>
+          <button id="addProductBtn" class="btn-primary btn-sm w-full">+ Agregar Producto</button>
+        </div>
+        <div class="border rounded-xl p-4">
+          <h3 class="font-semibold text-surface-900 mb-2">Tema y Notificaciones</h3>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="notifyEnabled" class="w-4 h-4" ${localStorage.getItem('crm_notify') === 'true' ? 'checked' : ''}>
+            <span>Notificaciones activas</span>
+          </label>
+        </div>
+      </div>
+    </div>`;
+  // Budget save
+  $('#saveBudgetBtn')?.addEventListener('click', () => {
+    const val = parseInt($('#budgetInput').value) || 0;
+    localStorage.setItem('crm_budget', val);
+    BUDGET_TOTAL = val;
+    toast('Presupuesto actualizado', 'success');
+    renderKPIs(); // update budget KPI
+  });
+  // Notify toggle
+  $('#notifyEnabled')?.addEventListener('change', () => {
+    localStorage.setItem('crm_notify', $('#notifyEnabled').checked.toString());
+    toast('Preferencia de notificaciones guardada', 'success');
+  });
+  // Products list render
+  renderProductsList();
+}
+window.renderSettings = renderSettings;
+
+function renderProductsList() {
+  const list = $('#productsList');
+  if (!list) return;
+  list.innerHTML = '';
+  Object.entries(PRODUCTS).forEach(([key, prod]) => {
+    const div = document.createElement('div');
+    div.className = 'flex items-center gap-3 p-2 bg-surface-50 rounded';
+    div.innerHTML = `
+      <span class="w-10 h-10 flex items-center justify-center rounded-${prod.color.slice(5)}">${prod.icon}</span>
+      <div class="flex-1">
+        <div class="font-medium">${prod.name}</div>
+        <div class="text-xs text-surface-500">${prod.short}</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="btn-sm btn-outline" onclick="editProduct('${key}')">Editar</button>
+        <button class="btn-sm btn-outline bg-danger-100 text-danger-700 hover:bg-danger-200" onclick="deleteProduct('${key}')">Eliminar</button>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+window.renderProductsList = renderProductsList;
+
+function editProduct(key) {
+  const prod = PRODUCTS[key];
+  const name = prompt('Nombre del producto:', prod.name);
+  if (!name) return;
+  const short = prompt('Siglas cortas:', prod.short);
+  if (short === null) return;
+  const icon = prompt('Icono (emoji):', prod.icon);
+  if (icon === null) return;
+  PRODUCTS[key] = { name, short, icon, color: prod.color };
+  localStorage.setItem('crm_products', JSON.stringify(PRODUCTS));
+  renderProductsList();
+  toast('Producto actualizado', 'success');
+}
+
+function deleteProduct(key) {
+  if (!confirm(`¿Eliminar producto ${PRODUCTS[key]?.name}?`)) return;
+  delete PRODUCTS[key];
+  localStorage.setItem('crm_products', JSON.stringify(PRODUCTS));
+  renderProductsList();
+  toast('Producto eliminado', 'success');
+}
+
+// ====== DRAWER FORM FUNCTIONS ======
+function renderCreatePaymentForm() {
+  return `
+    <form id="createPaymentForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-surface-500">Farmacia</label>
+        <input id="cpPharmacy" type="text" class="input-editorial w-full mt-1" placeholder="Nombre de la farmacia" required>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-surface-500">Producto</label>
+          <select id="cpProduct" class="input-editorial w-full mt-1">
+            ${Object.entries(PRODUCTS).map(([k,v])=>`<option value="${k}">${v.icon} ${v.name}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-surface-500">Cantidad</label>
+          <input id="cpQuantity" type="number" class="input-editorial w-full mt-1" min="1" value="1">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-surface-500">Precio unitario</label>
+          <input id="cpUnitPrice" type="number" class="input-editorial w-full mt-1" step="0.01" min="0" value="0">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-surface-500">Fecha</label>
+          <input id="cpDate" type="date" class="input-editorial w-full mt-1" value="${new Date().toISOString().split('T')[0]}">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-surface-500">Notas</label>
+        <textarea id="cpNotes" class="input-editorial w-full" rows="3" placeholder="Notas opcionales"></textarea>
+      </div>
+      <div class="flex justify-end">
+        <button type="button" class="btn-secondary mr-2" onclick="closeDrawer()">Cancelar</button>
+        <button type="button" class="btn-primary" id="cpSubmitBtn">Guardar Pago</button>
+      </div>
+    </form>`;
+}
+window.renderCreatePaymentForm = renderCreatePaymentForm;
+
+function renderCreateReintegroForm() {
+  return `
+    <form id="createReintegroForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-surface-500">Concepto</label>
+        <input id="crConcept" type="text" class="input-editorial w-full mt-1" placeholder="Descripción del reintegro" required>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-surface-500">Monto</label>
+          <input id="crAmount" type="number" class="input-editorial w-full mt-1" step="0.01" min="0" value="0">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-surface-500">Fecha</label>
+          <input id="crDate" type="date" class="input-editorial w-full mt-1" value="${new Date().toISOString().split('T')[0]}">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-surface-500">Notas</label>
+        <textarea id="crNotes" class="input-editorial w-full" rows="3" placeholder="Notas opcionales"></textarea>
+      </div>
+      <div class="flex justify-end">
+        <button type="button" class="btn-secondary mr-2" onclick="closeDrawer()">Cancelar</button>
+        <button type="button" class="btn-primary" id="crSubmitBtn">Guardar Reintegro</button>
+      </div>
+    </form>`;
+}
+window.renderCreateReintegroForm = renderCreateReintegroForm;
+
+function renderPaymentDetail(id) {
+  const p = allPayments.find(pp => pp.id === id) || {};
+  const reintes = (reintegroByPayment[id] || []).reduce((sum, r) => sum + r.amount, 0);
+  return `
+    <div class="space-y-4">
+      <div class="border rounded-xl p-4">
+        <h3 class="font-semibold text-surface-900">Detalle del Pago</h3>
+        <div class="space-y-2">
+          <div class="flex justify-between"><span class="text-surface-500">ID:</span><span class="font-mono">${p.id||'-'}</span></div>
+          <div class="flex justify-between"><span class="text-surface-500">Farmacia:</span><span>${p.pharmacy||'-'}</span></div>
+          <div class="flex justify-between"><span class="text-surface-500">Producto:</span><span>${PRODUCTS[p.product]?.name||p.product||'-'}</span></div>
+          <div class="flex justify-between"><span class="text-surface-500">Cantidad:</span><span>${p.quantity||0}</span></div>
+          <div class="flex justify-between"><span class="text-surface-500">Precio unitario:</span><span>${fmtCurrency(p.unitPrice||0)}</span></div>
+          <div class="flex justify-between"><span class="text-surface-500">Total:</span><span class="font-bold">${fmtCurrency(p.totalAmount||0)}</span></div>
+          <div class="flex justify-between"><span class="text-surface-500">Fecha:</span><span>${fmtDate(p.date||0)}</span></div>
+          <div class="flex justify-between"><span class="text-surface-500">Estado:</span><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS[p.status]?.badge?.includes('bg-success') ? 'bg-success-100 text-success-700' : 'bg-warning-100 text-warning-700'}">${STATUS[p.status]?.label||p.status}</span></div>
+          <div class="flex justify-between"><span class="text-surface-500">Reintegros aplicados:</span><span class="font-bold">${fmtCurrency(reintes)}</span></div>
+          <div class="flex justify-between"><span class="text-surface-500">Notas:</span><span class="break-all whitespace-pre-wrap">${(p.notes||'').replace(/</g,'<').replace(/>/g,'>')}</span></div>
+        </div>
+      </div>
+      <div class="border rounded-xl p-4 mt-4">
+        <h3 class="font-semibold text-surface-900">Acciones</h3>
+        <div class="flex items-center gap-2">
+          <button id="btnEditPayment" class="btn-primary btn-sm">✏️ Editar Pago</button>
+          <button id="btnDeletePayment" class="btn btn-danger btn-sm">🗑️ Eliminar Pago</button>
+        </div>
+      </div>
+    </div>`;
+}
+window.renderPaymentDetail = renderPaymentDetail;
+
+function renderPaymentHistory(id) {
+  const cash = allCashMovements.filter(cm => cm.paymentId === id);
+  if (!cash.length) {
+    return `<div class="p-6 text-center text-surface-500">No hay movimientos de caja asociados a este pago.</div>`;
+  }
+  const rows = cash.map(cm => `
+    <tr class="border-t">
+      <td class="p-2">${fmtDate(cm.date||0)}</td>
+      <td class="p-2">${cm.type==='reintegro'?'⏪ Reintegro':'💰 Abono'}</td>
+      <td class="p-2 text-right">${fmtCurrency(cm.amount)}</td>
+      <td class="p-2">${cm.notes||'-'}</td>
+    </tr>`).join('');
+  return `
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-surface-200">
+        <thead class="bg-surface-50">
+          <tr><th class="px-4 py-2 text-left text-xs font-medium text-surface-500">Fecha</th><th class="px-4 py-2 text-left text-xs font-medium text-surface-500">Tipo</th><th class="px-4 py-2 text-right text-xs font-medium text-surface-500">Monto</th><th class="px-4 py-2 text-left text-xs font-medium text-surface-500">Notas</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+window.renderPaymentHistory = renderPaymentHistory;
+
+function renderPaymentReintegros(id) {
+  const reins = reintegroByPayment[id] || [];
+  if (!reins.length) {
+    return `<div class="p-6 text-center text-surface-500">No hay reintegros asociados a este pago.</div>`;
+  }
+  const rows = reins.map(r => `
+    <tr class="border-t">
+      <td class="p-2">${fmtDate(r.date||0)}</td>
+      <td class="p-2">${r.type||'reintegro'}</td>
+      <td class="p-2 text-right">${fmtCurrency(r.amount)}</td>
+      <td class="p-2">${r.notes||'-'}</td>
+    </tr>`).join('');
+  return `
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-surface-200">
+        <thead class="bg-surface-50">
+          <tr><th class="px-4 py-2 text-left text-xs font-medium text-surface-500">Fecha</th><th class="px-4 py-2 text-left text-xs font-medium text-surface-500">Tipo</th><th class="px-4 py-2 text-right text-xs font-medium text-surface-500">Monto</th><th class="px-4 py-2 text-left text-xs font-medium text-surface-500">Notas</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+window.renderPaymentReintegros = renderPaymentReintegros;
+
+function renderPaymentNotes(id) {
+  const p = allPayments.find(pp => pp.id === id) || {};
+  return `
+    <div class="space-y-4">
+      <div class="border rounded-xl p-4">
+        <h3 class="font-semibold text-surface-900">Notas del Pago</h3>
+        <p class="whitespace-pre-wrap text-surface-700">${(p.notes||'').replace(/</g,'<').replace(/>/g,'>')}</p>
+      </div>
+      <div class="border rounded-xl p-4 mt-4">
+        <h3 class="font-semibold text-surface-900">Editar Notas</h3>
+        <form id="editNotesForm" class="space-y-2">
+          <textarea id="editNotesText" class="input-editorial w-full" rows="5">${(p.notes||'').replace(/"/g,'"')}</textarea>
+          <div class="flex justify-end">
+            <button type="button" class="btn-secondary mr-2" onclick="closeDrawer()">Cancelar</button>
+            <button type="button" class="btn-primary" id="saveNotesBtn">Guardar Notas</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+}
+window.renderPaymentNotes = renderPaymentNotes;
+
+// Hooks for drawer form submissions
+document.addEventListener('submit', e => {
+  if (e.target.id === 'createPaymentForm') {
+    e.preventDefault();
+    const pharmacy = $('#cpPharmacy').value.trim();
+    const product = $('#cpProduct').value;
+    const quantity = parseInt($('#cpQuantity').value) || 1;
+    const unitPrice = parseFloat($('#cpUnitPrice').value) || 0;
+    const dateStr = $('#cpDate').value;
+    const notes = $('#cpNotes').value.trim();
+    if (!pharmacy) { toast('Farmacia requerida', 'error'); return; }
+    const totalAmount = quantity * unitPrice;
+    const newPayment = {
+      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9),
+      pharmacy,
+      product,
+      quantity,
+      unitPrice,
+      totalAmount,
+      date: dateStr ? new Date(dateStr) : Timestamp.now(),
+      status: 'pendiente',
+      notes,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    };
+    addDoc(collection(db, 'payments'), newPayment)
+      .then(() => {
+        toast('Pago creado exitosamente', 'success');
+        closeDrawer();
+        // reload data to reflect new payment
+        loadData();
+      })
+      .catch(err => {
+        console.error(err);
+        toast('Error al crear pago', 'error');
+      });
+  }
+  if (e.target.id === 'createReintegroForm') {
+    e.preventDefault();
+    const concept = $('#crConcept').value.trim();
+    const amount = parseFloat($('#crAmount').value) || 0;
+    const dateStr = $('#crDate').value;
+    const notes = $('#crNotes').value.trim();
+    if (!concept) { toast('Concepto requerido', 'error'); return; }
+    if (amount <= 0) { toast('Monto debe ser mayor a cero', 'error'); return; }
+    if (!drawerPaymentId) { toast('No se pudo identificar el pago asociado', 'error'); return; }
+    const newReintegro = {
+      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9),
+      paymentId: drawerPaymentId,
+      concept,
+      amount,
+      date: dateStr ? new Date(dateStr) : Timestamp.now(),
+      type: 'reintegro',
+      notes,
+      createdAt: Timestamp.now()
+    };
+    addDoc(collection(db, 'cash_movements'), newReintegro)
+      .then(() => {
+        toast('Reintegro guardado exitosamente', 'success');
+        closeDrawer();
+        loadData();
+      })
+      .catch(err => {
+        console.error(err);
+        toast('Error al guardar reintegro', 'error');
+      });
+  }
+  if (e.target.id === 'editNotesForm') {
+    e.preventDefault();
+    if (!drawerPaymentId) { toast('No se pudo identificar el pago', 'error'); return; }
+    const notes = $('#editNotesText').value.trim();
+    updateDoc(doc(db, 'payments', drawerPaymentId), { notes, updatedAt: Timestamp.now() })
+      .then(() => {
+        toast('Notas actualizadas', 'success');
+        closeDrawer();
+        loadData();
+      })
+      .catch(err => {
+        console.error(err);
+        toast('Error al actualizar notas', 'error');
+      });
+  }
+});
+
 loadData();
