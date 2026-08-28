@@ -1,0 +1,32 @@
+{
+  "name": "crm-medicamentos",
+  "version": "1.0.0",
+  "description": "Sistema de gestión de pagos para medicamentos con Firebase/Firestore",
+  "main": "index.html",
+  "scripts": {
+    "build": "mkdir -p dist && cp index.html manifest.json sw.js firebase.json firestore.rules dist/ && cp -r src dist/ && echo 'Build completed'",
+    "serve": "npx serve dist",
+    "start": "npm run serve",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EdwDevs/CRM_Medicamentos.git"
+  },
+  "keywords": [
+    "firebase",
+    "firestore",
+    "crm",
+    "pwa",
+    "medicamentos"
+  ],
+  "author": "EdwDevs",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/EdwDevs/CRM_Medicamentos/issues"
+  },
+  "homepage": "https://github.com/EdwDevs/CRM_Medicamentos#readme",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
