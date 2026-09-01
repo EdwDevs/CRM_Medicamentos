@@ -1,1 +1,1115 @@
-<button id=\"quickCreateBtn\" class=\"btn-primary\" title=\"Nuevo pago\">\n                    <svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-4 w-4 mr-1\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 6v6m0 0v6m0-6h6m-6 0H6\"></path></svg>\n                    Nuevo Pago\n                </button>\n                <button id=\"mobileMenuBtn\" class=\"btn-secondary hidden md:block\" title=\"Menú móvil\">\n                    <svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 6h16M4 12h16M4 18h16\"></path></svg>\n                </button>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="description" content="Sistema profesional de gestión de pagos para medicamentos">
+  <meta name="theme-color" content="#4f46e5">
+  <title>CRM Control de Pagos - Medicamentos</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+
+  <style>
+    /* ============================================
+       SISTEMA DE DISEÑO - Variables CSS
+       ============================================ */
+    :root {
+      /* Brand Colors */
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --secondary: #8b5cf6;
+      --accent: #06b6d4;
+      
+      /* Semantic Colors */
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      
+      /* Neutral Colors & Surfaces */
+      --bg-body: #f3f4f6;
+      --surface: #ffffff;
+      --text-main: #111827;
+      --text-secondary: #6b7280;
+      --border: #e5e7eb;
+      
+      /* Shadows & Radius */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+      --shadow-glow: 0 0 15px rgba(79, 70, 229, 0.3);
+      
+      --radius-lg: 1rem;
+      --radius-xl: 1.5rem;
+      
+      /* Typography */
+      --font-sans: 'Inter', sans-serif;
+    }
+    
+    /* ============================================
+       RESET Y BASE
+       ============================================ */
+    body {
+      background-color: var(--bg-body);
+      font-family: var(--font-sans);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px; /* Espacio para el FAB en móvil */
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    /* ============================================
+       HEADER
+       ============================================ */
+    .app-header {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 1020;
+      padding: 1rem 0;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .brand-gradient {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* ============================================
+       CARDS & CONTENEDORES
+       ============================================ */
+    .card {
+      border: 1px solid rgba(255,255,255,0.5);
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+      box-shadow: var(--shadow-hover);
+    }
+    
+    .card-header {
+      background: transparent;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      padding: 1rem 1.5rem;
+      color: var(--text-main);
+    }
+
+    /* ============================================
+       WIDGET DE PRESUPUESTO (HERO)
+       ============================================ */
+    .budget-card {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .budget-card.over-budget {
+      background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+    }
+    
+    .budget-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .budget-val {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    
+    .budget-label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.9;
+      margin-bottom: 0.25rem;
+    }
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    /* ============================================
+       STATS CARDS
+       ============================================ */
+    .stats-card {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      height: 100%;
+      border: 1px solid var(--border);
+    }
+    
+    .stats-card .icon-wrapper {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--bg-body);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+      color: var(--primary);
+    }
+    
+    .stats-card .stat-val {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* ============================================
+       TABLA Y LISTA
+       ============================================ */
+    .table-wrap {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    
+    .table thead th {
+      background: var(--bg-body);
+      color: var(--text-secondary);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+      padding: 1rem;
+    }
+    
+    .table td {
+      padding: 1rem;
+      vertical-align: middle;
+      color: var(--text-main);
+      font-size: 0.9rem;
+    }
+
+    /* Animación de entrada para filas */
+    .animate-row {
+      animation: fadeInUp 0.4s ease forwards;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    @keyframes fadeInUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================
+       BADGES & ESTADOS
+       ============================================ */
+    .badge-pill {
+      padding: 0.35em 0.8em;
+      border-radius: 50rem;
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.02em;
+    }
+    
+    .bg-soft-primary { background: #e0e7ff; color: #4338ca; }
+    .bg-soft-success { background: #d1fae5; color: #065f46; }
+    .bg-soft-warning { background: #fef3c7; color: #92400e; }
+    .bg-soft-danger  { background: #fee2e2; color: #b91c1c; }
+    
+    .badge-descongel { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-multidol400 { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-multidol800 { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+
+    /* ============================================
+       FAB BUTTON & FORMULARIOS
+       ============================================ */
+    .fab-button {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      box-shadow: var(--shadow-glow), var(--shadow-hover);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 1050;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .fab-button:hover {
+      background: var(--primary-dark);
+      transform: scale(1.1) rotate(90deg);
+    }
+
+    .form-control, .form-select {
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 768px) {
+      .table thead { display: none; }
+      .table tbody tr {
+        display: block;
+        background: white;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+      }
+      .table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--bg-body);
+        padding: 0.75rem 1rem;
+      }
+      .table tbody td:last-child { border-bottom: none; }
+      .table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+      }
+      
+      .fab-button {
+        bottom: 1.5rem;
+        right: 1.5rem;
+      }
+      
+      /* Ajustes de tarjetas en móvil */
+      .stats-card {
+        padding: 1rem;
+        min-height: 120px;
+      }
+      .stats-card .stat-val { font-size: 1.25rem; }
+      .stats-card .label { font-size: 0.7rem; }
+    }
+    
+    /* Toast Notification */
+    .toast-custom {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      box-shadow: var(--shadow-hover);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-left: 4px solid var(--primary);
+      animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  </style>
+
+  <script type="module">
+    // Firebase Imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, getDocs, getDoc, deleteDoc, doc, query, orderBy, updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // --- CONFIGURACIÓN FIREBASE ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAaVSb70OFIoX48T9GbLmTcdXOSvKv2pRk",
+      authDomain: "zona1561-4de30.firebaseapp.com",
+      projectId: "zona1561-4de30",
+      storageBucket: "zona1561-4de30.firebasestorage.app",
+      messagingSenderId: "451366030738",
+      appId: "1:451366030738:web:e638db51fbe24f6a48054b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch(e){ console.warn("Analytics no soportado en este entorno"); }
+    const db = getFirestore(app);
+
+    // Autenticación anónima (requerida por las reglas de Firestore)
+    const auth = getAuth(app);
+    try {
+      await signInAnonymously(auth);
+    } catch(e) {
+      console.error("Error de autenticación en Firebase:", e);
+    }
+
+    // --- CONSTANTES & UTILIDADES ---
+    const BUDGET_TOTAL = 500000;
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => document.querySelectorAll(sel);
+
+    const PRODUCTS = {
+      descongel: {name:"Descongel x100", cls:"descongel", icon:"❄️"},
+      multidol400: {name:"Multidol 400mg", cls:"multidol400", icon:"💊"},
+      multidol800: {name:"Multidol 800mg", cls:"multidol800", icon:"💊"}
+    };
+
+    // Helpers de Formato
+    const fmtMoney = (v) => new Intl.NumberFormat("es-CO", {style:"currency", currency:"COP", maximumFractionDigits:0}).format(v);
+    const fmtDate = (d) => {
+      const dt = d?.toDate ? d.toDate() : new Date(d + "T00:00:00");
+      return dt.toLocaleDateString("es-CO", { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    function getStatusUI(status) {
+      return status === 'procesado' 
+        ? { label: 'Procesado', class: 'bg-soft-success', icon: 'check-circle' }
+        : { label: 'Pendiente', class: 'bg-soft-warning', icon: 'clock' };
+    }
+
+    // --- FUNCIONALIDAD UI ---
+    function showToast(msg, type="success") {
+      const el = document.createElement("div");
+      el.className = "toast-custom";
+      el.style.borderLeftColor = type === "error" ? "var(--danger)" : "var(--success)";
+      el.innerHTML = `<i class="fas fa-${type === "error" ? "exclamation-circle" : "check-circle"}" style="color:${type === "error" ? "var(--danger)" : "var(--success)"}"></i> <strong>${msg}</strong>`;
+      document.body.appendChild(el);
+      setTimeout(() => { el.style.opacity="0"; el.style.transform="translateY(-10px)"; setTimeout(()=>el.remove(), 300) }, 3000);
+    }
+
+    function toggleLoading(isLoading) {
+      const tbody = $('#payments-table');
+      if (isLoading) {
+        tbody.innerHTML = `
+          <tr><td colspan="9" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+            <p class="text-muted mt-2 small">Sincronizando con Firebase...</p>
+          </td></tr>`;
+      }
+    }
+
+    // --- LOGICA DE NEGOCIO ---
+    function calculateTotal() {
+      const q = Number($('#quantity').value || 0);
+      const up = Number($('#unitPrice').value || 0);
+      const total = q * up;
+      $('#total-display').textContent = fmtMoney(total);
+      $('#total-value').value = total;
+      $('#total-preview').classList.toggle('d-none', total <= 0);
+    }
+
+    // Corrección de datos antiguos
+    function normalizeData(data) {
+      return {
+        ...data,
+        unitPrice: Number(data.unitPrice ?? data.amount ?? 0),
+        totalAmount: Number(data.totalAmount ?? data.amount ?? (Number(data.quantity||1)*(data.unitPrice||0))),
+        status: data.status || "pendiente",
+        reimbursedAmount: Number(data.reimbursedAmount ?? 0),
+        reimbursedDate: data.reimbursedDate ?? null
+      };
+    }
+
+    function normalizeCashMovementData(data) {
+      const rawType = data.type === 'reintegro' ? 'reintegro' : 'egreso';
+      const normalizedReferenceIds = Array.isArray(data.referencePaymentIds)
+        ? data.referencePaymentIds.filter(Boolean)
+        : [];
+
+      return {
+        ...data,
+        type: rawType,
+        amount: Number(data.amount ?? 0),
+        date: data.date ?? null,
+        notes: data.notes ?? '',
+        referencePaymentIds: normalizedReferenceIds
+      };
+    }
+
+    async function getCashMovements() {
+      const q = query(collection(db, "cash_movements"), orderBy("date", "desc"));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...normalizeCashMovementData(docSnap.data())
+      }));
+    }
+
+    async function loadPayments() {
+      toggleLoading(true);
+      
+      // Filtros
+      const filters = {
+        prod: $('#filter-product').value,
+        pharm: $('#filter-pharmacy').value,
+        status: $('#filter-status').value,
+        month: $('#filter-date').value
+      };
+
+      let constraints = [orderBy("date", "desc")];
+      // Nota: Firestore requiere índices compuestos para múltiples filtros. 
+      // Aquí usamos filtrado en cliente para robustez si fallan los índices.
+      
+      try {
+        // Intentamos traer lo más reciente (limite de seguridad)
+        const [paymentsSnapshot, cashMovements] = await Promise.all([
+          getDocs(query(collection(db, "payments"), orderBy("date", "desc"))),
+          getCashMovements()
+        ]);
+
+        let payments = paymentsSnapshot.docs.map(doc => ({id: doc.id, ...normalizeData(doc.data())}));
+
+        // Filtrado en Cliente (Client-side filtering) para máxima flexibilidad UX
+        if (filters.prod) payments = payments.filter(p => p.product === filters.prod);
+        if (filters.pharm) payments = payments.filter(p => p.pharmacy === filters.pharm);
+        if (filters.status) payments = payments.filter(p => p.status === filters.status);
+        if (filters.month) {
+          const [y, m] = filters.month.split('-');
+          payments = payments.filter(p => {
+            const d = p.date?.toDate ? p.date.toDate() : new Date(p.date);
+            return d.getFullYear() == y && (d.getMonth() + 1) == m;
+          });
+        }
+
+        renderTable(payments);
+        updateDashboard(payments, cashMovements);
+        updateFiltersUI(payments); // Llenar select de farmacias dinámicamente
+
+      } catch (error) {
+        console.error("Error cargando datos:", error);
+        $('#payments-table').innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4"><i class="fas fa-wifi me-2"></i>Error de conexión. Intente recargar.</td></tr>`;
+      }
+    }
+
+    function renderTable(payments) {
+      const tbody = $('#payments-table');
+      tbody.innerHTML = "";
+
+      if (payments.length === 0) {
+        tbody.innerHTML = `
+          <tr><td colspan="9" class="text-center py-5 opacity-50">
+            <i class="fas fa-inbox fa-3x mb-3 text-muted"></i><br>No se encontraron pagos.
+          </td></tr>`;
+        return;
+      }
+
+      payments.forEach((p, index) => {
+        const prod = PRODUCTS[p.product] || {name: p.product, cls: 'secondary', icon: '📦'};
+        const st = getStatusUI(p.status);
+        const row = document.createElement('tr');
+        
+        // Animación escalonada
+        row.className = "animate-row";
+        row.style.animationDelay = `${index * 0.05}s`;
+
+        row.innerHTML = `
+          <td data-label="Fecha" class="fw-medium text-secondary">${fmtDate(p.date)}</td>
+          <td data-label="Farmacia" class="fw-bold text-dark">${p.pharmacy}</td>
+          <td data-label="Producto">
+            <span class="badge badge-${prod.cls} badge-pill shadow-sm">
+              <span class="me-1">${prod.icon}</span> ${prod.name}
+            </span>
+          </td>
+          <td data-label="Cant.">${p.quantity}</td>
+          <td data-label="Unitario" class="text-muted">${fmtMoney(p.unitPrice)}</td>
+          <td data-label="Total" class="fw-bold text-primary">${fmtMoney(p.totalAmount)}</td>
+          <td data-label="Estado">
+            <button class="btn btn-sm ${st.class} border-0 badge-pill w-100 text-start ps-3"
+              onclick="toggleStatus('${p.id}', '${p.status}')">
+              <i class="fas fa-${st.icon} me-1"></i> ${st.label}
+            </button>
+          </td>
+          <td data-label="Acciones">
+            <div class="d-flex gap-2 justify-content-end justify-content-md-start">
+               <button class="btn btn-light btn-sm text-primary" onclick="openDetails('${p.id}')"><i class="fas fa-eye"></i></button>
+               <button class="btn btn-light btn-sm text-danger" onclick="deleteItem('${p.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function updateDashboard(payments, cashMovements = []) {
+      // KPI Principal
+      const validMovements = cashMovements.filter(m => Number.isFinite(m.amount) && m.amount > 0);
+      const egresosFromMovements = validMovements
+        .filter(m => m.type === 'egreso')
+        .reduce((acc, m) => acc + m.amount, 0);
+      const reintegrosFromMovements = validMovements
+        .filter(m => m.type === 'reintegro')
+        .reduce((acc, m) => acc + m.amount, 0);
+
+      const paymentIdsWithEgreso = new Set(
+        validMovements
+          .filter(m => m.type === 'egreso')
+          .flatMap(m => m.referencePaymentIds)
+      );
+      const egresosLegacy = payments
+        .filter(p => !paymentIdsWithEgreso.has(p.id))
+        .reduce((acc, p) => acc + Number(p.totalAmount || 0), 0);
+
+      const legacyReintegros = payments.reduce((acc, p) => {
+        const amountFromLegacy = Number(
+          p.reimbursedAmount
+          ?? p.reintegro
+          ?? p.reintegros
+          ?? p.companyContribution
+          ?? p.companyTopUp
+          ?? p.abonoEmpresa
+          ?? p.abono
+          ?? 0
+        );
+        return acc + (Number.isFinite(amountFromLegacy) ? amountFromLegacy : 0);
+      }, 0);
+
+      const egresos = egresosFromMovements + egresosLegacy;
+      const reintegros = reintegrosFromMovements + legacyReintegros;
+      const available = BUDGET_TOTAL + reintegros - egresos;
+
+      const baseUsageRaw = BUDGET_TOTAL > 0 ? (egresos / BUDGET_TOTAL) * 100 : 0;
+      const baseUsagePercent = Math.min(Math.max(baseUsageRaw, 0), 100);
+
+      $('#kpi-paid').textContent = fmtMoney(egresos);
+      $('#kpi-remaining').textContent = fmtMoney(available);
+      $('#budget-bar').style.width = `${baseUsagePercent}%`;
+      $('#budget-percent').textContent = `${baseUsageRaw.toFixed(1)}%`;
+
+      // Colores de barra
+      const bar = $('#budget-bar');
+      bar.className = `progress-bar progress-bar-striped progress-bar-animated ${baseUsageRaw > 100 ? 'bg-danger' : baseUsagePercent > 90 ? 'bg-danger' : baseUsagePercent > 70 ? 'bg-warning' : 'bg-success'}`;
+
+      const overBudgetEl = $('#kpi-overbudget');
+      const budgetCard = $('#budget-card');
+      if (available < 0) {
+        overBudgetEl.textContent = `Déficit actual: ${fmtMoney(Math.abs(available))}`;
+        overBudgetEl.classList.remove('d-none');
+        budgetCard.classList.add('over-budget');
+      } else if (reintegros > 0) {
+        overBudgetEl.textContent = `Reintegros acumulados: ${fmtMoney(reintegros)}`;
+        overBudgetEl.classList.remove('d-none');
+        budgetCard.classList.remove('over-budget');
+      } else {
+        overBudgetEl.textContent = '';
+        overBudgetEl.classList.add('d-none');
+        budgetCard.classList.remove('over-budget');
+      }
+
+      // Contadores Cards
+      const count = (key) => payments.filter(p => p.product === key).length;
+      $('#stat-descongel').textContent = count('descongel');
+      $('#stat-multi400').textContent = count('multidol400');
+      $('#stat-multi800').textContent = count('multidol800');
+      $('#stat-pending').textContent = payments.filter(p => p.status === 'pendiente').length;
+    }
+
+    function updateFiltersUI(payments) {
+      const select = $('#filter-pharmacy');
+      const current = select.value;
+      const pharmacies = [...new Set(payments.map(p => p.pharmacy))].sort();
+      const fragment = document.createDocumentFragment();
+      const allOption = document.createElement('option');
+      allOption.value = '';
+      allOption.textContent = '🏥 Todas las farmacias';
+      fragment.appendChild(allOption);
+
+      pharmacies.forEach(ph => {
+        const opt = document.createElement('option');
+        opt.value = ph;
+        opt.textContent = ph;
+        fragment.appendChild(opt);
+      });
+
+      select.textContent = '';
+      select.appendChild(fragment);
+      select.value = pharmacies.includes(current) ? current : '';
+    }
+
+    // --- ACCIONES CRUD ---
+    window.addItem = async (e) => {
+      e.preventDefault();
+      const btn = $('#btn-save');
+      const originalText = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+      try {
+        const quantity = Number($('#quantity').value);
+        const unitPrice = Number($('#unitPrice').value);
+        const totalValueInput = $('#total-value').value;
+
+        if (quantity <= 0) {
+          showToast("La cantidad debe ser mayor a 0", "error");
+          return;
+        }
+
+        if (unitPrice < 0) {
+          showToast("El precio unitario no puede ser negativo", "error");
+          return;
+        }
+
+        const totalAmount = totalValueInput ? Number(totalValueInput) : quantity * unitPrice;
+        const data = {
+          pharmacy: $('#pharmacy').value.trim(),
+          product: $('#product').value,
+          quantity,
+          unitPrice,
+          totalAmount,
+          date: new Date($('#date').value + "T00:00:00"),
+          status: $('#status').value,
+          notes: $('#notes').value
+        };
+
+        const paymentRef = await addDoc(collection(db, "payments"), data);
+        await addDoc(collection(db, "cash_movements"), {
+          type: 'egreso',
+          amount: totalAmount,
+          date: data.date,
+          referencePaymentIds: [paymentRef.id],
+          notes: `Egreso por pago en farmacia ${data.pharmacy}`
+        });
+        showToast("Pago registrado correctamente");
+        bootstrap.Modal.getInstance($('#formModal')).hide();
+        e.target.reset();
+        $('#total-preview').classList.add('d-none');
+        loadPayments();
+      } catch (err) {
+        console.error(err);
+        showToast("Error al guardar", "error");
+      } finally {
+        btn.disabled = false; btn.innerHTML = originalText;
+      }
+    };
+
+    window.addReintegro = async (e) => {
+      e.preventDefault();
+      const btn = $('#btn-save-reintegro');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+      try {
+        const amount = Number($('#reintegro-amount').value || 0);
+        const dateInput = $('#reintegro-date').value;
+        const referencesRaw = $('#reintegro-reference').value;
+        const notes = $('#reintegro-notes').value.trim();
+
+        if (amount <= 0) {
+          showToast("El reintegro debe ser mayor a 0", "error");
+          return;
+        }
+
+        if (!dateInput) {
+          showToast("La fecha del reintegro es obligatoria", "error");
+          return;
+        }
+
+        const referencePaymentIds = referencesRaw
+          .split(',')
+          .map(id => id.trim())
+          .filter(Boolean);
+
+        await addDoc(collection(db, "cash_movements"), {
+          type: 'reintegro',
+          amount,
+          date: new Date(dateInput + "T00:00:00"),
+          referencePaymentIds,
+          notes
+        });
+
+        showToast("Reintegro registrado correctamente");
+        bootstrap.Modal.getInstance($('#reintegroModal')).hide();
+        e.target.reset();
+        $('#reintegro-date').value = new Date().toISOString().split('T')[0];
+        loadPayments();
+      } catch (error) {
+        console.error(error);
+        showToast("Error al registrar reintegro", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    };
+
+    window.deleteItem = async (id) => {
+      if(confirm("¿Eliminar este registro permanentemente?")) {
+        try {
+          await deleteDoc(doc(db, "payments", id));
+          showToast("Registro eliminado");
+          loadPayments();
+        } catch(e) { showToast("Error eliminando", "error"); }
+      }
+    };
+
+    window.toggleStatus = async (id, current) => {
+      const next = current === 'pendiente' ? 'procesado' : 'pendiente';
+      try {
+        await updateDoc(doc(db, "payments", id), {status: next});
+        loadPayments(); // Recargar para actualizar UI
+      } catch(e) { console.error(e); }
+    };
+
+    window.openDetails = async (id) => {
+      // Implementación simplificada: buscar en el DOM o volver a pedir (usaremos volver a pedir para asegurar datos)
+      const docSnap = await getDoc(doc(db, "payments", id));
+      if (!docSnap.exists()) {
+        showToast("No se encontró el pago solicitado.", "error");
+        return;
+      }
+      const data = normalizeData(docSnap.data());
+      const status = data.status || "pendiente";
+      const totalAmount = Number(data.totalAmount ?? 0);
+      const prod = PRODUCTS[data.product] || {name: data.product};
+      $('#modal-detail-content').innerHTML = `
+        <div class="text-center mb-4">
+           <div class="display-1 text-secondary">${prod.icon || '📦'}</div>
+           <h4 class="mt-2">${prod.name}</h4>
+           <span class="badge ${getStatusUI(status).class} px-3 py-2 mt-2">${status}</span>
+        </div>
+        <div class="bg-light p-3 rounded border">
+           <div class="d-flex justify-content-between mb-2 border-bottom pb-2"><span>Farmacia:</span> <strong>${data.pharmacy}</strong></div>
+           <div class="d-flex justify-content-between mb-2 border-bottom pb-2"><span>Total:</span> <strong class="text-primary fs-5">${fmtMoney(totalAmount)}</strong></div>
+           <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <span>${fmtDate(data.date)}</span></div>
+           <div class="mt-3"><small class="text-muted d-block">Notas:</small> <p class="mb-0 small">${data.notes || "Sin notas"}</p></div>
+        </div>
+      `;
+      new bootstrap.Modal($('#detailsModal')).show();
+    };
+
+    // --- INICIALIZACIÓN ---
+    document.addEventListener("DOMContentLoaded", () => {
+      // Set fecha hoy
+      $('#date').value = new Date().toISOString().split('T')[0];
+      
+      // Event Listeners
+      $('#payment-form').addEventListener('submit', window.addItem);
+      $('#reintegro-form').addEventListener('submit', window.addReintegro);
+      $('#quantity').addEventListener('input', calculateTotal);
+      $('#unitPrice').addEventListener('input', calculateTotal);
+      $('#reintegro-date').value = new Date().toISOString().split('T')[0];
+      
+      // Listeners Filtros
+      ['filter-product', 'filter-pharmacy', 'filter-status', 'filter-date'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadPayments);
+      });
+
+      loadPayments();
+    });
+  </script>
+</head>
+<body>
+
+  <!-- Navbar Sticky -->
+  <header class="app-header">
+    <div class="container d-flex justify-content-between align-items-center">
+      <div>
+        <h1 class="h5 mb-0 fw-bold brand-gradient">
+          <i class="fas fa-pills me-2"></i>CRM Pagos
+        </h1>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#reintegroModal">
+          <i class="fas fa-hand-holding-dollar me-1"></i> Registrar reintegro
+        </button>
+        <button class="btn btn-sm btn-light border rounded-pill px-3" onclick="location.reload()">
+          <i class="fas fa-sync-alt text-secondary"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container my-4">
+    
+    <!-- Dashboard Hero -->
+    <div class="row g-4 mb-4">
+      <!-- Tarjeta Presupuesto -->
+      <div class="col-lg-5">
+        <div class="card budget-card h-100 shadow-lg" id="budget-card">
+          <div class="card-body d-flex flex-column justify-content-between p-4 position-relative z-1">
+            <div>
+              <div class="budget-label"><i class="fas fa-wallet me-1"></i> Egresos acumulados</div>
+              <div class="budget-val" id="kpi-paid">$0</div>
+              <div class="small opacity-75 mt-1">Disponible actual: <span id="kpi-remaining">$500,000</span></div>
+              <div class="small fw-semibold mt-1 d-none" id="kpi-overbudget"></div>
+            </div>
+            
+            <div class="glass-panel mt-4">
+              <div class="d-flex justify-content-between small mb-1 fw-bold">
+                <span>Uso del fondo base</span>
+                <span id="budget-percent">0%</span>
+              </div>
+              <div class="progress bg-dark bg-opacity-25" style="height: 8px;">
+                <div id="budget-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estadísticas Rápidas -->
+      <div class="col-lg-7">
+        <div class="row g-3 h-100">
+          <div class="col-6 col-sm-3">
+            <div class="card stats-card">
+              <div class="icon-wrapper text-info"><i class="fas fa-snowflake"></i></div>
+              <div class="stat-val" id="stat-descongel">0</div>
+              <div class="text-muted small">Descongel</div>
+            </div>
+          </div>
+          <div class="col-6 col-sm-3">
+             <div class="card stats-card">
+              <div class="icon-wrapper text-success"><i class="fas fa-capsules"></i></div>
+              <div class="stat-val" id="stat-multi400">0</div>
+              <div class="text-muted small">Multi 400</div>
+            </div>
+          </div>
+          <div class="col-6 col-sm-3">
+             <div class="card stats-card">
+              <div class="icon-wrapper text-primary"><i class="fas fa-pills"></i></div>
+              <div class="stat-val" id="stat-multi800">0</div>
+              <div class="text-muted small">Multi 800</div>
+            </div>
+          </div>
+          <div class="col-6 col-sm-3">
+             <div class="card stats-card bg-soft-warning border-warning border-opacity-25">
+              <div class="icon-wrapper bg-white text-warning"><i class="fas fa-clock"></i></div>
+              <div class="stat-val text-warning" id="stat-pending">0</div>
+              <div class="text-warning small fw-bold">Pendientes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de Herramientas & Filtros -->
+    <div class="card mb-4 border-0 shadow-sm">
+      <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-12 col-md-auto text-secondary fw-bold small text-uppercase">
+            <i class="fas fa-filter me-1"></i> Filtrar por:
+          </div>
+          <div class="col-6 col-md">
+            <select id="filter-product" class="form-select form-select-sm bg-light border-0">
+              <option value="">📦 Todos los productos</option>
+              <option value="descongel">Descongel</option>
+              <option value="multidol400">Multidol 400</option>
+              <option value="multidol800">Multidol 800</option>
+            </select>
+          </div>
+          <div class="col-6 col-md">
+            <select id="filter-pharmacy" class="form-select form-select-sm bg-light border-0">
+              <option value="">🏥 Todas las farmacias</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-auto">
+            <select id="filter-status" class="form-select form-select-sm bg-light border-0">
+              <option value="">Estado: Todos</option>
+              <option value="pendiente">⏳ Pendiente</option>
+              <option value="procesado">✅ Procesado</option>
+            </select>
+          </div>
+           <div class="col-6 col-md-auto">
+            <input type="month" id="filter-date" class="form-control form-control-sm bg-light border-0">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de Datos -->
+    <div class="card mb-5">
+      <div class="table-responsive table-wrap">
+        <table class="table table-hover mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th>Fecha</th>
+              <th>Farmacia</th>
+              <th>Producto</th>
+              <th>Cant.</th>
+              <th>Unitario</th>
+              <th>Total</th>
+              <th width="140">Estado</th>
+              <th width="100" class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="payments-table">
+            <!-- JS Render -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FAB Button (Visible en móvil y desktop) -->
+  <button class="fab-button" data-bs-toggle="modal" data-bs-target="#formModal" aria-label="Nuevo Pago">
+    <i class="fas fa-plus"></i>
+  </button>
+
+  <!-- Modal Formulario -->
+  <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-primary"><i class="fas fa-file-invoice-dollar me-2"></i>Nuevo Pago</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="payment-form" class="row g-3">
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Farmacia</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="fas fa-store text-muted"></i></span>
+                <input type="text" id="pharmacy" class="form-control border-start-0 ps-0" placeholder="Nombre de la farmacia" required>
+              </div>
+            </div>
+            
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Producto</label>
+              <select id="product" class="form-select" required>
+                <option value="" selected disabled>Seleccionar...</option>
+                <option value="descongel">❄️ Descongel x100 cápsulas</option>
+                <option value="multidol400">💊 Multidol 400mg</option>
+                <option value="multidol800">💊 Multidol 800mg</option>
+              </select>
+            </div>
+
+            <div class="col-6">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Cantidad</label>
+              <input type="number" id="quantity" class="form-control" placeholder="0" min="1" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Precio Unit.</label>
+              <input type="number" id="unitPrice" class="form-control" placeholder="$" min="0" step="100" required>
+            </div>
+
+            <!-- Preview Total -->
+            <div class="col-12 d-none" id="total-preview">
+              <div class="alert bg-soft-primary border-0 d-flex justify-content-between align-items-center py-2">
+                <span class="small fw-bold text-primary">TOTAL A PAGAR</span>
+                <span class="fs-5 fw-bold text-primary" id="total-display">$0</span>
+                <input type="hidden" id="total-value">
+              </div>
+            </div>
+
+            <div class="col-6">
+               <label class="form-label small fw-bold text-uppercase text-secondary">Fecha</label>
+               <input type="date" id="date" class="form-control" required>
+            </div>
+            <div class="col-6">
+               <label class="form-label small fw-bold text-uppercase text-secondary">Estado</label>
+               <select id="status" class="form-select">
+                 <option value="pendiente">⏳ Pendiente</option>
+                 <option value="procesado">✅ Procesado</option>
+               </select>
+            </div>
+
+            <div class="col-12">
+              <textarea id="notes" class="form-control" rows="2" placeholder="Notas adicionales (opcional)..."></textarea>
+            </div>
+
+            <div class="col-12 mt-4">
+              <button type="submit" id="btn-save" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm">
+                Guardar Registro
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Reintegro -->
+  <div class="modal fade" id="reintegroModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-success"><i class="fas fa-hand-holding-dollar me-2"></i>Registrar reintegro</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="reintegro-form" class="row g-3">
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Monto</label>
+              <input type="number" id="reintegro-amount" class="form-control" placeholder="$" min="1" step="100" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Fecha</label>
+              <input type="date" id="reintegro-date" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">IDs de pagos (opcional)</label>
+              <input type="text" id="reintegro-reference" class="form-control" placeholder="id1,id2,id3">
+              <small class="text-muted">Separa múltiples IDs por coma.</small>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-bold text-uppercase text-secondary">Notas (opcional)</label>
+              <textarea id="reintegro-notes" class="form-control" rows="2" placeholder="Detalle del reintegro..."></textarea>
+            </div>
+            <div class="col-12 mt-4">
+              <button type="submit" id="btn-save-reintegro" class="btn btn-success w-100 py-2 rounded-pill fw-bold shadow-sm">
+                Guardar reintegro
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalles -->
+  <div class="modal fade" id="detailsModal" tabindex="-1">
+     <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0">
+           <div class="modal-body p-4" id="modal-detail-content">
+              <!-- Contenido JS -->
+           </div>
+           <div class="modal-footer border-0 pt-0 justify-content-center">
+              <button class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+           </div>
+        </div>
+     </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
